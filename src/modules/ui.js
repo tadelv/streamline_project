@@ -1,11 +1,12 @@
 import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
+import VisualizerAPI from './visualizer.js';
 
 export function formatStateForDisplay(state) {
     if (!state) return '';
     if (state === MachineState.FW_UPGRADE) return 'FW Upgrade';
-    const withSpaces = state.replace(/([A-Z])/g, ' $1');
+    const withSpaces = state.replace(/([A-Z])/g, ' ');
     return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
@@ -295,24 +296,46 @@ function setupPressAndHold(element, clickCallback, longPressCallback) {
     let timer;
     let longPressOccurred = false;
 
-    element.addEventListener('mousedown', (e) => {
+    const startPress = (e) => {
         e.preventDefault();
         longPressOccurred = false;
         timer = setTimeout(() => {
             longPressOccurred = true;
             longPressCallback();
         }, 1000); // 1 second for long press
-    });
+    };
 
-    element.addEventListener('mouseup', () => {
+    const endPress = (e) => {
         clearTimeout(timer);
-        if (!longPressOccurred) {
+        if (longPressOccurred) {
+            // Prevent any further "click" actions if a long press happened.
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+    
+    const cancelPress = () => {
+        clearTimeout(timer);
+    }
+
+    element.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // Mouse events
+    element.addEventListener('mousedown', startPress);
+    element.addEventListener('mouseup', endPress);
+    element.addEventListener('mouseleave', cancelPress);
+
+    // Touch events
+    element.addEventListener('touchstart', startPress, { passive: false });
+    element.addEventListener('touchend', endPress);
+
+    element.addEventListener('click', (e) => {
+        if (longPressOccurred) {
+            e.preventDefault();
+            e.stopPropagation();
+        } else {
             clickCallback();
         }
-    });
-
-    element.addEventListener('mouseleave', () => {
-        clearTimeout(timer);
     });
 }
 
@@ -456,6 +479,7 @@ export function initThemeToggle() {
 export function initUI() {
     initThemeToggle();
     initFullscreenHandler();
+    initSettingsModal();
     const drinkOutValueEl = document.getElementById('drink-out-value');
     const tempValueEl = document.getElementById('temp-value');
     const doseInValueEl = document.getElementById('dose-in-value');
@@ -479,6 +503,7 @@ export function initUI() {
 
     if (tempPresets) {
         for (const button of tempPresets.children) {
+            button.classList.add('no-select');
             const clickCallback = () => {
                 const newValue = parseFloat(button.textContent);
                 if (isNaN(newValue)) return;
@@ -510,6 +535,7 @@ export function initUI() {
 
     if (drinkOutPresets) {
         for (const button of drinkOutPresets.children) {
+            button.classList.add('no-select');
             const clickCallback = () => {
                 const [doseInStr, drinkOutStr] = button.textContent.split(':');
                 const newDoseIn = parseFloat(doseInStr);
@@ -547,6 +573,7 @@ export function initUI() {
 
     if (flushPresets) {
         for (const button of flushPresets.children) {
+            button.classList.add('no-select');
             const clickCallback = () => {
                 const newValue = parseFloat(button.textContent);
                 if (isNaN(newValue)) return;
@@ -581,6 +608,7 @@ export function initUI() {
         updateHotWaterPresetDisplay();
 
         Array.from(hotwaterPresets.children).forEach((button, index) => {
+            button.classList.add('no-select');
             const clickCallback = () => {
                 const isTempMode = hotWaterMode === 'temperature';
                 const presets = isTempMode ? hotWaterTempPresets : hotWaterVolPresets;
@@ -635,6 +663,7 @@ export function initUI() {
         updateSteamPresetDisplay();
 
         Array.from(steamPresets.children).forEach((button, index) => {
+            button.classList.add('no-select');
             const clickCallback = () => {
                 const newValue = steamTimePresets[index];
                 if (newValue === undefined) return;
@@ -671,6 +700,7 @@ export function initUI() {
         updateSteamPresetDisplay();
 
         Array.from(steamFlowPresetsEl.children).forEach((button, index) => {
+            button.classList.add('no-select');
             const clickCallback = () => {
                 const newValue = steamFlowPresets[index];
                 if (newValue === undefined) return;
@@ -1074,5 +1104,82 @@ export function initFullscreenHandler() {
         }
     } else {
         logger.warn('Fullscreen toggle button with id "fullscreen-toggle-btn" not found.');
+    }
+}
+
+function initSettingsModal() {
+    const settingsModal = document.getElementById('settings_modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const visualizerUsernameEl = document.getElementById('visualizer-username');
+    const visualizerPasswordEl = document.getElementById('visualizer-password');
+    const visualizerAutoUploadEl = document.getElementById('visualizer-auto-upload');
+    const visualizerMinDurationEl = document.getElementById('visualizer-min-duration');
+    const visualizerStatusEl = document.getElementById('visualizer-status');
+
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            if (settingsModal) {
+                settingsModal.showModal();
+            }
+        });
+    }
+
+    if (saveSettingsBtn) {
+        saveSettingsBtn.addEventListener('click', async () => {
+            const username = visualizerUsernameEl.value;
+            const password = visualizerPasswordEl.value;
+            const autoUpload = visualizerAutoUploadEl.checked;
+            const minDuration = visualizerMinDurationEl.value;
+
+            const api = new VisualizerAPI(username, password);
+            const credentialsValid = await api.checkCredentials();
+
+            if (credentialsValid) {
+                // Note: Storing passwords in localStorage is not secure.
+                // This is a placeholder for development.
+                // A more secure solution should be used in production.
+                localStorage.setItem('visualizerUsername', username);
+                localStorage.setItem('visualizerPassword', btoa(password)); // Simple encoding
+                localStorage.setItem('visualizerAutoUpload', autoUpload);
+                localStorage.setItem('visualizerMinDuration', minDuration);
+                visualizerStatusEl.textContent = 'Credentials saved and verified.';
+                visualizerStatusEl.className = 'text-green-500';
+            } else {
+                visualizerStatusEl.textContent = 'Invalid credentials. Please try again.';
+                visualizerStatusEl.className = 'text-red-500';
+            }
+        });
+    }
+
+    loadVisualizerSettings();
+}
+
+function loadVisualizerSettings() {
+    const visualizerUsernameEl = document.getElementById('visualizer-username');
+    const visualizerPasswordEl = document.getElementById('visualizer-password');
+    const visualizerAutoUploadEl = document.getElementById('visualizer-auto-upload');
+    const visualizerMinDurationEl = document.getElementById('visualizer-min-duration');
+
+    const username = localStorage.getItem('visualizerUsername');
+    const passwordEncoded = localStorage.getItem('visualizerPassword');
+    const autoUpload = localStorage.getItem('visualizerAutoUpload');
+    const minDuration = localStorage.getItem('visualizerMinDuration');
+
+    if (username) {
+        visualizerUsernameEl.value = username;
+    }
+    if (passwordEncoded) {
+        try {
+            visualizerPasswordEl.value = atob(passwordEncoded);
+        } catch (e) {
+            logger.error('Failed to decode password from localStorage', e);
+        }
+    }
+    if (autoUpload) {
+        visualizerAutoUploadEl.checked = autoUpload === 'true';
+    }
+    if (minDuration) {
+        visualizerMinDurationEl.value = minDuration;
     }
 }

@@ -1,6 +1,6 @@
 import { logger } from './logger.js';
 import { sendProfile, getWorkflow, getValueFromStore, setValueInStore } from './api.js';
-import { updateProfileName } from './ui.js';
+import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio } from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
 
 const FAV_COUNT = 5;
@@ -213,6 +213,13 @@ async function handleProfileClick(index) {
 
         if (isVerified) {
             updateProfileName(profile.title);
+            if (profile.steps && profile.steps.length > 0) {
+                updateTemperatureDisplay(profile.steps[0].temperature);
+            }
+            if (profile.target_weight) {
+                updateDrinkOut(profile.target_weight);
+                updateDrinkRatio();
+            }
             favoriteButtons.forEach((btn, i) => {
                 const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
                 const activeTextClass = 'text-white';
@@ -332,6 +339,7 @@ export async function init() {
         updateButtonUI();
 
         favoriteButtons.forEach((button, index) => {
+            button.classList.add('no-select');
             let pressTimer = null;
 
             const startPress = () => {
@@ -356,6 +364,8 @@ export async function init() {
             button.addEventListener('mouseleave', cancelPress);
             button.addEventListener('touchstart', startPress, { passive: true });
             button.addEventListener('touchend', cancelPress);
+
+            button.addEventListener('contextmenu', e => e.preventDefault());
         });
 
         const uploadButton = document.getElementById('upload-profile-btn');

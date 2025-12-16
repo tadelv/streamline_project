@@ -85,8 +85,14 @@ function displayShot(index) {
     // Update button states
     const prevBtn = document.getElementById('history-prev-btn');
     const nextBtn = document.getElementById('history-next-btn');
-    if (prevBtn) prevBtn.disabled = currentShotIndex >= shots.length - 1;
-    if (nextBtn) nextBtn.disabled = currentShotIndex <= 0;
+
+    if (prevBtn) {
+        
+        prevBtn.classList.toggle('invisible', currentShotIndex >= shots.length - 1);
+    }
+    if (nextBtn) {
+        nextBtn.classList.toggle('invisible', currentShotIndex <= 0);
+    }
 }
 
 export async function initHistory() {

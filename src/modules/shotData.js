@@ -215,3 +215,7 @@ export function updateShotData(de1Data, scaleWeight) {
 
     calculateAndRender(currentShot);
 }
+
+export function getCurrentShot() {
+    return currentShot;
+}

@@ -486,3 +486,19 @@ export async function setValueInStore(namespace, key, value) {
         throw error;
     }
 }
+
+export async function getShotIds() {
+    const response = await fetch(`${API_BASE_URL}/shots/ids`);
+    if (!response.ok) {
+        throw new Error('Failed to get shot ids');
+    }
+    return response.json();
+}
+
+export async function getShots(ids) {
+    const response = await fetch(`${API_BASE_URL}/shots?ids=${ids}`);
+    if (!response.ok) {
+        throw new Error('Failed to get shot');
+    }
+    return response.json();
+}

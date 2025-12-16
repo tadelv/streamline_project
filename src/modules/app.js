@@ -1,4 +1,4 @@
-import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState } from './api.js';
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots } from './api.js';
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
@@ -7,6 +7,7 @@ import * as shotData from './shotData.js';
 import * as profileManager from './profileManager.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
+import VisualizerAPI, { convertReaToVisualizerFormat } from './visualizer.js';
 
 // Helper function to format state strings
 function formatStateString(text) {
@@ -74,6 +75,62 @@ function startScaleReconnectPolling() {
         reconnectScale();
     }, 5000);
 }
+
+async function handleAutoUpload() {
+    const autoUpload = localStorage.getItem('visualizerAutoUpload') === 'true';
+    if (!autoUpload) {
+        logger.info('Auto-upload disabled.');
+        return;
+    }
+
+    const username = localStorage.getItem('visualizerUsername');
+    const passwordEncoded = localStorage.getItem('visualizerPassword');
+    if (!username || !passwordEncoded) {
+        logger.warn('Visualizer credentials not set. Cannot auto-upload.');
+        return;
+    }
+
+    try {
+        const shotIds = await getShotIds();
+        if (!shotIds || shotIds.length === 0) {
+            throw new Error('No shot IDs returned from REA.');
+        }
+
+        const latestShotId = shotIds[shotIds.length - 1];
+        logger.info(`Found latest shot ID: ${latestShotId}`);
+
+        const shotRecords = await getShots(latestShotId);
+        if (!shotRecords || shotRecords.length === 0) {
+            throw new Error(`No shot data returned for ID ${latestShotId}.`);
+        }
+        const reaShotData = shotRecords[0];
+
+        logger.info("Original REA shot data:", reaShotData);
+        const visualizerPayload = convertReaToVisualizerFormat(reaShotData);
+        logger.info("Converted Visualizer payload:", visualizerPayload);
+
+        const password = atob(passwordEncoded);
+        const visualizerAPI = new VisualizerAPI(username, password);
+
+        logger.info('Auto-uploading converted shot to Visualizer...');
+        const result = await visualizerAPI.uploadShot(visualizerPayload);
+        logger.info('Shot successfully uploaded to Visualizer:', result);
+
+        const visualizerStatusEl = document.getElementById('visualizer-status');
+        if (visualizerStatusEl) {
+            visualizerStatusEl.textContent = `Last upload successful: ${result.id}`;
+            visualizerStatusEl.className = 'text-green-500';
+        }
+    } catch (error) {
+        logger.error('Failed to auto-upload shot:', error);
+        const visualizerStatusEl = document.getElementById('visualizer-status');
+        if (visualizerStatusEl) {
+            visualizerStatusEl.textContent = `Last upload failed: ${error.message}`;
+            visualizerStatusEl.className = 'text-red-500';
+        }
+    }
+}
+
 
 function handleData(data) {
     //logger.debug("handleData received new snapshot.");
@@ -150,7 +207,13 @@ function handleData(data) {
 
     // Check for shot completion (transition from 'espresso' to 'ready' or 'idle')
     if (previousState.state === MachineState.ESPRESSO && (state === MachineState.READY || state === MachineState.IDLE)) {
-        logger.info('Shot finished. Refreshing history.', previousState);
+        logger.info('Shot finished. Scheduling auto-upload and history refresh.',previousState);
+        
+        // Add a delay to ensure the REA server has saved the shot
+        setTimeout(() => {
+            handleAutoUpload();
+        }, 2000); // 2-second delay
+
         setTimeout(() => {
             history.initHistory();
         }, 5000);

@@ -33,7 +33,7 @@
                 <input type="checkbox" name="theme-toggle" id="theme-toggle" class="hidden" />
                 <label for="theme-toggle" class="togglebtn-change flex items-center p-1 rounded-full w-12 h-6 cursor-pointer"></label>
             </div>
-            <button class="settings-button flex justify-center items-center min-h-0 w-[176px] px-10 pt-4 pb-5 border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[30px] text-2xl font-semibold">Settings</button>
+            <button id="settings-btn" class="settings-button flex justify-center items-center min-h-0 w-[176px] px-10 pt-4 pb-5 border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[30px] text-2xl font-semibold">Settings</button>
             <button id="sleep-button" class=" relative text-nowrap justify-center items-center min-h-0 w-[176px] px-10 pt-4 pb-5 border border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[30px] text-2xl font-semibold">Sleep</button>
             <button id="fullscreen-toggle-btn" title="Toggle fullscreen" class="absolute -top-12 -right-12 w-16 h-16 flex items-center justify-center   text-[var(--mimoja-blue)]">
                 <svg class="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
@@ -49,46 +49,46 @@
             <div class="flex justify-start items-center gap-12">
                 <span class="w-[144px] text-[var(--mimoja-blue-v2)] text-3xl font-bold">Grind</span>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="grind-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="grind-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="grind-value" class="w-[96px] text-center text-[var(--text-primary)] text-3xl font-bold">1.4</span>
-                    <button id="grind-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="grind-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <!-- Dose In -->
             <div class="flex justify-start items-center gap-12">
                 <span class="w-[144px] text-[var(--mimoja-blue-v2)] text-3xl font-bold">Dose</span>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="dose-in-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="dose-in-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="dose-in-value" class="w-[96px] text-center text-[var(--text-primary)] text-3xl font-bold">20g</span>
-                    <button id="dose-in-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="dose-in-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <!-- Drink out -->
             <div class="flex justify-start items-center gap-12">
                 <span class="w-[144px] text-[var(--mimoja-blue-v2)] text-3xl font-bold">Drink</span>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="drink-out-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="drink-out-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="w-[96px] text-center">
                         <span id="drink-out-value" class="text-[var(--text-primary)] text-3xl font-bold block">46g</span>
                         <span id="drink-ratio-value" class="text-[var(--text-primary)] text-2xl font-normal block">(1:2.3)</span>
                     </div>
-                    <button id="drink-out-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="drink-out-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <div id="drink-out-presets" class="w-[530px] h-14 flex justify-between items-center self-center">
                 <button id="drink-out-preset-1" class="justify-center text-neutral-400 text-2xl font-semibold">18:36</button>
                 <button id="drink-out-preset-2" class="text-center justify-center text-neutral-400 text-2xl font-semibold">20:40</button>
                 <button id="drink-out-preset-3" class="text-center justify-center text-neutral-400 text-2xl font-semibold">22:44</button>
-                <button id="drink-out-preset-4" class="text-right justify-center text-neutral-400 text-2xl font-semibold">20:46</button>
+                <button id="drink-out-preset-4" class="text-right justify-center  text-neutral-400 text-2xl font-semibold">20:46</button>
             </div>
             <div class="divider my-0"></div>
             <!-- Temp -->
              <div class="flex justify-start items-center gap-12">
                 <span class="w-[144px] text-[var(--mimoja-blue-v2)] text-3xl font-bold">Brew</span>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="temp-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="temp-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="temp-value" class="w-[96px] text-center text-[var(--text-primary)] text-3xl font-bold">92°c</span>
-                    <button id="temp-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="temp-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <div id="temp-presets" class="w-[530px] h-14 flex justify-between items-center self-center">
@@ -107,12 +107,12 @@
                     </span>
                 </div>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="steam-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="steam-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="w-[96px] text-center">
                         <span id="steam-duration-value" class="text-[var(--text-primary)] text-2xl font-bold block">30s</span>
                         <span id="steam-flow-value" class="text-[var(--text-primary)] text-2xl block">1.0ml/s</span>
                     </div>
-                    <button id="steam-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="steam-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <div id="steam-presets" class="w-[530px] h-14 flex justify-between items-center self-center">
@@ -132,9 +132,9 @@
             <div class="flex justify-start items-center gap-12">
                 <span class="w-[144px] text-[var(--mimoja-blue-v2)] text-3xl font-bold">Flush</span>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="flush-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="flush-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="flush-value" class="w-[96px] text-center text-[var(--text-primary)] text-3xl font-bold">5s</span>
-                    <button id="flush-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="flush-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
                 <div id="flush-presets" class="w-[530px] h-14 flex justify-between items-center self-center">
@@ -154,12 +154,12 @@
                     </span>
                 </div>
                 <div class="h-[96px] flex items-center gap-5">
-                    <button id="hot-water-vol-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">-</button>
+                    <button id="hot-water-vol-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="w-[96px] text-center">
                         <span id="hot-water-vol-value" class="text-[var(--text-primary)] text-3xl font-bold block">75ml</span>
                         <span id="hot-water-temp-value" class="text-[var(--text-primary)] text-2xl  block">45°C</span>
                     </div>
-                    <button id="hot-water-vol-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] font-extralight text-3xl flex items-center justify-center">+</button>
+                    <button id="hot-water-vol-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"><svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <div id="hotwater-presets" class="w-[530px] h-14 flex justify-between items-center self-center">
@@ -174,7 +174,7 @@
         <main class="flex flex-col min-h-0 bg-[var(--bgmain-color)] flex-grow">
             <div class="p-4  flex flex-col md:flex-row justify-between items-start">
                 <div>   
-                    <h1 id="profile-name" class="w-[741px] justify-start text-[var(--mimoja-blue)] text-4xl font-bold font-['Inter'] leading-[48px] tracking-wide">
+                    <h1 id="profile-name" class="w-[741px] justify-start text-[var(--mimoja-blue)] text-nowrap text-4xl font-bold font-['Inter'] leading-[48px] tracking-wide">
                         Damian’s LRv2 Long Name Profile
                         <!-- <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> -->
                     </h1>
@@ -199,12 +199,12 @@
             <div class="w-[512.67px] h-80 left-[639px] top-[1274px] absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
                 <div id= 'shot-history-label'class="w-52 left-[154px] top-[61px] absolute text-center justify-start text-[var(--text-primary)] text-2xl font-semibold font-['Inter'] leading-8">SHOT HISTORY</div>
                 <div class="w-96 left-[60px] top-[123px] absolute inline-flex justify-between items-center">
-                    <button id="history-prev-btn" class="btn btn-xs btn-ghost">◀</button>
+                    <button id="history-prev-btn" ><svg class="w-8 h-8 rotate-180" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="text-center">
                         <p id="history-date" class="text-3xl font-bold font-['Inter'] text-[var(--text-primary)]">Tue, 14 Sept, 18:45</p>
                         <p id="history-profile-name" class="text-3xl font-normal font-['Inter'] text-[var(--text-primary)]">Londinium</p>
                     </div>
-                    <button id="history-next-btn" class="btn btn-xs btn-ghost">▶</button>
+                    <button id="history-next-btn" ><svg class="w-8 h-8" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <div class="w-[1409.34px] h-80 left-[1150.66px] top-[1274px] absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
@@ -260,6 +260,46 @@
             <div class="modal-action">
                 <button id="upload-profile-btn" class="btn">Upload a Profile</button>
                 <input type="file" id="profile-upload-input" class="hidden" accept=".json">
+                <form method="dialog">
+                    <button class="btn">Close</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="settings_modal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg">Settings</h3>
+            <div class="py-4">
+                <h4 class="font-semibold text-md">Visualizer</h4>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Username</span>
+                    </label>
+                    <input type="text" id="visualizer-username" placeholder="Username" class="input input-bordered" />
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Password</span>
+                    </label>
+                    <input type="password" id="visualizer-password" placeholder="Password" class="input input-bordered" />
+                </div>
+                <div class="form-control">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">Auto-upload shots</span>
+                        <input type="checkbox" id="visualizer-auto-upload" class="toggle" />
+                    </label>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Minimum shot duration (seconds)</span>
+                    </label>
+                    <input type="number" id="visualizer-min-duration" placeholder="6" class="input input-bordered" />
+                </div>
+                <div id="visualizer-status" class="mt-4"></div>
+            </div>
+            <div class="modal-action">
+                <button id="save-settings-btn" class="btn btn-primary">Save</button>
                 <form method="dialog">
                     <button class="btn">Close</button>
                 </form>
