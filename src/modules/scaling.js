@@ -1,8 +1,8 @@
 export function initScaling() {
     const viewport = document.getElementById('scaling-container');
     const content = document.getElementById('scaled-content');
-    const designWidth = 2560;
-    const designHeight = 1600;
+    const designWidth = 1920;
+    const designHeight = 1200;
 
     function updateScale() {
         if (!viewport || !content) return;

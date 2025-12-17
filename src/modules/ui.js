@@ -148,7 +148,7 @@ function makeEditable(element, onCommit) {
         const input = document.createElement('input');
         input.type = 'number';
         input.value = currentValue;
-        input.className = 'text-3xl font-bold text-center w-24 bg-transparent';
+        input.className = 'text-[22.5px] font-bold text-center w-18 bg-transparent';
         input.name = element.id; // Recommended for accessibility and autofill
 
         element.style.display = 'none';
@@ -196,17 +196,17 @@ export function updateHotWaterDisplay(data) {
     tempEl.textContent = `${currentHotWaterTemp}°C`;
 
     if (hotWaterMode === 'volume') {
-        volEl.classList.remove('text-2xl', 'text-neutral-400');
-        volEl.classList.add('text-3xl', 'font-bold','text-neutral-900');
-        tempEl.classList.remove('text-3xl', 'font-bold');
-        tempEl.classList.add('text-2xl', 'text-neutral-400');
+        volEl.classList.remove('text-lg', 'text-neutral-400');
+        volEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900');
+        tempEl.classList.remove('text-[22.5px]', 'font-bold');
+        tempEl.classList.add('text-lg', 'text-neutral-400');
         modeVolEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTempEl.className = 'text-[var(--low-contrast-white)]';
     } else { // temperature mode
-        tempEl.classList.remove('text-2xl', 'text-neutral-400');
-        tempEl.classList.add('text-3xl', 'font-bold','text-neutral-900','font-bold');
-        volEl.classList.remove('text-3xl', 'font-bold');
-        volEl.classList.add('text-2xl', 'text-neutral-400');
+        tempEl.classList.remove('text-lg', 'text-neutral-400');
+        tempEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900','font-bold');
+        volEl.classList.remove('text-[22.5px]', 'font-bold');
+        volEl.classList.add('text-lg', 'text-neutral-400');
         modeTempEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeVolEl.className = 'text-[var(--low-contrast-white)]';
     }
@@ -367,17 +367,17 @@ export function updateSteamDisplay(data) {
     flowEl.textContent = `${currentSteamFlow.toFixed(1)}ml/s`;
 
     if (steamMode === 'time') {
-        durationEl.classList.remove('text-2xl', 'text-neutral-400');
-        durationEl.classList.add('text-3xl', 'font-bold','text-neutral-900');
-        flowEl.classList.remove('text-3xl', 'font-bold');
-        flowEl.classList.add('text-2xl', 'text-neutral-400');
+        durationEl.classList.remove('text-lg', 'text-neutral-400');
+        durationEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900');
+        flowEl.classList.remove('text-[22.5px]', 'font-bold');
+        flowEl.classList.add('text-lg', 'text-neutral-400');
         modeTimeEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeFlowEl.className = 'text-[var(--low-contrast-white)]';
     } else { // flow mode
-        flowEl.classList.remove('text-2xl', 'text-neutral-400');
-        flowEl.classList.add('text-3xl', 'font-bold','text-neutral-900','font-bold');
-        durationEl.classList.remove('text-3xl', 'font-bold');
-        durationEl.classList.add('text-2xl', 'text-neutral-400');
+        flowEl.classList.remove('text-lg', 'text-neutral-400');
+        flowEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900','font-bold');
+        durationEl.classList.remove('text-[22.5px]', 'font-bold');
+        durationEl.classList.add('text-lg', 'text-neutral-400');
         modeFlowEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTimeEl.className = 'text-[var(--low-contrast-white)]';
     }
