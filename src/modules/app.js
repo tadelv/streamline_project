@@ -5,10 +5,11 @@ import * as ui from './ui.js';
 import * as history from './history.js';
 import * as shotData from './shotData.js';
 import * as profileManager from './profileManager.js';
+import * as api from './api.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
 import VisualizerAPI, { convertReaToVisualizerFormat } from './visualizer.js';
-
+window.app = { api, ui, chart };
 // Helper function to format state strings
 function formatStateString(text) {
     if (!text) return '';
@@ -45,9 +46,6 @@ function resetDataTimeout() {
             reconnectDevice(de1DeviceId);
         }
 
-        if (reconnectingWebSocket) {
-            reconnectingWebSocket.close();
-        }
     }, 5000); // 5-second timeout
 }
 
@@ -55,26 +53,7 @@ function isHeatingState(state, substate) {
     return state === MachineState.HEATING || (state === MachineState.IDLE && substate === 'preparingForShot');
 }
 
-function stopScaleReconnectPolling() {
-    if (scaleReconnectPoller) {
-        logger.info('Stopping scale reconnect polling.');
-        clearInterval(scaleReconnectPoller);
-        scaleReconnectPoller = null;
-    }
-}
-
-function startScaleReconnectPolling() {
-    stopScaleReconnectPolling(); 
-    logger.info('Starting scale reconnect polling every 5 seconds...');
-    scaleReconnectPoller = setInterval(() => {
-        if (isScaleConnected) {
-            stopScaleReconnectPolling();
-            return;
-        }
-        logger.info('Polling: attempting to reconnect scale...');
-        reconnectScale();
-    }, 5000);
-}
+const UPLOAD_QUEUE_KEY = 'visualizerUploadQueue';
 
 async function handleAutoUpload() {
     const autoUpload = localStorage.getItem('visualizerAutoUpload') === 'true';
@@ -90,43 +69,69 @@ async function handleAutoUpload() {
         return;
     }
 
+    let uploadQueue = [];
+    try {
+        const storedQueue = localStorage.getItem(UPLOAD_QUEUE_KEY);
+        if (storedQueue) {
+            uploadQueue = JSON.parse(storedQueue);
+        }
+    } catch (e) {
+        logger.error("Failed to parse upload queue from localStorage", e);
+        localStorage.removeItem(UPLOAD_QUEUE_KEY);
+    }
+    
     try {
         const shotIds = await getShotIds();
-        if (!shotIds || shotIds.length === 0) {
-            throw new Error('No shot IDs returned from REA.');
-        }
+        if (!shotIds || shotIds.length === 0) throw new Error("No shots found");
 
         const latestShotId = shotIds[shotIds.length - 1];
-        logger.info(`Found latest shot ID: ${latestShotId}`);
 
-        const shotRecords = await getShots(latestShotId);
-        if (!shotRecords || shotRecords.length === 0) {
-            throw new Error(`No shot data returned for ID ${latestShotId}.`);
+        if (!uploadQueue.some(shot => shot.id === latestShotId)) {
+            const shotRecords = await getShots(latestShotId);
+            if (!shotRecords || shotRecords.length === 0) throw new Error(`Could not fetch shot ${latestShotId}`);
+            const reaShotData = shotRecords[0];
+            const visualizerPayload = convertReaToVisualizerFormat(reaShotData);
+            
+            uploadQueue.push({id: latestShotId, payload: visualizerPayload});
+            localStorage.setItem(UPLOAD_QUEUE_KEY, JSON.stringify(uploadQueue));
         }
-        const reaShotData = shotRecords[0];
+    } catch(error) {
+        logger.error("Failed to get latest shot for upload queue:", error);
+    }
 
-        logger.info("Original REA shot data:", reaShotData);
-        const visualizerPayload = convertReaToVisualizerFormat(reaShotData);
-        logger.info("Converted Visualizer payload:", visualizerPayload);
+    if(uploadQueue.length === 0) return;
 
-        const password = atob(passwordEncoded);
-        const visualizerAPI = new VisualizerAPI(username, password);
+    logger.info(`Processing upload queue. Size: ${uploadQueue.length}`);
+    const visualizerAPI = new VisualizerAPI(username, atob(passwordEncoded));
+    const visualizerStatusEl = document.getElementById('visualizer-status');
+    
+    while(uploadQueue.length > 0) {
+        const itemToUpload = uploadQueue[0];
+        try {
+            const onRetry = (attempt, maxRetries) => {
+                ui.showUploadStatus(`Retrying upload... (attempt ${attempt + 1} of ${maxRetries})`);
+            };
+            
+            ui.showUploadStatus(`Uploading shot ${itemToUpload.id}...`);
+            const result = await visualizerAPI.uploadShot(itemToUpload.payload, onRetry);
+            ui.hideUploadStatus();
+            logger.info(`Successfully uploaded shot ${itemToUpload.id}:`, result);
+            
+            uploadQueue.shift(); 
+            localStorage.setItem(UPLOAD_QUEUE_KEY, JSON.stringify(uploadQueue));
 
-        logger.info('Auto-uploading converted shot to Visualizer...');
-        const result = await visualizerAPI.uploadShot(visualizerPayload);
-        logger.info('Shot successfully uploaded to Visualizer:', result);
-
-        const visualizerStatusEl = document.getElementById('visualizer-status');
-        if (visualizerStatusEl) {
-            visualizerStatusEl.textContent = `Last upload successful: ${result.id}`;
-            visualizerStatusEl.className = 'text-green-500';
-        }
-    } catch (error) {
-        logger.error('Failed to auto-upload shot:', error);
-        const visualizerStatusEl = document.getElementById('visualizer-status');
-        if (visualizerStatusEl) {
-            visualizerStatusEl.textContent = `Last upload failed: ${error.message}`;
-            visualizerStatusEl.className = 'text-red-500';
+            if (visualizerStatusEl) {
+                visualizerStatusEl.textContent = `Upload successful: ${result.id}`;
+                visualizerStatusEl.className = 'text-green-500';
+            }
+        } catch (error) {
+            ui.hideUploadStatus();
+            logger.error(`Failed to upload queued shot ${itemToUpload.id} after all retries.`, error);
+            if (visualizerStatusEl) {
+                visualizerStatusEl.textContent = `Upload failed for shot ${itemToUpload.id}. Will retry later.`;
+                visualizerStatusEl.className = 'text-red-500';
+            }
+            break; 
         }
     }
 }
@@ -264,9 +269,7 @@ function handleScaleData(data) {
     latestScaleWeight = currentWeight;
 
     // Receiving any message means the websocket and BLE link are up.
-    // We can stop polling for a reconnect.
     // The timeout in api.js will trigger a disconnect if data stops flowing.
-    stopScaleReconnectPolling();
 
     if (currentWeight !== null && currentWeight !== undefined) {
         // We have a weight, so we are fully connected.
@@ -410,7 +413,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 logger.warn('Scale has disconnected.');
                 isScaleConnected = false;
                 ui.updateWeight('--g');
-                startScaleReconnectPolling();
             }
         );
         initWaterTankSocket();

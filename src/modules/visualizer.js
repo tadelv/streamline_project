@@ -9,33 +9,49 @@ class VisualizerAPI {
         return 'Basic ' + btoa(this.username + ':' + this.password);
     }
 
-    async uploadShot(shotData) {
+    async uploadShot(shotData, onRetry) {
+        const retries = 3;
+        const delay = 2000;
         const url = `${this.baseURL}/shots/upload`;
 
-        const formData = new FormData();
-        const shotBlob = new Blob([JSON.stringify(shotData)], { type: 'application/json' });
-        formData.append('file', shotBlob, 'file.shot');
+        for (let i = 0; i < retries; i++) {
+            try {
+                const formData = new FormData();
+                const shotBlob = new Blob([JSON.stringify(shotData)], { type: 'application/json' });
+                formData.append('file', shotBlob, 'file.shot');
 
-        const headers = {
-            'Authorization': this.getAuthHeader(),
-        };
+                const headers = {
+                    'Authorization': this.getAuthHeader(),
+                };
 
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: headers,
-                body: formData
-            });
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
 
-            if (response.ok) {
-                return await response.json();
-            } else {
+                if (response.ok) {
+                    return await response.json();
+                }
+
                 const errorText = await response.text();
+                // For client-side errors (4xx), don't retry, just fail.
+                if (response.status >= 400 && response.status < 500) {
+                    throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+                }
+                // For server-side errors (5xx), a retry might help.
                 throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
+
+            } catch (error) {
+                console.error(`Upload attempt ${i + 1}/${retries} failed:`, error.message);
+                if (i === retries - 1) {
+                    throw error; // Re-throw the error on the last attempt
+                }
+                if (onRetry) {
+                    onRetry(i + 1, retries);
+                }
+                await new Promise(res => setTimeout(res, delay));
             }
-        } catch (error) {
-            console.error('Error uploading shot to Visualizer:', error);
-            throw error;
         }
     }
 

@@ -107,15 +107,18 @@ export function connectWebSocket(onData, onReconnect) {
     }); // Enable debug logging
 
     reconnectingWebSocket.onopen = () => {
-        logger.info('WebSocket connected');
-        ui.updateMachineStatus("Connecting");
+        logger.info('WebSocket (re)connected.');
+        ui.updateMachineStatus("Connecting..."); // Show a temporary status
+        if (onReconnect) {
+            onReconnect(); // Trigger the logic in app.js
+        }
         logger.debug('DE1 WebSocket re-opened. Status set to Connected.'); // Added debug log
     };
 
     reconnectingWebSocket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            // Update local shot settings cache if snapshot includes shot settings
+            // Update local shot settings cache if snapshot includes snapshot settings
             onData(data);
             // setDebug(true);
             // logger.debug(data)
@@ -129,7 +132,7 @@ export function connectWebSocket(onData, onReconnect) {
         ui.updateMachineStatus("Disconnected");
         setTimeout(() => {
             logger.info('reloading now');
-            // location.reload();
+            location.reload();
             
         }, 6000);
     };
@@ -139,12 +142,7 @@ export function connectWebSocket(onData, onReconnect) {
         ui.updateMachineStatus("Disconnected"); // Ensure this is present
     };
 
-    reconnectingWebSocket.onreconnect = () => {
-        logger.info('WebSocket reconnected');
-        if (onReconnect) {
-            onReconnect();
-        }
-    };
+    reconnectingWebSocket.onreconnect = null;
 }
 
 export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
@@ -164,9 +162,12 @@ export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
     });
 
     scaleWebSocket.onopen = () => {
-        logger.info('Scale WebSocket connected');
+        logger.info('Scale WebSocket (re)connected.');
         clearTimeout(scaleDataTimeout);
         scaleDataTimeout = setTimeout(handleScaleTimeout, SCALE_TIMEOUT_DURATION);
+        if (onReconnect) {
+            onReconnect();
+        }
     };
 
     scaleWebSocket.onmessage = (event) => {
@@ -195,14 +196,7 @@ export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
         clearTimeout(scaleDataTimeout);
     };
 
-    scaleWebSocket.onreconnect = () => {
-        logger.info('Scale WebSocket reconnected');
-        clearTimeout(scaleDataTimeout);
-        scaleDataTimeout = setTimeout(handleScaleTimeout, SCALE_TIMEOUT_DURATION);
-        if (onReconnect) {
-            onReconnect();
-        }
-    };
+    scaleWebSocket.onreconnect = null;
 }
 
 export function connectShotSettingsWebSocket(onData) {
