@@ -33,8 +33,8 @@
                 <input type="checkbox" name="theme-toggle" id="theme-toggle" class="hidden" />
                 <label for="theme-toggle" class="togglebtn-change flex items-center  rounded-full w-9 h-[18px] cursor-pointer"></label>
             </div>
-            <button id="settings-btn" class="settings-button flex justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold">Settings</button>
-            <button id="sleep-button" class=" relative text-nowrap justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold">Sleep</button>
+            <button id="settings-btn" class="settings-button flex justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold" data-i18n-key="Settings">Settings</button>
+            <button id="sleep-button" class=" relative text-nowrap justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold" data-i18n-key="sleep">Sleep</button>
             <button id="fullscreen-toggle-btn" title="Toggle fullscreen" class="absolute -top-9 -right-9 w-12 h-12 flex items-center justify-center   text-[var(--mimoja-blue)]">
                 <svg class="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
                 <svg class="exit-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
@@ -47,7 +47,7 @@
         <aside class="bg-[var(--box-color)] pl-9 pr-3 md:pr-[6px] py-3 flex flex-col justify-around border-r border-base-300 w-[480px] h-[1036px]">
             <!-- Grind -->
             <div class="flex justify-start items-center gap-9">
-                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold">Grind</span>
+                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold" data-i18n-key="Grind">Grind</span>
                 <div class="h-[72px] flex items-center gap-[15px]">
                     <button id="grind-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[15px] flex items-center justify-center"><svg width="38" height="38" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="grind-value" class="w-[72px] text-center text-[var(--text-primary)] text-[22.5px] font-bold">1.4</span>
@@ -56,7 +56,7 @@
             </div>
             <!-- Dose In -->
             <div class="flex justify-start items-center gap-9">
-                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold">Dose</span>
+                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold" data-i18n-key="Dose">Dose</span>
                 <div class="h-[72px] flex items-center gap-[15px]">
                     <button id="dose-in-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[15px] flex items-center justify-center"><svg width="38" height="38" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="dose-in-value" class="w-[72px] text-center text-[var(--text-primary)] text-[22.5px] font-bold">20g</span>
@@ -65,7 +65,7 @@
             </div>
             <!-- Drink out -->
             <div class="flex justify-start items-center gap-9">
-                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold">Drink</span>
+                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold" data-i18n-key="Drink">Drink</span>
                 <div class="h-[72px] flex items-center gap-[15px]">
                     <button id="drink-out-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[15px] flex items-center justify-center"><svg width="38" height="38" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="w-[72px] text-center">
@@ -84,7 +84,7 @@
             <div class="divider my-0"></div>
             <!-- Temp -->
              <div class="flex justify-start items-center gap-9">
-                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold">Brew</span>
+                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold" data-i18n-key="Brew">Brew</span>
                 <div class="h-[72px] flex items-center gap-[15px]">
                     <button id="temp-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[15px] flex items-center justify-center"><svg width="38" height="38" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="temp-value" class="w-[72px] text-center text-[var(--text-primary)] text-[22.5px] font-bold">92°c</span>
@@ -101,9 +101,9 @@
             <!-- Steam -->
             <div class="flex justify-start items-center gap-9">
                 <div class="w-[114px]">
-                    <span class="text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold block">Steam</span>
+                    <span class="text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold block" data-i18n-key="Steam">Steam</span>
                     <span id="steam-mode-toggle" class="w-[114px] text-neutral-400 text-lg font-semibold text-nowrap block leading-6 cursor-pointer">
-                        <span id="steam-mode-time">Time</span> | <span id="steam-mode-flow">Flow</span>
+                        <span id="steam-mode-time" data-i18n-key="Time">Time</span> | <span id="steam-mode-flow" data-i18n-key="Flow">Flow</span>
                     </span>
                 </div>
                 <div class="h-[72px] flex items-center gap-[15px]">
@@ -130,7 +130,7 @@
             <div class="divider my-0"></div>
             <!-- Flush -->
             <div class="flex justify-start items-center gap-9">
-                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold">Flush</span>
+                <span class="w-[114px] text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold" data-i18n-key="Flush">Flush</span>
                 <div class="h-[72px] flex items-center gap-[15px]">
                     <button id="flush-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[15px] flex items-center justify-center"><svg width="38" height="38" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <span id="flush-value" class="w-[72px] text-center text-[var(--text-primary)] text-[22.5px] font-bold">5s</span>
@@ -148,9 +148,9 @@
             <!-- Hot Water -->
             <div class="flex justify-start items-center gap-9">
                 <div class="w-[114px]">
-                    <span class="text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold block text-nowrap">Hot Water</span>
+                    <span class="text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold block text-nowrap" data-i18n-key="Hot Water">Hot Water</span>
                     <span id="hot-water-mode-toggle" class="w-[114px] text-neutral-400 text-lg font-semibold text-nowrap block leading-6 cursor-pointer">
-                        <span id="hot-water-mode-temp">Temp</span> | <span id="hot-water-mode-vol">Vol</span>
+                        <span id="hot-water-mode-temp" data-i18n-key="Temp">Temp</span> | <span id="hot-water-mode-vol" data-i18n-key="Vol">Vol</span>
                     </span>
                 </div>
                 <div class="h-[72px] flex items-center gap-[15px]">
@@ -179,15 +179,15 @@
                         <!-- <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> -->
                     </h1>
                     <div class="h-9 inline-flex justify-start items-center gap-[15px]">
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Mix</span> <span id="data-mix-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Group</span> <span id="data-group-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Steam</span> <span id="data-steam-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Tank</span> <span id="data-tank-vol" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">ml</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Weight</span> <span id="data-weight" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6"> g</span></p>
+                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Mix">Mix</span> <span id="data-mix-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
+                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Group">Group</span> <span id="data-group-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
+                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Steam">Steam</span> <span id="data-steam-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
+                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Tank">Tank</span> <span id="data-tank-vol" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">ml</span></p>
+                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Weight">Weight</span> <span id="data-weight" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6"> g</span></p>
 
                     </div>
                 </div>
-                <div id="machine-status" class="text-right justify-center  text-[27px] font-bold font-['Inter'] leading-9 tracking-wide">
+                <div id="machine-status" class="text-right justify-center  text-[27px] font-bold font-['Inter'] leading-9 tracking-wide" data-i18n-key="Connecting">
                     Connecting
                 </div>
             </div>
@@ -197,7 +197,7 @@
             
             <!-- Footer: Shot History and Data -->
             <div class="w-[385px] h-60 left-[479px] top-[955px] absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
-                <div id= 'shot-history-label'class="w-[156px] left-[115px] top-[46px] absolute text-center justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">SHOT HISTORY</div>
+                <div id= 'shot-history-label'class="w-[156px] left-[115px] top-[46px] absolute text-center justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="SHOT HISTORY">SHOT HISTORY</div>
                 <div class="w-72 left-[45px] top-[92px] absolute inline-flex justify-between items-center">
                     <button id="history-prev-btn" ><svg class="w-6 h-6 rotate-180" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="text-center">
@@ -209,17 +209,17 @@
             </div>
             <div class="w-[1057px] h-60 left-[863px] top-[955px] absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
                 <div class="w-[120px] left-[45px] top-[41px] absolute text-right justify-center text-[var(--text-primary)] text-lg font-bold font-['Inter'] leading-6"></div>
-                <div class="w-[120px] h-9 left-[35px] top-[88px] absolute text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Preinfusion</div>
-                <div class="w-[108px] h-9 left-[51px] top-[135px] absolute text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Extraction</div>
-                <div class="w-[108px] h-9 left-[51px] top-[182px] absolute text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Total</div>
+                <div class="w-[120px] h-9 left-[35px] top-[88px] absolute text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Preinfusion">Preinfusion</div>
+                <div class="w-[108px] h-9 left-[51px] top-[135px] absolute text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Extraction">Extraction</div>
+                <div class="w-[108px] h-9 left-[51px] top-[182px] absolute text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Total">Total</div>
 
                 <div class="w-[709px] left-[198px] top-[35px] absolute inline-flex justify-start items-start gap-[27px]">
-                    <div class="w-12 h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Time</div>
-                    <div class="w-[108px] h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Weight</div>
-                    <div class="w-18 h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Volume</div>
-                    <div class="w-[108px] h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Temp</div>
-                    <div class="w-[120px] h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Flow</div>
-                    <div class="w-42 h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6">Pressure</div>
+                    <div class="w-12 h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Time">Time</div>
+                    <div class="w-[108px] h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Weight">Weight</div>
+                    <div class="w-18 h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Volume">Volume</div>
+                    <div class="w-[108px] h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Temp">Temp</div>
+                    <div class="w-[120px] h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Flow">Flow</div>
+                    <div class="w-42 h-9 justify-center text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Pressure">Pressure</div>
                 </div>
                 <div class="w-[783px] left-[198px] top-[88px] absolute inline-flex flex-col justify-start items-start gap-[21px]">
                     <div class="h-6 inline-flex justify-start items-start gap-[27px]">
@@ -253,15 +253,15 @@
 
     <dialog id="profile_modal" class="modal">
         <div class="modal-box">
-            <h3 class="font-bold text-lg">Choose a Profile</h3>
+            <h3 class="font-bold text-lg" data-i18n-key="Choose a Profile">Choose a Profile</h3>
             <div id="profile-list-container" class="py-3 grid grid-cols-1 gap-1.5">
                 <!-- Profile list will be inserted here by JavaScript -->
             </div>
             <div class="modal-action">
-                <button id="upload-profile-btn" class="btn">Upload a Profile</button>
+                <button id="upload-profile-btn" class="btn" data-i18n-key="Upload a Profile">Upload a Profile</button>
                 <input type="file" id="profile-upload-input" class="hidden" accept=".json">
                 <form method="dialog">
-                    <button class="btn">Close</button>
+                    <button class="btn" data-i18n-key="Close">Close</button>
                 </form>
             </div>
         </div>
@@ -269,39 +269,49 @@
 
     <dialog id="settings_modal" class="modal">
         <div class="modal-box">
-            <h3 class="font-bold text-[13.5px]">Settings</h3>
+            <h3 class="font-bold text-[13.5px]" data-i18n-key="Settings">Settings</h3>
+            <div class="divider"></div>
             <div class="py-3">
-                <h4 class="font-semibold text-sm">Visualizer</h4>
+                <h4 class="font-semibold text-sm" data-i18n-key="Language">Language</h4>
+                <div class="form-control">
+                    <select id="language-switcher" class="select select-bordered w-full max-w-xs">
+                        <!-- Options will be populated by ui.js -->
+                    </select>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="py-3">
+                <h4 class="font-semibold text-sm" data-i18n-key="Visualizer">Visualizer</h4>
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Username</span>
+                        <span class="label-text" data-i18n-key="Username">Username</span>
                     </label>
                     <input type="text" id="visualizer-username" placeholder="Username" class="input input-bordered" />
                 </div>
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Password</span>
+                        <span class="label-text" data-i18n-key="Password">Password</span>
                     </label>
                     <input type="password" id="visualizer-password" placeholder="Password" class="input input-bordered" />
                 </div>
                 <div class="form-control">
                     <label class="label cursor-pointer">
-                        <span class="label-text">Auto-upload shots</span>
+                        <span class="label-text" data-i18n-key="Auto-upload shots">Auto-upload shots</span>
                         <input type="checkbox" id="visualizer-auto-upload" class="toggle" />
                     </label>
                 </div>
                 <div class="form-control">
                     <label class="label">
-                        <span class="label-text">Minimum shot duration (seconds)</span>
+                        <span class="label-text" data-i18n-key="Minimum shot duration (seconds)">Minimum shot duration (seconds)</span>
                     </label>
                     <input type="number" id="visualizer-min-duration" placeholder="6" class="input input-bordered" />
                 </div>
                 <div id="visualizer-status" class="mt-3"></div>
             </div>
             <div class="modal-action">
-                <button id="save-settings-btn" class="btn btn-primary">Save</button>
+                <button id="save-settings-btn" class="btn btn-primary" data-i18n-key="Save">Save</button>
                 <form method="dialog">
-                    <button class="btn">Close</button>
+                    <button class="btn" data-i18n-key="Close">Close</button>
                 </form>
             </div>
         </div>
@@ -311,11 +321,11 @@
     <div id="fullscreen-toast-container" class="toast toast-center toast-middle" style="z-index: 10000; display: none;">
         <div class="alert bg-base-100/60 backdrop-blur-md text-[var(--text-primary)] shadow-lg">
             <div class="flex-col gap-y-1.5 text-center">
-                <h3 class="font-bold">Fullscreen Recommended</h3>
-                <div class="text-[9px]">For the best experience, please use fullscreen mode.</div>
+                <h3 class="font-bold" data-i18n-key="Fullscreen Recommended">Fullscreen Recommended</h3>
+                <div class="text-[9px]" data-i18n-key="For the best experience, please use fullscreen mode.">For the best experience, please use fullscreen mode.</div>
                 <div class="flex gap-2 self-center pt-1.5">
-                    <button id="toast-fullscreen-btn" class="btn btn-primary btn-sm text-white">Enter Fullscreen</button>
-                    <button id="toast-close-btn" class="btn btn-ghost btn-sm">Later</button>
+                    <button id="toast-fullscreen-btn" class="btn btn-primary btn-sm text-white" data-i18n-key="Enter Fullscreen">Enter Fullscreen</button>
+                    <button id="toast-close-btn" class="btn btn-ghost btn-sm" data-i18n-key="Later">Later</button>
                 </div>
             </div>
         </div>

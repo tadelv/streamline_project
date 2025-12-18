@@ -1,7 +1,33 @@
 import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
+import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
 import VisualizerAPI from './visualizer.js';
+
+function initLanguageSwitcher() {
+    const switcher = document.getElementById('language-switcher');
+    if (!switcher) return;
+
+    const supportedLanguages = getSupportedLanguages();
+    const currentLanguage = getCurrentLanguage();
+
+    // Populate the dropdown
+    switcher.innerHTML = ''; // Clear existing options
+    supportedLanguages.forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang;
+        option.textContent = new Intl.DisplayNames(['en'], { type: 'language' }).of(lang) || lang;
+        if (lang === currentLanguage) {
+            option.selected = true;
+        }
+        switcher.appendChild(option);
+    });
+
+    // Add event listener
+    switcher.addEventListener('change', (event) => {
+        setLanguage(event.target.value);
+    });
+}
 
 export function formatStateForDisplay(state) {
     if (!state) return '';
@@ -480,6 +506,7 @@ export function initUI() {
     initThemeToggle();
     initFullscreenHandler();
     initSettingsModal();
+    initLanguageSwitcher();
     const drinkOutValueEl = document.getElementById('drink-out-value');
     const tempValueEl = document.getElementById('temp-value');
     const doseInValueEl = document.getElementById('dose-in-value');
@@ -942,9 +969,11 @@ export function updateSleepButton(state) {
     const sleepButton = document.getElementById('sleep-button');
     if (sleepButton) {
         if (state === 'sleeping') {
-            sleepButton.textContent = 'Wake Up';
+            sleepButton.textContent = getTranslation('awake');
+            sleepButton.setAttribute('data-i18n-key', 'awake');
         } else {
-            sleepButton.textContent = 'Sleep';
+            sleepButton.textContent = getTranslation('Sleep');
+            sleepButton.setAttribute('data-i18n-key', 'Sleep');
         }
     }
 }

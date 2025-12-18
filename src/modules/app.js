@@ -2,6 +2,7 @@ import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayMode
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
+import { initI18n } from './i18n.js';
 import * as history from './history.js';
 import * as shotData from './shotData.js';
 import * as profileManager from './profileManager.js';
@@ -379,6 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         chart.initChart();
         logger.info('App DOMContentLoaded: Chart initialized.');
 
+        await initI18n();
         ui.initUI();
         initScaling();
         logger.info('App DOMContentLoaded: UI initialized.');
