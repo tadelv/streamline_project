@@ -1,8 +1,9 @@
 import * as ui from './ui.js';
 import { logger ,setDebug} from './logger.js';
 
+export let reaHostname = localStorage.getItem('reaHostname') || window.location.hostname;
 export const REA_PORT = 8080;
-export const API_BASE_URL = `http://${window.location.hostname}:${REA_PORT}/api/v1`;
+export let API_BASE_URL = `http://${reaHostname}:${REA_PORT}/api/v1`;
 export const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
 export const MachineState = {
@@ -101,7 +102,7 @@ export async function reconnectScale() {
 }
 
 export function connectWebSocket(onData, onReconnect) {
-    reconnectingWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${window.location.hostname}:${REA_PORT}/ws/v1/de1/snapshot`, [], {
+    reconnectingWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/de1/snapshot`, [], {
         debug: true,
         reconnectInterval: 3000,
     }); // Enable debug logging
@@ -156,7 +157,7 @@ export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
         }
     };
 
-    scaleWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${window.location.hostname}:${REA_PORT}/ws/v1/scale/snapshot`, [], {
+    scaleWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/scale/snapshot`, [], {
         debug: true,
         reconnectInterval: 3000,
     });
@@ -200,7 +201,7 @@ export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
 }
 
 export function connectShotSettingsWebSocket(onData) {
-    const shotSettingsWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${window.location.hostname}:${REA_PORT}/ws/v1/de1/shotSettings`, [], {
+    const shotSettingsWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/de1/shotSettings`, [], {
         debug: true,
         reconnectInterval: 3000,
     });

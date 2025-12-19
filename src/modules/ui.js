@@ -1,4 +1,4 @@
-import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState } from './api.js';
+import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
@@ -1145,11 +1145,35 @@ function initSettingsModal() {
     const visualizerAutoUploadEl = document.getElementById('visualizer-auto-upload');
     const visualizerMinDurationEl = document.getElementById('visualizer-min-duration');
     const visualizerStatusEl = document.getElementById('visualizer-status');
+    const reaHostnameInput = document.getElementById('rea-hostname-input');
+    const saveReaHostnameBtn = document.getElementById('save-rea-hostname-btn');
 
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             if (settingsModal) {
+                // Populate the hostname input with the current value when the modal is opened
+                if (reaHostnameInput) {
+                    reaHostnameInput.value = reaHostname;
+                }
                 settingsModal.showModal();
+            }
+        });
+    }
+    
+    if (saveReaHostnameBtn) {
+        saveReaHostnameBtn.addEventListener('click', () => {
+            if (reaHostnameInput) {
+                const newHostname = reaHostnameInput.value.trim();
+                if (newHostname) {
+                    localStorage.setItem('reaHostname', newHostname);
+                    alert('Hostname saved. The page will now reload.');
+                    location.reload();
+                } else {
+                    // If the input is empty, remove the item from localStorage to revert to default
+                    localStorage.removeItem('reaHostname');
+                    alert('Hostname cleared. The page will now reload to use the default address.');
+                    location.reload();
+                }
             }
         });
     }
