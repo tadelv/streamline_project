@@ -53,7 +53,7 @@ export function updateShotSettingsCache(newSettings) {
 }
 
 export async function getDevices() {
-    const response = await fetch(`${API_BASE_URL}/devices`);
+    const response = await fetch(`${API_BASE_URL}/devices`, { targetAddressSpace: 'local' });
     if (!response.ok) {
         throw new Error('Failed to get devices');
     }
@@ -61,7 +61,7 @@ export async function getDevices() {
 }
 
 export async function scanForDevices() {
-    const response = await fetch(`${API_BASE_URL}/devices/scan`);
+    const response = await fetch(`${API_BASE_URL}/devices/scan`, { targetAddressSpace: 'local' });
     if (!response.ok) {
         throw new Error('Failed to scan for devices');
     }
@@ -88,7 +88,7 @@ let reloadcount = 0;
 export async function reconnectScale() {
     try {
         logger.info('Attempting to reconnect scale by scanning...');
-        const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`);
+        const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`, { targetAddressSpace: 'local' });
         if (!response.ok) {
             reloadcount += 1;
             if (reloadcount >= 10) { location.reload(); }
@@ -230,7 +230,7 @@ export function connectShotSettingsWebSocket(onData) {
 }
 
 export async function getProfile() {
-    const response = await fetch(`${API_BASE_URL}/workflow`);
+    const response = await fetch(`${API_BASE_URL}/workflow`, { targetAddressSpace: 'local' });
     if (!response.ok) {
         throw new Error('Failed to get profile');
     }
