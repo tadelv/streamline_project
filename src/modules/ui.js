@@ -1,8 +1,8 @@
-import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname } from './api.js';
+import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
-import VisualizerAPI from './visualizer.js';
+
 
 function initLanguageSwitcher() {
     const switcher = document.getElementById('language-switcher');
@@ -1143,23 +1143,48 @@ function initSettingsModal() {
     const visualizerUsernameEl = document.getElementById('visualizer-username');
     const visualizerPasswordEl = document.getElementById('visualizer-password');
     const visualizerAutoUploadEl = document.getElementById('visualizer-auto-upload');
-    const visualizerMinDurationEl = document.getElementById('visualizer-min-duration');
     const visualizerStatusEl = document.getElementById('visualizer-status');
     const reaHostnameInput = document.getElementById('rea-hostname-input');
     const saveReaHostnameBtn = document.getElementById('save-rea-hostname-btn');
+    const pluginId = 'visualizer.reaplugin';
 
+    // When the modal is opened, load the latest settings
     if (settingsBtn) {
-        settingsBtn.addEventListener('click', () => {
+        settingsBtn.addEventListener('click', async () => {
             if (settingsModal) {
-                // Populate the hostname input with the current value when the modal is opened
+                // 1. Populate hostname
                 if (reaHostnameInput) {
                     reaHostnameInput.value = reaHostname;
                 }
+
+                // 2. Load and populate plugin settings
+                try {
+                    const savedSettings = await getPluginSettings(pluginId);
+                    if (savedSettings && savedSettings.Username) {
+                        visualizerUsernameEl.value = savedSettings.Username;
+                    } else {
+                        visualizerUsernameEl.value = '';
+                    }
+                    visualizerPasswordEl.value = ''; // Always clear password field
+                    visualizerStatusEl.textContent = ''; // Clear status
+                } catch (error) {
+                    logger.error(`Failed to load settings for ${pluginId}:`, error);
+                    visualizerStatusEl.textContent = 'Could not load plugin settings.';
+                    visualizerStatusEl.className = 'text-red-500';
+                }
+
+                // 3. Load UI-only settings from localStorage
+                const autoUpload = localStorage.getItem('visualizerAutoUpload');
+                if (visualizerAutoUploadEl) {
+                    visualizerAutoUploadEl.checked = autoUpload === 'true';
+                }
+
                 settingsModal.showModal();
             }
         });
     }
-    
+
+    // Handle saving the REA hostname
     if (saveReaHostnameBtn) {
         saveReaHostnameBtn.addEventListener('click', () => {
             if (reaHostnameInput) {
@@ -1169,7 +1194,6 @@ function initSettingsModal() {
                     alert('Hostname saved. The page will now reload.');
                     location.reload();
                 } else {
-                    // If the input is empty, remove the item from localStorage to revert to default
                     localStorage.removeItem('reaHostname');
                     alert('Hostname cleared. The page will now reload to use the default address.');
                     location.reload();
@@ -1178,61 +1202,93 @@ function initSettingsModal() {
         });
     }
 
+    // Handle saving all other settings
     if (saveSettingsBtn) {
         saveSettingsBtn.addEventListener('click', async () => {
-            const username = visualizerUsernameEl.value;
-            const password = visualizerPasswordEl.value;
-            const autoUpload = visualizerAutoUploadEl.checked;
-            const minDuration = visualizerMinDurationEl.value;
+            const username = visualizerUsernameEl.value.trim();
+            const password = visualizerPasswordEl.value; // Don't trim password
 
-            const api = new VisualizerAPI(username, password);
-            const credentialsValid = await api.checkCredentials();
+            visualizerStatusEl.textContent = 'Testing credentials...';
+            visualizerStatusEl.className = 'text-gray-500';
 
-            if (credentialsValid) {
-                // Note: Storing passwords in localStorage is not secure.
-                // This is a placeholder for development.
-                // A more secure solution should be used in production.
-                localStorage.setItem('visualizerUsername', username);
-                localStorage.setItem('visualizerPassword', btoa(password)); // Simple encoding
-                localStorage.setItem('visualizerAutoUpload', autoUpload);
-                localStorage.setItem('visualizerMinDuration', minDuration);
-                visualizerStatusEl.textContent = 'Credentials saved and verified.';
+            // Perform client-side check against Visualizer API
+            const VISUALIZER_API_URL = 'https://visualizer.coffee/api';
+            try {
+                const authHeader = 'Basic ' + btoa(username + ':' + password);
+                const response = await fetch(`${VISUALIZER_API_URL}/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': authHeader
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    visualizerStatusEl.textContent = `Invalid Visualizer credentials. (${response.status}: ${errorText.substring(0, 50)}...)`;
+                    visualizerStatusEl.className = 'text-red-500';
+                    return; // Stop here if credentials are bad
+                }
+                visualizerStatusEl.textContent = 'Visualizer credentials valid.';
                 visualizerStatusEl.className = 'text-green-500';
-            } else {
-                visualizerStatusEl.textContent = 'Invalid credentials. Please try again.';
+
+            } catch (error) {
+                logger.error('Error testing Visualizer credentials:', error);
+                visualizerStatusEl.textContent = `Network error or Visualizer API unreachable: ${error.message}.`;
+                visualizerStatusEl.className = 'text-red-500';
+                return; // Stop here on network error
+            }
+
+            // If credentials are valid, proceed to save to plugin
+            const autoUpload = visualizerAutoUploadEl.checked;
+            
+            // 1. Save UI-only settings to localStorage
+            localStorage.setItem('visualizerAutoUpload', autoUpload);
+
+            // 2. Prepare and save plugin settings
+            const settingsPayload = {
+                Username: username,
+            };
+
+            // Only include the password if the user entered one (or if it's the first time setting it).
+            // This prevents overwriting a stored password with a blank one.
+            if (password) {
+                settingsPayload.Password = password;
+            }
+
+            try {
+                await setPluginSettings(pluginId, settingsPayload);
+                visualizerStatusEl.textContent = 'Credentials saved to REA plugin.';
+                visualizerStatusEl.className = 'text-green-500';
+                
+                // Hide status after a few seconds
+                setTimeout(() => {
+                    visualizerStatusEl.textContent = '';
+                }, 3000);
+
+            } catch (error) {
+                logger.error('Failed to save visualizer plugin settings:', error);
+                visualizerStatusEl.textContent = `Failed to save to REA plugin: ${error.message}.`;
                 visualizerStatusEl.className = 'text-red-500';
             }
         });
     }
-
-    loadVisualizerSettings();
 }
 
-function loadVisualizerSettings() {
-    const visualizerUsernameEl = document.getElementById('visualizer-username');
-    const visualizerPasswordEl = document.getElementById('visualizer-password');
-    const visualizerAutoUploadEl = document.getElementById('visualizer-auto-upload');
-    const visualizerMinDurationEl = document.getElementById('visualizer-min-duration');
 
-    const username = localStorage.getItem('visualizerUsername');
-    const passwordEncoded = localStorage.getItem('visualizerPassword');
-    const autoUpload = localStorage.getItem('visualizerAutoUpload');
-    const minDuration = localStorage.getItem('visualizerMinDuration');
+export function showUploadStatus(message) {
+    const toastEl = document.getElementById('upload-status-toast');
+    const messageEl = document.getElementById('upload-status-message');
+    if (toastEl && messageEl) {
+        messageEl.textContent = message;
+        toastEl.style.display = 'grid'; // Use grid or block as appropriate for daisyUI toast
+    } else {
+        logger.warn('Upload status toast element not found.');
+    }
+}
 
-    if (username) {
-        visualizerUsernameEl.value = username;
-    }
-    if (passwordEncoded) {
-        try {
-            visualizerPasswordEl.value = atob(passwordEncoded);
-        } catch (e) {
-            logger.error('Failed to decode password from localStorage', e);
-        }
-    }
-    if (autoUpload) {
-        visualizerAutoUploadEl.checked = autoUpload === 'true';
-    }
-    if (minDuration) {
-        visualizerMinDurationEl.value = minDuration;
+export function hideUploadStatus() {
+    const toastEl = document.getElementById('upload-status-toast');
+    if (toastEl) {
+        toastEl.style.display = 'none';
     }
 }

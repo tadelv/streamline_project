@@ -1,4 +1,4 @@
-import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots } from './api.js';
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore } from './api.js';
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
@@ -9,8 +9,8 @@ import * as profileManager from './profileManager.js';
 import * as api from './api.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
-import VisualizerAPI, { convertReaToVisualizerFormat } from './visualizer.js';
-window.app = { api, ui, chart };
+
+window.app = { api, ui, chart, pollForUploadConfirmation };
 // Helper function to format state strings
 function formatStateString(text) {
     if (!text) return '';
@@ -54,87 +54,39 @@ function isHeatingState(state, substate) {
     return state === MachineState.HEATING || (state === MachineState.IDLE && substate === 'preparingForShot');
 }
 
-const UPLOAD_QUEUE_KEY = 'visualizerUploadQueue';
+async function pollForUploadConfirmation(shotId, timeout = 30000) {
+    logger.info(`Polling for upload confirmation for shot ID: ${shotId}`);
+    const pollInterval = 3000; // 3 seconds
+    const startTime = Date.now();
 
-async function handleAutoUpload() {
-    const autoUpload = localStorage.getItem('visualizerAutoUpload') === 'true';
-    if (!autoUpload) {
-        logger.info('Auto-upload disabled.');
-        return;
-    }
-
-    const username = localStorage.getItem('visualizerUsername');
-    const passwordEncoded = localStorage.getItem('visualizerPassword');
-    if (!username || !passwordEncoded) {
-        logger.warn('Visualizer credentials not set. Cannot auto-upload.');
-        return;
-    }
-
-    let uploadQueue = [];
-    try {
-        const storedQueue = localStorage.getItem(UPLOAD_QUEUE_KEY);
-        if (storedQueue) {
-            uploadQueue = JSON.parse(storedQueue);
+    const checkUploadStatus = async (resolve, reject) => {
+        if (Date.now() - startTime > timeout) {
+            logger.warn(`Polling timed out for shot ${shotId}.`);
+            ui.showUploadStatus(`Upload timed out for shot ${shotId}.`);
+            setTimeout(ui.hideUploadStatus, 5000);
+            return reject(new Error('Polling timed out'));
         }
-    } catch (e) {
-        logger.error("Failed to parse upload queue from localStorage", e);
-        localStorage.removeItem(UPLOAD_QUEUE_KEY);
-    }
-    
-    try {
-        const shotIds = await getShotIds();
-        if (!shotIds || shotIds.length === 0) throw new Error("No shots found");
 
-        const latestShotId = shotIds[shotIds.length - 1];
-
-        if (!uploadQueue.some(shot => shot.id === latestShotId)) {
-            const shotRecords = await getShots(latestShotId);
-            if (!shotRecords || shotRecords.length === 0) throw new Error(`Could not fetch shot ${latestShotId}`);
-            const reaShotData = shotRecords[0];
-            const visualizerPayload = convertReaToVisualizerFormat(reaShotData);
-            
-            uploadQueue.push({id: latestShotId, payload: visualizerPayload});
-            localStorage.setItem(UPLOAD_QUEUE_KEY, JSON.stringify(uploadQueue));
-        }
-    } catch(error) {
-        logger.error("Failed to get latest shot for upload queue:", error);
-    }
-
-    if(uploadQueue.length === 0) return;
-
-    logger.info(`Processing upload queue. Size: ${uploadQueue.length}`);
-    const visualizerAPI = new VisualizerAPI(username, atob(passwordEncoded));
-    const visualizerStatusEl = document.getElementById('visualizer-status');
-    
-    while(uploadQueue.length > 0) {
-        const itemToUpload = uploadQueue[0];
         try {
-            const onRetry = (attempt, maxRetries) => {
-                ui.showUploadStatus(`Retrying upload... (attempt ${attempt + 1} of ${maxRetries})`);
-            };
-            
-            ui.showUploadStatus(`Uploading shot ${itemToUpload.id}...`);
-            const result = await visualizerAPI.uploadShot(itemToUpload.payload, onRetry);
-            ui.hideUploadStatus();
-            logger.info(`Successfully uploaded shot ${itemToUpload.id}:`, result);
-            
-            uploadQueue.shift(); 
-            localStorage.setItem(UPLOAD_QUEUE_KEY, JSON.stringify(uploadQueue));
+            const lastUploadedShotId = await getValueFromStore('visualizer.reaplugin', 'lastUploadedShot');
+            logger.debug(`Polled lastUploadedShotId: ${lastUploadedShotId}`);
 
-            if (visualizerStatusEl) {
-                visualizerStatusEl.textContent = `Upload successful: ${result.id}`;
-                visualizerStatusEl.className = 'text-green-500';
+            if (lastUploadedShotId === shotId) {
+                logger.info(`Successfully confirmed upload for shot ${shotId}.`);
+                ui.showUploadStatus('Shot uploaded successfully!');
+                setTimeout(ui.hideUploadStatus, 5000);
+                return resolve(true);
+            } else {
+                setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
             }
         } catch (error) {
-            ui.hideUploadStatus();
-            logger.error(`Failed to upload queued shot ${itemToUpload.id} after all retries.`, error);
-            if (visualizerStatusEl) {
-                visualizerStatusEl.textContent = `Upload failed for shot ${itemToUpload.id}. Will retry later.`;
-                visualizerStatusEl.className = 'text-red-500';
-            }
-            break; 
+            logger.error('Error during polling for upload confirmation:', error);
+            // Don't reject immediately, let it retry until timeout
+             setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
         }
-    }
+    };
+
+    return new Promise(checkUploadStatus);
 }
 
 
@@ -213,12 +165,22 @@ function handleData(data) {
 
     // Check for shot completion (transition from 'espresso' to 'ready' or 'idle')
     if (previousState.state === MachineState.ESPRESSO && (state === MachineState.READY || state === MachineState.IDLE)) {
-        logger.info('Shot finished. Scheduling auto-upload and history refresh.',previousState);
-        
-        // Add a delay to ensure the REA server has saved the shot
-        setTimeout(() => {
-            handleAutoUpload();
-        }, 2000); // 2-second delay
+        logger.info('Shot finished. Checking for upload confirmation and refreshing history.');
+
+        // Start polling for upload confirmation
+        setTimeout(async () => {
+            try {
+                const shotIds = await getShotIds();
+                if (shotIds && shotIds.length > 0) {
+                    const latestShotId = shotIds[shotIds.length - 1];
+                    pollForUploadConfirmation(latestShotId);
+                } else {
+                    logger.warn('Could not get latest shot ID to confirm upload.');
+                }
+            } catch (error) {
+                logger.error('Failed to initiate upload polling:', error);
+            }
+        }, 2000); // Delay to ensure shot is saved on server
 
         setTimeout(() => {
             history.initHistory();

@@ -497,3 +497,55 @@ export async function getShots(ids) {
     }
     return response.json();
 }
+
+export async function getPlugins() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/plugins`);
+        if (!response.ok) {
+            throw new Error(`Failed to get plugins: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        logger.error("Error in getPlugins:", error);
+        return null;
+    }
+}
+
+export async function getPluginSettings(pluginId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/plugins/${pluginId}/settings`);
+        if (!response.ok) {
+            // If settings are not found (e.g., first time), return empty object rather than error
+            if (response.status === 404) {
+                return {};
+            }
+            throw new Error(`Failed to get plugin settings for ${pluginId}: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        logger.error(`Error getting plugin settings for ${pluginId}:`, error);
+        return {}; // Return empty object on error to prevent UI from breaking
+    }
+}
+
+export async function setPluginSettings(pluginId, settings) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/plugins/${pluginId}/settings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to set plugin settings for ${pluginId}. Status: ${response.status}, Body: ${errorBody}`);
+        }
+        logger.info(`Plugin settings for ${pluginId} updated successfully:`, settings);
+        return true;
+    } catch (error) {
+        logger.error(`Error setting plugin settings for ${pluginId}:`, error);
+        throw error; // Re-throw to allow calling code to handle
+    }
+}
