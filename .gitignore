@@ -106,7 +106,5 @@ plugin.tcl
 /Users/markc/Documents/streamline_js/streamline_project/src/modules/visualizer.js
 visualizer upload 2 .txt
 visualizer_pluging.txt
-visulizer_REAPLUGIN/manifest.json
-visulizer_REAPLUGIN/plugin.js
 Plugins.md
 

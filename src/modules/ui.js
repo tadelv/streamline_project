@@ -1,4 +1,4 @@
-import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings } from './api.js';
+import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings, verifyVisualizerCredentials } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
@@ -1208,35 +1208,32 @@ function initSettingsModal() {
             const username = visualizerUsernameEl.value.trim();
             const password = visualizerPasswordEl.value; // Don't trim password
 
+            if (!username || !password) {
+                visualizerStatusEl.textContent = 'Username and Password are required.';
+                visualizerStatusEl.className = 'text-red-500';
+                return;
+            }
+
             visualizerStatusEl.textContent = 'Testing credentials...';
             visualizerStatusEl.className = 'text-gray-500';
 
-            // Perform client-side check against Visualizer API
-            const VISUALIZER_API_URL = 'https://visualizer.coffee/api';
-            try {
-                const authHeader = 'Basic ' + btoa(username + ':' + password);
-                const response = await fetch(`${VISUALIZER_API_URL}/me`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': authHeader
-                    }
-                });
+            const isValid = await verifyVisualizerCredentials(username, password);
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    visualizerStatusEl.textContent = `Invalid Visualizer credentials. (${response.status}: ${errorText.substring(0, 50)}...)`;
-                    visualizerStatusEl.className = 'text-red-500';
-                    return; // Stop here if credentials are bad
-                }
-                visualizerStatusEl.textContent = 'Visualizer credentials valid.';
-                visualizerStatusEl.className = 'text-green-500';
-
-            } catch (error) {
-                logger.error('Error testing Visualizer credentials:', error);
-                visualizerStatusEl.textContent = `Network error or Visualizer API unreachable: ${error.message}.`;
+            if (!isValid) {
+                visualizerStatusEl.textContent = 'Invalid Visualizer credentials.';
                 visualizerStatusEl.className = 'text-red-500';
-                return; // Stop here on network error
+                // Clear any previously saved (and now invalid) credentials
+                localStorage.removeItem('visualizerUsername');
+                localStorage.removeItem('visualizerPassword');
+                return; // Stop here if credentials are bad
             }
+            
+            visualizerStatusEl.textContent = 'Visualizer credentials valid.';
+            visualizerStatusEl.className = 'text-green-500';
+
+            // On success, save to localStorage for future auto-login
+            localStorage.setItem('visualizerUsername', username);
+            localStorage.setItem('visualizerPassword', btoa(password)); // Basic obfuscation
 
             // If credentials are valid, proceed to save to plugin
             const autoUpload = visualizerAutoUploadEl.checked;
@@ -1247,17 +1244,14 @@ function initSettingsModal() {
             // 2. Prepare and save plugin settings
             const settingsPayload = {
                 Username: username,
+                Password: password, // Send the actual password to the plugin
+                AutoUpload: autoUpload,
+                LengthThreshold: parseInt(document.getElementById('visualizer-min-duration').value, 10) || 5,
             };
-
-            // Only include the password if the user entered one (or if it's the first time setting it).
-            // This prevents overwriting a stored password with a blank one.
-            if (password) {
-                settingsPayload.Password = password;
-            }
 
             try {
                 await setPluginSettings(pluginId, settingsPayload);
-                visualizerStatusEl.textContent = 'Credentials saved to REA plugin.';
+                visualizerStatusEl.textContent = 'Credentials saved successfully!';
                 visualizerStatusEl.className = 'text-green-500';
                 
                 // Hide status after a few seconds
@@ -1275,19 +1269,32 @@ function initSettingsModal() {
 }
 
 
-export function showUploadStatus(message) {
-    const toastEl = document.getElementById('upload-status-toast');
-    const messageEl = document.getElementById('upload-status-message');
+export function showToast(message, duration = 2400, type = 'info') {
+    const toastEl = document.getElementById('app-toast');
+    const messageEl = document.getElementById('app-toast-message');
     if (toastEl && messageEl) {
         messageEl.textContent = message;
-        toastEl.style.display = 'grid'; // Use grid or block as appropriate for daisyUI toast
+        
+        const alertEl = toastEl.querySelector('.alert');
+        if (alertEl) {
+            alertEl.classList.remove('alert-info', 'alert-success', 'alert-error');
+            alertEl.classList.add(`alert-${type}`);
+        }
+
+        toastEl.style.display = 'grid';
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                hideToast();
+            }, duration);
+        }
     } else {
-        logger.warn('Upload status toast element not found.');
+        logger.warn('App toast element not found.');
     }
 }
 
-export function hideUploadStatus() {
-    const toastEl = document.getElementById('upload-status-toast');
+export function hideToast() {
+    const toastEl = document.getElementById('app-toast');
     if (toastEl) {
         toastEl.style.display = 'none';
     }

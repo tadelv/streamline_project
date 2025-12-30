@@ -1,4 +1,4 @@
-import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore } from './api.js';
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials } from './api.js';
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
@@ -10,7 +10,7 @@ import * as api from './api.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
 
-window.app = { api, ui, chart, pollForUploadConfirmation };
+window.app = { api, ui, chart };
 // Helper function to format state strings
 function formatStateString(text) {
     if (!text) return '';
@@ -62,8 +62,7 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
     const checkUploadStatus = async (resolve, reject) => {
         if (Date.now() - startTime > timeout) {
             logger.warn(`Polling timed out for shot ${shotId}.`);
-            ui.showUploadStatus(`Upload timed out for shot ${shotId}.`);
-            setTimeout(ui.hideUploadStatus, 5000);
+            ui.showToast(`Upload timed out for shot ${shotId}.`, 5000, 'error');
             return reject(new Error('Polling timed out'));
         }
 
@@ -73,8 +72,7 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
 
             if (lastUploadedShotId === shotId) {
                 logger.info(`Successfully confirmed upload for shot ${shotId}.`);
-                ui.showUploadStatus('Shot uploaded successfully!');
-                setTimeout(ui.hideUploadStatus, 5000);
+                ui.showToast('Shot uploaded successfully!', 3000, 'success');
                 return resolve(true);
             } else {
                 setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
@@ -82,7 +80,7 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
         } catch (error) {
             logger.error('Error during polling for upload confirmation:', error);
             // Don't reject immediately, let it retry until timeout
-             setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
+            setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
         }
     };
 
@@ -259,8 +257,13 @@ async function handleShotSettingsData(data) {
 
     try {
         const de1Settings = await getDe1Settings();
-        const combinedData = { ...data, targetSteamFlow: de1Settings.steamFlow };
-        ui.updateSteamDisplay(combinedData);
+        if (de1Settings) {
+            const combinedData = { ...data, targetSteamFlow: de1Settings.steamFlow };
+            ui.updateSteamDisplay(combinedData);
+        } else {
+            logger.warn('Could not retrieve DE1 settings, using fallback for steam display.');
+            ui.updateSteamDisplay(data);
+        }
     } catch (error) {
         logger.error('Failed to get DE1 settings for steam display:', error);
         ui.updateSteamDisplay(data); // Fallback to original data
@@ -334,6 +337,35 @@ async function initializeDe1Connection() {
     }
 }
 
+async function initVisualizer() {
+    logger.info('Initializing Visualizer connection...');
+    const username = localStorage.getItem('visualizerUsername');
+    const encodedPassword = localStorage.getItem('visualizerPassword');
+
+    if (username && encodedPassword) {
+        try {
+            const password = atob(encodedPassword); // Decode password
+            const isValid = await verifyVisualizerCredentials(username, password);
+            if (isValid) {
+                logger.info('Saved Visualizer credentials are valid.');
+                ui.showToast('Visualizer log-in success', 3000, 'success');
+            } else {
+                logger.warn('Saved Visualizer credentials failed to validate. Please check your settings.');
+                // Clearing the invalid credentials
+                localStorage.removeItem('visualizerUsername');
+                localStorage.removeItem('visualizerPassword');
+            }
+        } catch (e) {
+            logger.error('Failed to decode or verify saved credentials', e);
+            // Clear potentially corrupted credentials
+            localStorage.removeItem('visualizerUsername');
+            localStorage.removeItem('visualizerPassword');
+        }
+    } else {
+        logger.info('No saved Visualizer credentials found.');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         setDebug(true);
@@ -362,6 +394,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.info('App DOMContentLoaded: Awaiting DE1 connection...');
         await initializeDe1Connection();
         logger.info('App DOMContentLoaded: DE1 connection finished.');
+
+        logger.info('App DOMContentLoaded: Initializing Visualizer...');
+        await initVisualizer();
+        logger.info('App DOMContentLoaded: Visualizer initialized.');
 
         logger.info('App DOMContentLoaded: Setting up WebSockets and timers...');
         connectWebSocket(handleData, () => {

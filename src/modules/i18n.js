@@ -36,7 +36,7 @@ function parseCSV(csvText) {
             return value;
         });
 
-        const key = values[0].toLowerCase();
+        const key = values[0];
         if (key) {
             headers.forEach((lang, index) => {
                 if (values[index] !== undefined) {
@@ -82,7 +82,7 @@ function translatePage() {
  * @returns {string} The translated string, or the key if not found.
  */
 export function getTranslation(key) {
-    return translations[currentLanguage]?.[key.toLowerCase()] || key;
+    return translations[currentLanguage]?.[key] || key;
 }
 
 /**

@@ -53,7 +53,7 @@ export function updateShotSettingsCache(newSettings) {
 }
 
 export async function getDevices() {
-    const response = await fetch(`${API_BASE_URL}/devices`, { targetAddressSpace: 'local' });
+    const response = await fetch(`${API_BASE_URL}/devices`);
     if (!response.ok) {
         throw new Error('Failed to get devices');
     }
@@ -545,7 +545,24 @@ export async function setPluginSettings(pluginId, settings) {
         logger.info(`Plugin settings for ${pluginId} updated successfully:`, settings);
         return true;
     } catch (error) {
-        logger.error(`Error setting plugin settings for ${pluginId}:`, error);
         throw error; // Re-throw to allow calling code to handle
+    }
+}
+
+export async function verifyVisualizerCredentials(username, password) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/plugins/visualizer.reaplugin/verifyCredentials`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+        const result = await response.json();
+        return result.valid;
+    } catch (error) {
+        logger.error('Failed to verify Visualizer credentials:', error);
+        return false; // Assume invalid on error
     }
 }

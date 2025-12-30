@@ -1,0 +1,64 @@
+{
+  "id": "visualizer.reaplugin",
+  "author": "Decent",
+  "name": "Visualizer upload",
+  "description": "Uploads the latest shot to Visualizer",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "permissions": [
+    "log",
+    "api",
+    "emit",
+    "pluginStorage"
+  ],
+  "settings": {
+    "Username": {
+      "type": "string",
+      "description": "Visualiser username"
+    },
+    "Password": {
+      "type": "string",
+      "secure": true,
+      "description": "Visualiser password"
+    },
+    "AutoUpload": {
+      "type": "boolean",
+      "description": "Upload shots automatically",
+      "default": true
+    },
+    "LengthThreshold": {
+      "type": "number",
+      "description": "Only upload shots that are longer than the threshold (in seconds)",
+      "default": 5
+    }
+  },
+  "api": [
+    {
+      "id": "status",
+      "type": "http",
+      "data": {}
+    },
+    {
+      "id": "upload",
+      "type": "http",
+      "data": {
+        "shotId": {
+          "type": "string"
+        },
+        "description": "Send POST with shotID to upload in body"
+      }
+    },
+    {
+      "id": "verifyCredentials",
+      "type": "http",
+      "data": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}
