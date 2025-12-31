@@ -10,45 +10,82 @@ const LONG_PRESS_DURATION = 700; // ms
 const SETTINGS_NAMESPACE = 'streamline-app';
 const FAVORITES_KEY = 'favorite-profiles';
 const UPLOADED_PROFILES_KEY = 'uploaded-profiles';
+const DEFAULT_PROFILES_KEY = 'default-profiles';
+const DEFAULT_PROFILES_MIGRATED_KEY = 'default-profiles-migrated';
 
 
 let favoriteButtons = [];
-let availableProfiles = {};
+export let availableProfiles = {};
 let favoriteAssignments = {};
 let currentButtonIndex = null;
 
 // --- Helper Functions ---
 
-async function loadAvailableProfiles() {
-    // 1. Load default profiles from the file system
-    let profileFiles = [];
+export async function migrateDefaultProfilesToRea() {
     try {
+        const migrationDone = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_MIGRATED_KEY);
+        if (migrationDone) {
+            logger.info('Default profiles already migrated to REA store. Skipping.');
+            return;
+        }
+
+        logger.info('Starting one-time migration of default profiles to REA store...');
+
         const response = await fetch(`${PROFILES_PATH}profile-manifest.json`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch profile manifest. Status: ${response.status}`);
+        if (!response.ok) throw new Error('Failed to fetch profile manifest for migration.');
+        
+        const profileFiles = [...new Set(await response.json())];
+        const defaultProfiles = {};
+
+        for (const fileName of profileFiles) {
+            try {
+                const res = await fetch(`${PROFILES_PATH}${fileName}`);
+                if (!res.ok) throw new Error(`Failed to fetch ${fileName} for migration`);
+                const profileJson = await res.json();
+                const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
+                defaultProfiles[fileName] = profileContent;
+            } catch (error) {
+                logger.error(`Migration: Failed to load profile: ${fileName}`, error);
+            }
         }
-        profileFiles = await response.json();
+        
+        if (Object.keys(defaultProfiles).length > 0) {
+            await setValueInStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY, defaultProfiles);
+            await setValueInStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_MIGRATED_KEY, true);
+            logger.info(`Successfully migrated ${Object.keys(defaultProfiles).length} default profiles to REA store.`);
+            // Also save to IndexedDB backup right away
+            await setSetting(DEFAULT_PROFILES_KEY, defaultProfiles);
+        }
+
     } catch (error) {
-        logger.error('Failed to load profiles from manifest.', error);
+        logger.error('Failed during default profile migration:', error);
     }
+}
 
-    profileFiles = [...new Set(profileFiles)]; // Deduplicate
 
-    for (const fileName of profileFiles) {
-        try {
-            const response = await fetch(`${PROFILES_PATH}${fileName}`);
-            if (!response.ok) throw new Error(`Failed to fetch ${fileName}`);
-            const profileJson = await response.json();
-            const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
-            availableProfiles[fileName] = profileContent;
-        } catch (error) {
-            logger.error(`Failed to load profile: ${fileName}`, error);
-        }
-    }
-
-    // 2. Load user-uploaded profiles using the new fallback logic
+export async function loadAvailableProfiles() {
+    let defaultProfiles = {};
     let uploadedProfiles = {};
+
     try {
+        // Try to load default profiles from REA store or fallback to IndexedDB
+        const reaDefaults = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY);
+        if (reaDefaults) {
+            logger.info('Loaded default profiles from REA store.');
+            defaultProfiles = reaDefaults;
+            await setSetting(DEFAULT_PROFILES_KEY, defaultProfiles); // Update backup
+        } else {
+            logger.warn('No default profiles in REA store, checking IndexedDB backup...');
+            const idbDefaults = await getSetting(DEFAULT_PROFILES_KEY);
+            if (idbDefaults) {
+                logger.info('Loaded default profiles from IndexedDB backup.');
+                defaultProfiles = idbDefaults;
+                // Attempt to sync back to REA. The migration logic should handle the primary load.
+                await setValueInStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY, defaultProfiles);
+            }
+        }
+
+        // Try to load user-uploaded profiles from REA store or fallback to IndexedDB
         const reaUploaded = await getValueFromStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY);
         if (reaUploaded) {
             logger.info('Loaded uploaded profiles from REA store.');
@@ -64,22 +101,27 @@ async function loadAvailableProfiles() {
             }
         }
     } catch (error) {
-        logger.error('Failed to load uploaded profiles from REA store. Falling back to IndexedDB.', error);
+        logger.error('Failed to load profiles from REA store. Falling back to IndexedDB.', error);
         try {
+            const idbDefaults = await getSetting(DEFAULT_PROFILES_KEY);
+            if (idbDefaults) defaultProfiles = idbDefaults;
+
             const idbUploaded = await getSetting(UPLOADED_PROFILES_KEY);
-            if (idbUploaded) {
-                uploadedProfiles = idbUploaded;
+            if (idbUploaded) uploadedProfiles = idbUploaded;
+            
+            if(Object.keys(defaultProfiles).length > 0 || Object.keys(uploadedProfiles).length > 0) {
+                logger.info('Loaded profiles from IndexedDB backup during fallback.');
+            } else {
+                logger.warn('No profiles found in IndexedDB backup either.');
             }
+
         } catch (idbError) {
-             logger.error('Failed to load uploaded profiles from IndexedDB backup as well.', idbError);
+             logger.error('Failed to load profiles from IndexedDB backup as well.', idbError);
         }
     }
     
-    if (Object.keys(uploadedProfiles).length > 0) {
-        Object.assign(availableProfiles, uploadedProfiles);
-        logger.info('Merged uploaded profiles.', Object.keys(uploadedProfiles));
-    }
-
+    // Merge all profiles into the main object
+    availableProfiles = { ...defaultProfiles, ...uploadedProfiles };
     logger.info('All available profiles loaded.', Object.keys(availableProfiles));
 }
 
@@ -334,6 +376,7 @@ export async function init() {
 
         await openDB(); // Still needed for the backup functionality
 
+        await migrateDefaultProfilesToRea();
         await loadAvailableProfiles();
         await loadAssignments();
         updateButtonUI();
