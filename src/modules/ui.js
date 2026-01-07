@@ -502,11 +502,20 @@ export function initThemeToggle() {
     });
 }
 
-export function initUI() {
+export function initScaleClick(callback) {
+    const weightEl = document.getElementById('data-weight');
+    if (weightEl) {
+        weightEl.classList.add('cursor-pointer');
+        weightEl.addEventListener('click', callback);
+    }
+}
+
+export function initUI(callbacks) {
     initThemeToggle();
     initFullscreenHandler();
     initSettingsModal();
     initLanguageSwitcher();
+    initScaleClick(callbacks.onWeightClick);
     const drinkOutValueEl = document.getElementById('drink-out-value');
     const tempValueEl = document.getElementById('temp-value');
     const doseInValueEl = document.getElementById('dose-in-value');
@@ -1010,13 +1019,36 @@ export function updateTemperatures({ mix, group, steam }) {
     }
 }
 
-export function updateWeight(weight) {
+export function updateWeight(weight, classUpdates = {}) {
+    const { dataWeight, weightText } = classUpdates;
     const weightEl = document.getElementById('data-weight');
+    const weightTextEl = document.getElementById('weight-text');
+
     if (weightEl) {
         if (typeof weight === 'number' && !isNaN(weight)) {
             weightEl.textContent = ` ${weight.toFixed(1)}g`;
         } else {
-            weightEl.textContent = '--g';
+            weightEl.textContent = weight;
+        }
+
+        if (dataWeight) {
+            if (dataWeight.add) {
+                weightEl.classList.add(...dataWeight.add);
+            }
+            if (dataWeight.remove) {
+                weightEl.classList.remove(...dataWeight.remove);
+            }
+        }
+    }
+
+    if (weightTextEl) {
+        if (weightText) {
+            if (weightText.add) {
+                weightTextEl.classList.add(...weightText.add);
+            }
+            if (weightText.remove) {
+                weightTextEl.classList.remove(...weightText.remove);
+            }
         }
     }
 }
@@ -1294,8 +1326,96 @@ export function showToast(message, duration = 2400, type = 'info') {
 }
 
 export function hideToast() {
+
     const toastEl = document.getElementById('app-toast');
+
     if (toastEl) {
+
         toastEl.style.display = 'none';
+
     }
+
+}
+
+
+
+export function initResizablePanels(separatorId) {
+    const separator = document.getElementById(separatorId);
+    if (!separator) {
+        logger.warn(`Separator with id #${separatorId} not found.`);
+        return;
+    }
+
+    const container = separator.parentElement;
+    if (!container) {
+        logger.warn('Separator has no parent container.');
+        return;
+    }
+
+    const leftPanel = separator.previousElementSibling;
+    if (!leftPanel) {
+        logger.warn('Left panel not found for separator.');
+        return;
+    }
+
+    let isDragging = false;
+    let initialX = 0;
+    let initialLeftWidth = 0;
+
+    const startDrag = (e) => {
+        isDragging = true;
+        
+        const clientX = e.clientX || e.touches[0].clientX;
+        initialX = clientX;
+        
+        initialLeftWidth = leftPanel.offsetWidth;
+
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', stopDrag);
+    };
+
+    const drag = (e) => {
+        if (!isDragging) return;
+        
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
+
+        requestAnimationFrame(() => {
+            const clientX = e.clientX || e.touches[0].clientX;
+            const deltaX = clientX - initialX;
+            let newLeftWidth = initialLeftWidth + deltaX;
+
+            const containerRect = container.getBoundingClientRect();
+            const minWidth = containerRect.width * 0.2; 
+            const maxWidth = containerRect.width * 0.5;
+
+            if (newLeftWidth < minWidth) newLeftWidth = minWidth;
+            if (newLeftWidth > maxWidth) newLeftWidth = maxWidth;
+
+            container.style.gridTemplateColumns = `${newLeftWidth}px auto 1fr`;
+        });
+    };
+
+    const stopDrag = () => {
+        isDragging = false;
+        
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('touchend', stopDrag);
+    };
+
+    separator.addEventListener('mousedown', startDrag);
+    separator.addEventListener('touchstart', startDrag);
 }

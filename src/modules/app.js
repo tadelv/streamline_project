@@ -1,4 +1,4 @@
-import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket,reconnectScale, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials } from './api.js';
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials, connectScaleDevice, tareScale, connectTimeToReadyWebSocket } from './api.js';
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
@@ -29,6 +29,8 @@ let scaleReconnectPoller = null;
 let latestScaleWeight = 0;
 let heatingStartTime = null;
 let heatingStartTemp = 0;
+let isConnectingScale = false;
+let timeToReadyMessage = null;
 
 // To filter the chart to only show data from the 'pouring' state,
 // set this variable to true in your browser's developer console.
@@ -87,6 +89,13 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
     return new Promise(checkUploadStatus);
 }
 
+function handleTimeToReadyData(data) {
+    if (data.status === 'heating') {
+        timeToReadyMessage = data.message;
+    } else {
+        timeToReadyMessage = null;
+    }
+}
 
 function handleData(data) {
     //logger.debug("handleData received new snapshot.");
@@ -107,36 +116,12 @@ function handleData(data) {
     if (state === MachineState.ERROR) {
         statusString = "Error";
     } else if (isHeating) {
-        const targetGroupTemp = data.targetGroupTemperature;
-        const currentGroupTemp = data.groupTemperature;
-
-        // If we just entered heating state, record start time and temp.
-        if (!wasHeating) {
-            heatingStartTime = Date.now();
-            heatingStartTemp = currentGroupTemp;
-        }
-
-        const togo = targetGroupTemp - currentGroupTemp;
-
-        if (togo > 0.5 && heatingStartTime && currentGroupTemp > heatingStartTemp) {
-            const elapsed = (Date.now() - heatingStartTime) / 1000; // seconds
-            const warmed = currentGroupTemp - heatingStartTemp;
-
-            // Only calculate ETA if we've warmed at least 0.5 degree and 2s passed to get a stable rate
-            if (warmed > 0.5 && elapsed > 2) {
-                const timePerDegree = elapsed / warmed;
-                let eta = Math.round(timePerDegree * togo);
-
-                if (eta < 5) eta = 5;
-                if (eta > 600) eta = 600; 
-
-                statusString = `Heating Time Remaining : ${eta}s`;
-            } else {
-                // Not enough data for ETA yet, show temp progress
-                statusString = `Heating... (${currentGroupTemp.toFixed(0)}°c / ${targetGroupTemp.toFixed(0)}°c)`;
-            }
+        if (timeToReadyMessage) {
+            statusString = timeToReadyMessage;
         } else {
-             statusString = `Heating... (${currentGroupTemp.toFixed(0)}°c / ${targetGroupTemp.toFixed(0)}°c)`;
+            const targetGroupTemp = data.targetGroupTemperature;
+            const currentGroupTemp = data.groupTemperature;
+            statusString = `Heating... (${currentGroupTemp.toFixed(0)}°c / ${targetGroupTemp.toFixed(0)}°c)`;
         }
     } else {
         const formattedState = formatStateString(state);
@@ -238,16 +223,79 @@ function handleScaleData(data) {
             logger.info('Scale reconnected.');
             isScaleConnected = true;
         }
-        // Update the UI with the new weight.
-        throttledUpdateWeight(currentWeight);
+        // Update the UI with the new weight and reset styles.
+        throttledUpdateWeight(currentWeight, {
+            weightText: { remove: ['text-red-600'] },
+            dataWeight: { remove: ['text-[var(--mimoja-blue)]'] }
+        });
     } else {
         // We received a message without a weight.
-        // If we were already connected, we just keep the last weight on screen.
-        // If we were not connected, we show '--g'.
         if (!isScaleConnected) {
-            ui.updateWeight('--g');
+            ui.updateWeight('[Reconnect]', {
+                weightText: { add: ['text-red-600'] },
+                dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+            });
         }
         logger.warn('Scale message received without weight data.');
+    }
+}
+
+async function handleWeightClick() {
+    if (isScaleConnected) {
+        try {
+            await tareScale();
+            ui.showToast('Scale tared', 2000, 'success');
+        } catch (error) {
+            ui.showToast('Failed to tare scale', 3000, 'error');
+        }
+        return;
+    }
+
+    if (isConnectingScale) return;
+
+    isConnectingScale = true;
+    ui.updateWeight('Connecting...');
+
+    try {
+        await connectScaleDevice();
+
+        let attempts = 0;
+        const maxAttempts = 15;
+        const poll = setInterval(async () => {
+            attempts++;
+            if (attempts > maxAttempts) {
+                clearInterval(poll);
+                ui.showToast('Scale connection failed', 3000, 'error');
+                ui.updateWeight('[Reconnect]', {
+                    weightText: { add: ['text-red-600'] },
+                    dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+                });
+                isConnectingScale = false;
+                return;
+            }
+
+            try {
+                const devices = await getDevices();
+                const scale = devices.find(d => d.type === 'scale' && d.state === 'connected');
+
+                if (scale) {
+                    clearInterval(poll);
+                    logger.info('Scale found and connected via polling.');
+                    isConnectingScale = false;
+                    isScaleConnected = true;
+                    connectScaleWebSocket(handleScaleData);
+                }
+            } catch (pollError) {
+                // Ignore poll errors, let it retry
+            }
+        }, 1000);
+    } catch (error) {
+        ui.showToast('Failed to initiate scale connection', 3000, 'error');
+        ui.updateWeight('[Reconnect]', {
+            weightText: { add: ['text-red-600'] },
+            dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+        });
+        isConnectingScale = false;
     }
 }
 
@@ -375,7 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         logger.info('App DOMContentLoaded: Chart initialized.');
 
         await initI18n();
-        ui.initUI();
+        ui.initUI({ onWeightClick: handleWeightClick });
         initScaling();
         logger.info('App DOMContentLoaded: UI initialized.');
 
@@ -412,10 +460,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             () => { // onDisconnect
                 logger.warn('Scale has disconnected.');
                 isScaleConnected = false;
-                ui.updateWeight('--g');
-            }
+                ui.updateWeight('[Reconnect]', {
+                    weightText: { add: ['text-red-600'] },
+                    dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+                });            }
         );
         initWaterTankSocket();
+        connectTimeToReadyWebSocket(handleTimeToReadyData);
         ensureGatewayModeTracking();
         resetDataTimeout(); // Start the timeout timer initially.
         connectShotSettingsWebSocket(handleShotSettingsData);

@@ -125,7 +125,7 @@ export async function loadAvailableProfiles() {
     logger.info('All available profiles loaded.', Object.keys(availableProfiles));
 }
 
-async function loadAssignments() {
+export async function loadAssignments() {
     logger.info('Loading assignments...');
     try {
         // 1. Try to fetch from the primary source (REA store)
@@ -136,7 +136,7 @@ async function loadAssignments() {
             favoriteAssignments = reaAssignments;
             // Asynchronously update the local backup to keep it fresh
             await setSetting(FAVORITES_KEY, reaAssignments);
-            return;
+            return favoriteAssignments;
         }
 
         // 2. If REA has no data, try the local backup (IndexedDB)
@@ -148,11 +148,12 @@ async function loadAssignments() {
             favoriteAssignments = idbAssignments;
             // Data was found locally but not on the server, so let's sync it back up.
             await saveAssignments();
-            return;
+            return favoriteAssignments;
         }
 
         // 3. If neither source has data, create and save defaults.
         logger.info('No assignments found anywhere. Creating defaults.');
+        favoriteAssignments = {};
         const profileKeys = Object.keys(availableProfiles);
         for (let i = 0; i < FAV_COUNT; i++) {
             favoriteAssignments[i] = profileKeys[i] || null;
@@ -170,6 +171,7 @@ async function loadAssignments() {
             } else {
                  // Even the backup failed, so create defaults (but they will only be saved locally for now)
                  logger.warn('IndexedDB backup is also empty. Creating defaults.');
+                 favoriteAssignments = {};
                  const profileKeys = Object.keys(availableProfiles);
                  for (let i = 0; i < FAV_COUNT; i++) {
                      favoriteAssignments[i] = profileKeys[i] || null;
@@ -179,6 +181,7 @@ async function loadAssignments() {
             logger.error('CRITICAL: Failed to load from both REA store and IndexedDB backup.', idbError);
         }
     }
+    return favoriteAssignments;
 }
 
 async function saveAssignments() {
@@ -203,7 +206,7 @@ async function saveAssignments() {
     }
 }
 
-function updateButtonUI() {
+export function updateButtonUI() {
     for (let i = 0; i < FAV_COUNT; i++) {
         const button = favoriteButtons[i];
         const profileKey = favoriteAssignments[i];
@@ -282,7 +285,7 @@ async function handleProfileClick(index) {
     }
 }
 
-async function assignProfile(buttonIndex, profileKey) {
+export async function assignProfile(buttonIndex, profileKey) {
     logger.info(`Assigning profile '${profileKey}' to button ${buttonIndex}`);
     favoriteAssignments[buttonIndex] = profileKey;
     await saveAssignments();
@@ -322,8 +325,8 @@ async function handleLongPress(index) {
         updateButtonUI();
     }
     else {
-        logger.info(`Opening profile selection for empty button ${index}`);
-        openProfileSelectionModal(index);
+        logger.info(`Long press on favorite button ${index}, navigating to profile editor.`);
+    window.location.href = 'src/profiles/profile_selector.html';
     }
 }
 

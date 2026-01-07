@@ -83,21 +83,53 @@ export async function reconnectDevice(deviceId) {
     }
 }
 
-let reloadcount = 0;
+// let reloadcount = 0;
 
-export async function reconnectScale() {
+// export async function reconnectScale() {
+//     try {
+//         logger.info('Attempting to reconnect scale by scanning...');
+//         const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`, { targetAddressSpace: 'local' });
+//         if (!response.ok) {
+//             reloadcount += 1;
+//             if (reloadcount >= 10) { location.reload(); }
+//             logger.info("reload",reloadcount);
+//             throw new Error(`Failed to trigger scale scan/reconnect: ${response.statusText}`);
+//         } 
+//         logger.info('Successfully triggered scale scan/reconnect.');
+//     } catch (error) {
+//         logger.error('Error during scale reconnection attempt:', error);
+//     }
+// }
+
+export async function connectScaleDevice() {
     try {
-        logger.info('Attempting to reconnect scale by scanning...');
-        const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`, { targetAddressSpace: 'local' });
+        logger.info('Attempting to connect to scale...');
+        const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`, {
+            method: 'GET',
+        });
         if (!response.ok) {
-            reloadcount += 1;
-            if (reloadcount >= 10) { location.reload(); }
-            logger.info("reload",reloadcount);
-            throw new Error(`Failed to trigger scale scan/reconnect: ${response.statusText}`);
-        } 
-        logger.info('Successfully triggered scale scan/reconnect.');
+            throw new Error(`Failed to send connect request for scale: ${response.statusText}`);
+        }
+        logger.info('Successfully sent connect request for scale.');
     } catch (error) {
-        logger.error('Error during scale reconnection attempt:', error);
+        logger.error('Error during scale connection attempt:', error);
+        throw error;
+    }
+}
+
+export async function tareScale() {
+    try {
+        logger.info('Taring scale...');
+        const response = await fetch(`${API_BASE_URL}/scale/tare`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to tare scale: ${response.statusText}`);
+        }
+        logger.info('Successfully tared scale.');
+    } catch (error) {
+        logger.error('Error taring scale:', error);
+        throw error;
     }
 }
 
@@ -226,6 +258,34 @@ export function connectShotSettingsWebSocket(onData) {
 
     shotSettingsWebSocket.onerror = (error) => {
         logger.error('Shot Settings WebSocket error:', error);
+    };
+}
+
+export function connectTimeToReadyWebSocket(onData) {
+    const timeToReadyWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/plugins/time-to-ready.reaplugin/timeToReady`, [], {
+        debug: true,
+        reconnectInterval: 3000,
+    });
+
+    timeToReadyWebSocket.onopen = () => {
+        logger.info('Time-to-ready WebSocket connected');
+    };
+
+    timeToReadyWebSocket.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            onData(data);
+        } catch (error) {
+            logger.error('Error parsing time-to-ready WebSocket message:', error);
+        }
+    };
+
+    timeToReadyWebSocket.onclose = () => {
+        logger.info('Time-to-ready WebSocket disconnected. Attempting to reconnect...');
+    };
+
+    timeToReadyWebSocket.onerror = (error) => {
+        logger.error('Time-to-ready WebSocket error:', error);
     };
 }
 

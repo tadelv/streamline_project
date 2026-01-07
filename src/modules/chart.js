@@ -1,4 +1,3 @@
-import { connectWebSocket } from './api.js';
 import { logger } from './logger.js';
 
 const chartElement = document.getElementById('plotly-chart');
@@ -361,6 +360,95 @@ export function plotHistoricalShot(measurements) {
     const layout = theme === 'dark' ? darkLayout : lightLayout;
     layout.annotations = getAnnotations();
     Plotly.react(chartElement, Object.values(chartData), layout, {displayModeBar: false});
+}
+
+export function plotProfile(profile) {
+    if (!profile || !profile.steps || profile.steps.length === 0) {
+        clearChart();
+        return;
+    }
+
+    // Clear all data but keep trace styles
+    for (const trace in chartData) {
+        chartData[trace].x = [];
+        chartData[trace].y = [];
+    }
+
+    const tpX = chartData.targetPressure.x;
+    const tpY = chartData.targetPressure.y;
+    const tfX = chartData.targetFlow.x;
+    const tfY = chartData.targetFlow.y;
+    const tempX = chartData.groupTemperature.x;
+    const tempY = chartData.groupTemperature.y;
+
+    let currentTime = 0;
+    
+    // Start at 0,0, and initial temperature
+    const initialTemp = (parseFloat(profile.steps[0].temperature || 0) / 100) * 10;
+    tpX.push(0);
+    tpY.push(0);
+    tfX.push(0);
+    tfY.push(0);
+    tempX.push(0);
+    tempY.push(initialTemp);
+
+    for (const step of profile.steps) {
+        const duration = parseFloat(step.seconds || 0);
+        if (duration <= 0) continue;
+
+        const nextTime = currentTime + duration;
+        let pressure = null;
+        let flow = null;
+        const temp = (parseFloat(step.temperature || 0) / 100) * 10;
+
+        if (step.pump === 'pressure') {
+            pressure = parseFloat(step.pressure || 0);
+        } else if (step.pump === 'flow') {
+            flow = parseFloat(step.flow || 0);
+        }
+        
+        // Add points for the step. Plotly will create a step-chart effect.
+        // A null value creates a break in the line.
+        tpX.push(currentTime, nextTime);
+        tpY.push(pressure, pressure);
+        
+        tfX.push(currentTime, nextTime);
+        tfY.push(flow, flow);
+
+        tempX.push(currentTime, nextTime);
+        tempY.push(temp, temp);
+
+        currentTime = nextTime;
+    }
+
+    const theme = localStorage.getItem('theme') || 'light';
+    // Deep copy layout to avoid side effects on other charts
+    const layout = JSON.parse(JSON.stringify(theme === 'dark' ? darkLayout : lightLayout));
+    layout.annotations = []; // Annotations are for live data, not static profiles
+    layout.xaxis.range = [0, currentTime];
+    layout.xaxis.dtick = 10; // Set x-axis ticks to every 10 seconds
+    
+    // Create a deep copy of traces to modify line style for this plot only
+    const plotData = JSON.parse(JSON.stringify(Object.values(chartData)));
+    
+    const targetPressureTrace = plotData.find(trace => trace.name === 'Target Pressure');
+    if (targetPressureTrace) {
+        targetPressureTrace.line.dash = 'solid';
+        targetPressureTrace.line.width = 3;
+    }
+
+    const targetFlowTrace = plotData.find(trace => trace.name === 'Target Flow');
+    if (targetFlowTrace) {
+        targetFlowTrace.line.dash = 'solid';
+        targetFlowTrace.line.width = 3;
+    }
+
+    const groupTempTrace = plotData.find(trace => trace.name === '°C');
+    if (groupTempTrace) {
+        groupTempTrace.line.width = 3;
+    }
+
+    Plotly.react(chartElement, plotData, layout, {displayModeBar: false});
 }
 
 export function initChart() {
