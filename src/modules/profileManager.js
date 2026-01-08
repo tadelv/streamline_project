@@ -21,6 +21,31 @@ let currentButtonIndex = null;
 
 // --- Helper Functions ---
 
+/**
+ * Attempts to fetch a resource first using a relative path, then falls back to an absolute path.
+ * This handles differences between local dev server and static hosting environments.
+ * @param {string} path - The resource path.
+ * @returns {Promise<Response>}
+ */
+async function fetchWithFallback(path) {
+    const relativePath = path.startsWith('/') ? path.slice(1) : path;
+    const absolutePath = path.startsWith('/') ? path : '/' + path;
+
+    try {
+        const response = await fetch(relativePath);
+        if (response.ok) {
+            return response;
+        }
+        logger.warn(`Fetch with relative path '${relativePath}' failed with status ${response.status}. Trying absolute path.`);
+    } catch (error) {
+        logger.warn(`Fetch with relative path '${relativePath}' threw an error. Trying absolute path.`, error);
+    }
+
+    // Fallback to absolute path
+    return fetch(absolutePath);
+}
+
+
 export async function migrateDefaultProfilesToRea() {
     try {
         const migrationDone = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_MIGRATED_KEY);
@@ -31,7 +56,7 @@ export async function migrateDefaultProfilesToRea() {
 
         logger.info('Starting one-time migration of default profiles to REA store...');
 
-        const response = await fetch(`${PROFILES_PATH}profile-manifest.json`);
+        const response = await fetchWithFallback(`${PROFILES_PATH}profile-manifest.json`);
         if (!response.ok) throw new Error('Failed to fetch profile manifest for migration.');
         
         const profileFiles = [...new Set(await response.json())];
@@ -39,7 +64,7 @@ export async function migrateDefaultProfilesToRea() {
 
         for (const fileName of profileFiles) {
             try {
-                const res = await fetch(`${PROFILES_PATH}${fileName}`);
+                const res = await fetchWithFallback(`${PROFILES_PATH}${fileName}`);
                 if (!res.ok) throw new Error(`Failed to fetch ${fileName} for migration`);
                 const profileJson = await res.json();
                 const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
@@ -131,7 +156,7 @@ export async function loadAvailableProfiles() {
     if (Object.keys(availableProfiles).length === 0) {
         logger.warn('No profiles found in REA or IndexedDB. Falling back to bundled manifest profiles.');
         try {
-            const response = await fetch(`${PROFILES_PATH}profile-manifest.json`);
+            const response = await fetchWithFallback(`${PROFILES_PATH}profile-manifest.json`);
             if (!response.ok) throw new Error('Failed to fetch profile manifest for fallback.');
             
             const profileFiles = [...new Set(await response.json())];
@@ -139,7 +164,7 @@ export async function loadAvailableProfiles() {
 
             for (const fileName of profileFiles) {
                 try {
-                    const res = await fetch(`${PROFILES_PATH}${fileName}`);
+                    const res = await fetchWithFallback(`${PROFILES_PATH}${fileName}`);
                     if (!res.ok) throw new Error(`Failed to fetch ${fileName} for fallback`);
                     const profileJson = await res.json();
                     const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
