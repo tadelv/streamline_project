@@ -434,18 +434,18 @@ export function plotProfile(profile) {
     const targetPressureTrace = plotData.find(trace => trace.name === 'Target Pressure');
     if (targetPressureTrace) {
         targetPressureTrace.line.dash = 'solid';
-        targetPressureTrace.line.width = 3;
+        targetPressureTrace.line.width = 5;
     }
 
     const targetFlowTrace = plotData.find(trace => trace.name === 'Target Flow');
     if (targetFlowTrace) {
         targetFlowTrace.line.dash = 'solid';
-        targetFlowTrace.line.width = 3;
+        targetFlowTrace.line.width = 5;
     }
 
     const groupTempTrace = plotData.find(trace => trace.name === '°C');
     if (groupTempTrace) {
-        groupTempTrace.line.width = 3;
+        groupTempTrace.line.width = 5;
     }
 
     Plotly.react(chartElement, plotData, layout, {displayModeBar: false});

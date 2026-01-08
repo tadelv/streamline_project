@@ -4,7 +4,7 @@ import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrin
 import { openDB, getSetting, setSetting } from './idb.js';
 
 const FAV_COUNT = 5;
-const PROFILES_PATH = 'src/profiles/';
+const PROFILES_PATH = '/src/profiles/';
 const LONG_PRESS_DURATION = 700; // ms
 
 const SETTINGS_NAMESPACE = 'streamline-app';
@@ -66,7 +66,9 @@ export async function migrateDefaultProfilesToRea() {
 export async function loadAvailableProfiles() {
     let defaultProfiles = {};
     let uploadedProfiles = {};
-
+    let profilesfromREA = false;
+    let profilesfromIDB = false;
+    let profilesfromJSON = false;
     try {
         // Try to load default profiles from REA store or fallback to IndexedDB
         const reaDefaults = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY);
@@ -74,6 +76,7 @@ export async function loadAvailableProfiles() {
             logger.info('Loaded default profiles from REA store.');
             defaultProfiles = reaDefaults;
             await setSetting(DEFAULT_PROFILES_KEY, defaultProfiles); // Update backup
+            profilesfromREA= true;
         } else {
             logger.warn('No default profiles in REA store, checking IndexedDB backup...');
             const idbDefaults = await getSetting(DEFAULT_PROFILES_KEY);
@@ -111,6 +114,7 @@ export async function loadAvailableProfiles() {
             
             if(Object.keys(defaultProfiles).length > 0 || Object.keys(uploadedProfiles).length > 0) {
                 logger.info('Loaded profiles from IndexedDB backup during fallback.');
+                profilesfromIDB = true;
             } else {
                 logger.warn('No profiles found in IndexedDB backup either.');
             }
@@ -122,7 +126,43 @@ export async function loadAvailableProfiles() {
     
     // Merge all profiles into the main object
     availableProfiles = { ...defaultProfiles, ...uploadedProfiles };
+
+    // If all sources failed, fall back to bundled profiles from manifest
+    if (Object.keys(availableProfiles).length === 0) {
+        logger.warn('No profiles found in REA or IndexedDB. Falling back to bundled manifest profiles.');
+        try {
+            const response = await fetch(`${PROFILES_PATH}profile-manifest.json`);
+            if (!response.ok) throw new Error('Failed to fetch profile manifest for fallback.');
+            
+            const profileFiles = [...new Set(await response.json())];
+            const bundledProfiles = {};
+
+            for (const fileName of profileFiles) {
+                try {
+                    const res = await fetch(`${PROFILES_PATH}${fileName}`);
+                    if (!res.ok) throw new Error(`Failed to fetch ${fileName} for fallback`);
+                    const profileJson = await res.json();
+                    const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
+                    bundledProfiles[fileName] = profileContent;
+                } catch (error) {
+                    logger.error(`Fallback: Failed to load profile: ${fileName}`, error);
+                }
+            }
+            
+            if (Object.keys(bundledProfiles).length > 0) {
+                availableProfiles = bundledProfiles;
+                logger.info(`Successfully loaded ${Object.keys(bundledProfiles).length} bundled profiles as a fallback.`);
+                profilesfromJSON = true;
+            } else {
+                logger.error('Fallback failed: Could not load any profiles from the manifest.');
+            }
+        } catch (manifestError) {
+            logger.error('Failed to load profiles from bundled manifest.', manifestError);
+        }
+    }
+
     logger.info('All available profiles loaded.', Object.keys(availableProfiles));
+    return { profilesfromIDB, profilesfromJSON, profilesfromREA };
 }
 
 export async function loadAssignments() {

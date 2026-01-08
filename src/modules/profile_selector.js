@@ -93,14 +93,22 @@ async function renderProfiles() {
     try {
         await openDB();
         await migrateDefaultProfilesToRea();
-        await loadAvailableProfiles();
-
-        const container = document.getElementById('profile-list');
+        const profileLoadStatus = await loadAvailableProfiles(); // Capture the return value                                                                                                         
+                                                                                                                                                                                                   
+     if (profileLoadStatus.profilesfromREA) {                                                                                                                                                     
+         showToast('Profiles loaded from REA store.', 3000, 'success');                                                                                                                           
+    } else if (profileLoadStatus.profilesfromIDB) {                                                                                                                                              
+         showToast('Profiles loaded from IndexedDB backup.', 3000, 'info');                                                                                                                       
+     } else if (profileLoadStatus.profilesfromJSON) {                                                                                                                                             
+         showToast('User profiles not found, loaded from bundled manifest.', 3000, 'warning');                                                                                                         
+     } else {                                                                                                                                                                                     
+         showToast('No profiles could be loaded.', 3000, 'error');                                                                                                                                
+    }  
+      const container = document.getElementById('profile-list');
         if (!container) {
             logger.error('Profile Editor: Profile list container not found.');
             return;
         }
-
         container.innerHTML = ''; // Clear static content
 
         const sortedProfiles = Object.entries(availableProfiles).sort(([, a], [, b]) => {
