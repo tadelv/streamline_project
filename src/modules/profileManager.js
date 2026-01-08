@@ -22,15 +22,14 @@ let currentButtonIndex = null;
 // --- Helper Functions ---
 
 /**
- * Attempts to fetch a resource by trying multiple path strategies.
- * This handles differences between local dev server and static hosting environments like GitHub Pages.
+ * Attempts to fetch a resource by trying multiple absolute path strategies.
+ * This handles differences between a local dev server and the GitHub Pages environment.
  * @param {string} path - The base resource path (e.g., '/src/profiles/profile.json').
  * @returns {Promise<Response>}
  */
 async function fetchWithFallback(path) {
-    const relativePath = path.startsWith('/') ? path.slice(1) : path; // "src/profiles/profile.json"
-    const absolutePath = path.startsWith('/') ? path : '/' + path; // "/src/profiles/profile.json"
-    const githubPagesPath = `streamline_project/${relativePath}`; // "streamline_project/src/profiles/profile.json"
+    const githubPagesPath = `/streamline_project${path}`; // e.g., /streamline_project/src/profiles/profile.json
+    const localDevPath = path;                         // e.g., /src/profiles/profile.json
 
     // 1. Try GitHub Pages specific path
     try {
@@ -44,21 +43,9 @@ async function fetchWithFallback(path) {
         logger.warn(`Fetch with GitHub Pages path '${githubPagesPath}' threw an error.`, error);
     }
 
-    // 2. Try relative path
-    try {
-        const response = await fetch(relativePath);
-        if (response.ok) {
-            logger.info(`Fetched '${relativePath}' successfully (relative path).`);
-            return response;
-        }
-        logger.warn(`Fetch with relative path '${relativePath}' failed with status ${response.status}. Trying absolute path.`);
-    } catch (error) {
-        logger.warn(`Fetch with relative path '${relativePath}' threw an error. Trying absolute path.`, error);
-    }
-
-    // 3. Fallback to absolute path
-    logger.info(`Falling back to absolute path: '${absolutePath}'`);
-    return fetch(absolutePath);
+    // 2. Fallback to local dev path
+    logger.info(`Falling back to local dev path: '${localDevPath}'`);
+    return fetch(localDevPath);
 }
 
 
