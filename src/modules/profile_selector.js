@@ -306,6 +306,7 @@ function initViewButton() {
             // State: HIDING hidden profiles -> default background, blue icon
             viewButton.innerHTML = getEyeIconSVG('#385A92');
             viewButton.classList.remove("bg-[var(--mimoja-blue)]");
+            viewButton.classList.add("bg-white");
             page_title.textContent = "Profiles"
         }
 
