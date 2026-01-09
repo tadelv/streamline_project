@@ -504,9 +504,11 @@ export function initThemeToggle() {
 
 export function initScaleClick(callback) {
     const weightEl = document.getElementById('data-weight');
-    if (weightEl) {
+    const weighttext = document.getElementById('weight-text');
+    if (weightEl||weighttext) {
         weightEl.classList.add('cursor-pointer');
         weightEl.addEventListener('click', callback);
+        weighttext.addEventListener('click', callback);
     }
 }
 
