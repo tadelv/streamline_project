@@ -121,7 +121,7 @@ export async function tareScale() {
     try {
         logger.info('Taring scale...');
         const response = await fetch(`${API_BASE_URL}/scale/tare`, {
-            method: 'POST',
+            method: 'PUT',
         });
         if (!response.ok) {
             throw new Error(`Failed to tare scale: ${response.statusText}`);
@@ -179,6 +179,11 @@ export function connectWebSocket(onData, onReconnect) {
 }
 
 export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
+    if (scaleWebSocket) {
+        logger.info('Closing existing scale WebSocket before creating a new one.');
+        scaleWebSocket.close();
+    }
+
     let scaleDataTimeout;
     const SCALE_TIMEOUT_DURATION = 5000; // 5 seconds
 

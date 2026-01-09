@@ -36,6 +36,19 @@ let timeToReadyMessage = null;
 // set this variable to true in your browser's developer console.
 let filterGraphToPouringState = true;
 
+function onScaleReconnect() {
+    logger.info('Scale WebSocket reconnected.');
+}
+
+function onScaleDisconnect() {
+    logger.warn('Scale has disconnected.');
+    isScaleConnected = false;
+    ui.updateWeight('[Reconnect]', {
+        weightText: { add: ['text-red-600'] },
+        dataWeight: { add: ['text-[var(--mimoja-blue)]'], remove: ['text-[var(--text-primary)]'] }
+    });
+}
+
 // Sets a timer. If no data is received within 5 seconds, it assumes a stale connection.
 function resetDataTimeout() {
     clearTimeout(dataTimeout);
@@ -280,10 +293,14 @@ async function handleWeightClick() {
 
                 if (scale) {
                     clearInterval(poll);
-                    logger.info('Scale found and connected via polling.');
+                    logger.info('Scale BLE link established. Re-initializing WebSocket connection.');
                     isConnectingScale = false;
-                    isScaleConnected = true;
-                    connectScaleWebSocket(handleScaleData);
+                    // Re-create the WebSocket with proper handlers to ensure a clean connection.
+                    connectScaleWebSocket(
+                        handleScaleData,
+                        onScaleReconnect,
+                        onScaleDisconnect
+                    );
                 }
             } catch (pollError) {
                 // Ignore poll errors, let it retry
@@ -454,16 +471,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         connectScaleWebSocket(
             handleScaleData,
-            () => { // onReconnect
-                logger.info('Scale WebSocket reconnected.');
-            },
-            () => { // onDisconnect
-                logger.warn('Scale has disconnected.');
-                isScaleConnected = false;
-                ui.updateWeight('[Reconnect]', {
-                    weightText: { add: ['text-red-600'] },
-                    dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
-                });            }
+            onScaleReconnect,
+            onScaleDisconnect
         );
         initWaterTankSocket();
         connectTimeToReadyWebSocket(handleTimeToReadyData);
