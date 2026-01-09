@@ -12,12 +12,14 @@ const FAVORITES_KEY = 'favorite-profiles';
 const UPLOADED_PROFILES_KEY = 'uploaded-profiles';
 const DEFAULT_PROFILES_KEY = 'default-profiles';
 const DEFAULT_PROFILES_MIGRATED_KEY = 'default-profiles-migrated';
+const HIDDEN_PROFILES_KEY = 'hidden-profiles';
 
 
 let favoriteButtons = [];
 export let availableProfiles = {};
 let favoriteAssignments = {};
 let currentButtonIndex = null;
+let hiddenProfiles = [];
 
 // --- Helper Functions ---
 
@@ -46,6 +48,71 @@ async function fetchWithFallback(path) {
     // 2. Fallback to local dev path
     logger.info(`Falling back to local dev path: '${localDevPath}'`);
     return fetch(localDevPath);
+}
+
+async function saveHiddenProfiles() {
+    await Promise.allSettled([
+        setValueInStore(SETTINGS_NAMESPACE, HIDDEN_PROFILES_KEY, hiddenProfiles),
+        setSetting(HIDDEN_PROFILES_KEY, hiddenProfiles)
+    ]);
+}
+
+async function loadHiddenProfiles() {
+    const reaHidden = await getValueFromStore(SETTINGS_NAMESPACE, HIDDEN_PROFILES_KEY);
+    if (reaHidden) {
+        hiddenProfiles = reaHidden;
+        await setSetting(HIDDEN_PROFILES_KEY, hiddenProfiles);
+    } else {
+        const idbHidden = await getSetting(HIDDEN_PROFILES_KEY);
+        hiddenProfiles = idbHidden || [];
+    }
+    return hiddenProfiles;
+}
+
+export function getHiddenProfiles() {
+    return hiddenProfiles;
+}
+
+export async function unhideProfile(profileKey) {
+    const index = hiddenProfiles.indexOf(profileKey);
+    if (index > -1) {
+        hiddenProfiles.splice(index, 1);
+        await saveHiddenProfiles();
+        logger.info(`Unhid profile: ${profileKey}`);
+    }
+}
+
+export async function deleteOrHideProfile(profileKey) {
+    const profile = availableProfiles[profileKey];
+    if (!profile) {
+        console.error(`Profile '${profileKey}' not found.`);
+        return;
+    }
+
+    // Check if the profile is a default one
+    const defaultProfiles = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY) || {};
+    const isDefaultProfile = defaultProfiles.hasOwnProperty(profileKey);
+
+    if (isDefaultProfile) {
+        // HIDE LOGIC: Add to the hidden list if not already there
+        if (!hiddenProfiles.includes(profileKey)) {
+            hiddenProfiles.push(profileKey);
+            await saveHiddenProfiles();
+            logger.info(`Hid default profile: ${profileKey}`);
+        }
+    } else {
+        // DELETE LOGIC: Permanently remove from uploaded profiles
+        const uploaded = await getValueFromStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY) || {};
+        if (uploaded.hasOwnProperty(profileKey)) {
+            delete uploaded[profileKey];
+            delete availableProfiles[profileKey]; // Also remove from memory
+            
+            // Save the updated list of uploaded profiles
+            await setValueInStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY, uploaded);
+            await setSetting(UPLOADED_PROFILES_KEY, uploaded); // Update backup
+            logger.info(`Deleted user profile: ${profileKey}`);
+        }
+    }
 }
 
 
@@ -439,6 +506,7 @@ async function handleProfileUpload(event) {
 
 export async function init() {
     logger.info('Profile Manager init started.');
+    let profileLoadStatus = {};
     try {
         for (let i = 0; i < FAV_COUNT; i++) {
             const button = document.getElementById(`fav-profile-btn-${i}`);
@@ -448,8 +516,9 @@ export async function init() {
         await openDB(); // Still needed for the backup functionality
 
         await migrateDefaultProfilesToRea();
-        await loadAvailableProfiles();
+        profileLoadStatus = await loadAvailableProfiles();
         await loadAssignments();
+        await loadHiddenProfiles();
         updateButtonUI();
 
         favoriteButtons.forEach((button, index) => {
@@ -498,4 +567,5 @@ export async function init() {
     }
 
     logger.info('Profile Manager initialized.');
+    return profileLoadStatus;
 }

@@ -28,11 +28,15 @@
                     <div id="left-panel" class="flex flex-col border-r border-base-300">
                         <div class="flex justify-between p-6 border-b border-base-300 h-[121.5px]">
                             <div class="flex items-center gap-[30px]">
-                                <button class="w-[82px] h-[82px]"><img src="http://localhost:3845/assets/ff2d8007e63c6a091eb22c0940e6420677667500.svg" alt="New Profile" title="New Profile"></button>
-                                <button id="view_profile" class="w-[82px] h-[82px] bg-white border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" title="View All Profiles">
+                                <button id="add_profile" class="w-[82px] h-[82px] bg-white border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" title="New Profile">
+                                    <svg class="w-[50px] h-[50px]" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                                <button id="view_profile" class="w-[82px] h-[82px] bg-white  border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" title="View All Profiles">
                                     <svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                                        <path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M29.5156 13.9596C35.9214 13.1962 42.4011 14.5503 47.965 17.8152C53.529 21.0801 57.8715 26.0763 60.3294 32.0408C60.5586 32.6583 60.5586 33.3374 60.3294 33.9548C59.3172 36.4043 57.9816 38.7072 56.3584 40.8023M38.7309 38.9351C37.1749 40.4379 35.0909 41.2694 32.9278 41.2506C30.7647 41.2319 28.6955 40.3642 27.1659 38.8346C25.6363 37.305 24.7686 35.2358 24.7498 33.0726C24.731 30.9095 25.5626 28.8256 27.0654 27.2696" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M48.0672 48.1223C44.4193 50.2831 40.3492 51.634 36.1332 52.0833C31.9171 52.5326 27.6538 52.0698 23.6324 50.7262C19.611 49.3826 15.9257 47.1897 12.8265 44.2963C9.72731 41.4029 7.28675 37.8767 5.67043 33.957C5.44124 33.3396 5.44124 32.6604 5.67043 32.043C8.10866 26.1301 12.3988 21.1674 17.8969 17.8997M5.49993 5.5L60.4999 60.5" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
                                 </button>
                                 <button id="search_profile" class="w-[82px] h-[82px] bg-white border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" title="Search Profiles">
@@ -40,7 +44,7 @@
                                         <path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                                         <path d="M57.7498 57.7508L45.9248 45.9258" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
-                                </button>
+                                </button> 
                             </div>
                             <button class="w-[82px] h-[82px] bg-white border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" id ='delete_profile' title="Delete">
                                 <svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -51,7 +55,7 @@
                         <div id="profile-list" class="flex-1 overflow-y-auto p-3 space-y-1.5 text-[30px] text-[#121212]">
                             <div class="p-3 text-[30px] text-[#121212]">80’s Espresso</div>
                             <div class="p-3 text-[30px] text-[#959595]">Adaptive for Medium Roasts</div>
-                            <div class="p-3 text-[30px] text-white bg-[#385a92] rounded-[8px] flex justify-between items-center">
+                            <div class="p-3 text-[30px] text-white bg-[var(--mimoja-blue)] rounded-[8px] flex justify-between items-center">
                                 Advanced spring lever
                                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
                             </div>
@@ -61,11 +65,11 @@
                             
                         </div>
                         <div class="p-6 border-t border-base-300 flex items-center space-x-[22px]">
-                            <button id='fav-profile-btn-0'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">1</button>
-                            <button id='fav-profile-btn-1'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">2</button>
-                            <button id='fav-profile-btn-2'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">3</button>
-                            <button id='fav-profile-btn-3'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">4</button>
-                            <button id='fav-profile-btn-4'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">5</button>
+                            <button id='assign-fav-btn-0'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">1</button>
+                            <button id='assign-fav-btn-1'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">2</button>
+                            <button id='assign-fav-btn-2'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">3</button>
+                            <button id='assign-fav-btn-3'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">4</button>
+                            <button id='assign-fav-btn-4'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">5</button>
                             <span class="text-[var(--mimoja-blue)] font-semibold text-xl ml-2">Assign favourite</span>
                         </div>
                     </div>
@@ -73,12 +77,12 @@
                     <div id="right-panel" class="flex flex-col bg-white">
                         <div class="flex justify-between items-center  bg-white pl-[54px] pr-[30px]">
                             <div class="flex items-center gap-4 h-[121.5px]">
-                                <h2 class="text-[30px] font-bold text-[#385a92]" id = 'selected_profile_name'>Default</h2>
+                                <h2 class="text-[30px] font-bold text-[var(--mimoja-blue)]" id = 'selected_profile_name'>Default</h2>
                                 <svg id ='edit_profile_title' title="New Profile Name"   xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                             </div>
                             <div class="flex space-x-4">
-                                <button class="bg-white border-2 border-[#c9c9c9] text-[#385a92] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center">RESET</button>
-                                <button id='edit_profile' class="bg-white border-2 border-[#c9c9c9] text-[#385a92] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center">EDIT</button>
+                                <button class="bg-white border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center">RESET</button>
+                                <button id='edit_profile' class="bg-white border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center">EDIT</button>
                             </div>
                         </div>
                         <div class="border-t border-b border-[#c9c9c9] p-4">
