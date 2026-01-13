@@ -1126,7 +1126,7 @@ function toggleFullScreen() {
     }
 }
 
-function updateFullscreenState() {
+export function updateFullscreenState() {
     const isFullScreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
     
     const enterIcon = document.querySelector('#fullscreen-toggle-btn .enter-fullscreen-icon');

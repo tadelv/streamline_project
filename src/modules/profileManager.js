@@ -2,6 +2,7 @@ import { logger } from './logger.js';
 import { sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile } from './api.js';
 import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio ,showToast} from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
+import { loadPage } from './router.js'; // Singular and correctly formatted import
 
 const FAV_COUNT = 5;
 const PROFILES_PATH = '/src/profiles/';
@@ -267,7 +268,7 @@ async function handleDoubleClick(index) {
         updateButtonUI();
     } else {
         logger.info(`Double-click on unassigned button ${index}. Redirect to profile selector.`);
-        window.location.href = 'src/profiles/profile_selector.html';
+        await loadPage('src/profiles/profile_selector.html');
     }
 }
 
@@ -282,7 +283,7 @@ async function handleLongPress(index) {
     }
     else {
         logger.info(`Long press on favorite button ${index}, navigating to profile editor.`);
-    window.location.href = 'src/profiles/profile_selector.html';
+    await loadPage('src/profiles/profile_selector.html');
     }
 }
 

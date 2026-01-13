@@ -107,7 +107,7 @@ function handleTimeToReadyData(data) {
         const totalSeconds = Math.round(data.remainingTimeMs / 1000);
         const minutes = Math.floor(totalSeconds / 60);
         const seconds = totalSeconds % 60;
-        logger.info("time to read data",data);
+        // logger.debug("time to read data",data);
         if (minutes > 0) {
             timeToReadyMessage = `~${minutes}m ${seconds}s until ready`;
         } else {

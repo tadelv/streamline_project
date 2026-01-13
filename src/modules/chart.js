@@ -1,6 +1,9 @@
 import { logger } from './logger.js';
 
-const chartElement = document.getElementById('plotly-chart');
+// Function to get or update the chart element reference
+function getChartElement() {
+    return document.getElementById('plotly-chart');
+}
 let currentSubstate = 'idle';
 let annotationUpdateCounter = 0;
 const ANNOTATION_UPDATE_THROTTLE = 10; // Update every 10 data points
@@ -229,7 +232,12 @@ export function updateChart(shotStartTime, data, weight, filterToPouring) {
     chartData.weight.x.push(time);
     chartData.weight.y.push(weightY);
 
-    Plotly.extendTraces(chartElement, {
+    const element = getChartElement();
+    if (!element) {
+        console.error('updateChart: chartElement not found in DOM');
+        return;
+    }
+    Plotly.extendTraces(element, {
         x: [[time], [time], [time], [time], [time], [time]],
         y: [[pressureY], [flowY], [targetPressureY], [targetFlowY], [groupTemperatureY], [weightY]]
     }, [0, 1, 2, 3, 4, 5]);
@@ -247,7 +255,12 @@ export function clearChart() {
     const layout = theme === 'dark' ? darkLayout : lightLayout;
     layout.annotations = [];
     layout.xaxis.range = [0, 10];
-    Plotly.react(chartElement, Object.values(chartData), layout);
+    const element = getChartElement();
+    if (!element) {
+        console.error('clearChart: chartElement not found in DOM');
+        return;
+    }
+    Plotly.react(element, Object.values(chartData), layout);
 }
 
 export function plotHistoricalShot(measurements) {
@@ -359,7 +372,12 @@ export function plotHistoricalShot(measurements) {
     const theme = localStorage.getItem('theme') || 'light';
     const layout = theme === 'dark' ? darkLayout : lightLayout;
     layout.annotations = getAnnotations();
-    Plotly.react(chartElement, Object.values(chartData), layout, {displayModeBar: false});
+    const element = getChartElement();
+    if (!element) {
+        console.error('plotHistoricalShot: chartElement not found in DOM');
+        return;
+    }
+    Plotly.react(element, Object.values(chartData), layout, {displayModeBar: false});
 }
 
 export function plotProfile(profile) {
@@ -448,18 +466,64 @@ export function plotProfile(profile) {
         groupTempTrace.line.width = 5;
     }
 
-    Plotly.react(chartElement, plotData, layout, {displayModeBar: false});
+    const element = getChartElement();
+    if (!element) {
+        console.error('plotProfile: chartElement not found in DOM');
+        return;
+    }
+    Plotly.react(element, plotData, layout, {displayModeBar: false});
 }
 
 export function initChart() {
+    console.log('initChart: Starting chart initialization');
+
+    // Get the chart element - it should exist by now since this is called after DOM is updated
+    const element = getChartElement();
+    if (!element) {
+        console.error('initChart: chartElement is not found in the DOM');
+        return;
+    }
+
+    console.log('initChart: chartElement found, offsetParent:', element.offsetParent !== null);
+    console.log('initChart: chartElement visibility:', window.getComputedStyle ? window.getComputedStyle(element).visibility : 'unknown');
+    console.log('initChart: chartElement display:', window.getComputedStyle ? window.getComputedStyle(element).display : 'unknown');
+
     const theme = localStorage.getItem('theme') || 'light';
     const layout = theme === 'dark' ? darkLayout : lightLayout;
     chartData.weight.line.color = theme === 'dark' ? '#695f57' : '#e9d3c3';
     layout.annotations = getAnnotations();
-    Plotly.newPlot(chartElement, Object.values(chartData), layout, {displayModeBar: false});
+
+    console.log('initChart: About to call Plotly.newPlot');
+    try {
+        Plotly.newPlot(element, Object.values(chartData), layout, {displayModeBar: false});
+        console.log('initChart: Plotly.newPlot completed successfully');
+    } catch (error) {
+        console.error('initChart: Error in Plotly.newPlot:', error);
+    }
+
+    // Create a debounced resize handler to prevent too frequent calls
+    let resizeTimeout;
+    console.log('initChart: Adding resize event listener');
     window.addEventListener('resize', () => {
-        Plotly.Plots.resize(chartElement);
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            // Check if the chart element is visible before resizing
+            const resizeElement = getChartElement();
+            console.log('initChart: Window resize event, checking chart visibility');
+            if (resizeElement && resizeElement.offsetParent !== null) {
+                console.log('initChart: Chart element is visible, attempting resize');
+                try {
+                    Plotly.Plots.resize(resizeElement);
+                    console.log('initChart: Chart resized successfully');
+                } catch (error) {
+                    console.warn('Could not resize chart, element may not be visible:', error);
+                }
+            } else {
+                console.log('initChart: Chart element not visible or not found, skipping resize');
+            }
+        }, 100);
     });
+    console.log('initChart: Chart initialization completed');
 }
 
 export function setTheme(theme) {
@@ -467,5 +531,10 @@ export function setTheme(theme) {
     chartData.weight.line.color = theme === 'dark' ? '#695f57' : '#e9d3c3';
     layoutUpdate.annotations = getAnnotations();
     const data = Object.values(chartData);
-    Plotly.react(chartElement, data, layoutUpdate);
+    const element = getChartElement();
+    if (!element) {
+        console.error('setTheme: chartElement not found in DOM');
+        return;
+    }
+    Plotly.react(element, data, layoutUpdate);
 }
