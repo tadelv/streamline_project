@@ -103,8 +103,16 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
 }
 
 function handleTimeToReadyData(data) {
-    if (data.status === 'heating') {
-        timeToReadyMessage = data.message;
+    if (data.status === 'heating' && data.remainingTimeMs > 0) {
+        const totalSeconds = Math.round(data.remainingTimeMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        logger.info("time to read data",data);
+        if (minutes > 0) {
+            timeToReadyMessage = `~${minutes}m ${seconds}s until ready`;
+        } else {
+            timeToReadyMessage = `~${seconds}s until ready`;
+        }
     } else {
         timeToReadyMessage = null;
     }
@@ -278,7 +286,7 @@ async function handleWeightClick() {
             attempts++;
             if (attempts > maxAttempts) {
                 clearInterval(poll);
-                ui.showToast('Scale connection failed', 3000, 'error');
+                ui.showToast('Scale Not Found', 3000, 'error');
                 ui.updateWeight('[Reconnect]', {
                     weightText: { add: ['text-red-600'] },
                     dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}

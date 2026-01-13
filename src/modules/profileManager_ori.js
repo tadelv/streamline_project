@@ -1,6 +1,6 @@
 import { logger } from './logger.js';
 import { sendProfile, getWorkflow } from './api.js';
-import { updateProfileName } from './ui.js';
+import { showToast, updateProfileName } from './ui.js';
 
 const FAV_COUNT = 5;
 const PROFILES_PATH = 'src/profiles/';
@@ -156,7 +156,7 @@ function assignProfile(buttonIndex, profileKey) {
     favoriteAssignments[buttonIndex] = profileKey;
     saveAssignments();
     updateButtonUI();
-    document.getElementById('profile_modal').close();
+    
 }
 
 function openProfileSelectionModal(buttonIndex) {
@@ -192,6 +192,7 @@ function handleLongPress(index) {
     }
     else {
         logger.info(`Opening profile selection for empty button ${index}`);
+        logger.info(`opening profile selector html ${index}`);
         openProfileSelectionModal(index);
     }
 }
@@ -221,7 +222,7 @@ function handleProfileUpload(event) {
             }
         } catch (error) {
             logger.error('Failed to parse uploaded profile:', error);
-            alert('Error: Could not parse the uploaded JSON file.');
+            showToast('Error: Could not parse the uploaded JSON file.',1000,'alert');
         }
     };
     reader.readAsText(file);

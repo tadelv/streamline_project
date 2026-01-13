@@ -49,7 +49,6 @@ Current Working example is at /Users/markc/Documents/streamline_js/de1app/de1plu
 You are also required to check reaprime_api.md and rewrite_roadmap.md in your reasoning. These documents serve as guidelines for the project.
 ## 6. Current Goal
 
-*   **What I'm working on:** "I would like to test out if tech stack works, I would like to have a simple html page connect to reaprime api and showing connection status and rendering real time data from decent espresso machine. "
-
+* * bug fixes and code suggestions. 
 ## Gemini Added Memories
 - When updating Plotly charts, use Plotly.update() instead of Plotly.react() for better performance.

@@ -1,0 +1,519 @@
+[main] 2026-01-12 17:02:03.550160 INFO _ - Rotated log.
+[main] 2026-01-12 17:02:03.553723 INFO HiveProfileStorageService - HiveProfileStorageService initialized with 16 profiles
+[main] 2026-01-12 17:02:03.554899 FINE ProfileController - Skipped existing default profile: profile:b2c1ffcbed17038ae145 (Advanced spring lever)
+[main] 2026-01-12 17:02:03.555578 FINE ProfileController - Skipped existing default profile: profile:0601a8e28d2f93a97858 (Espresso/Baseline HC)
+[main] 2026-01-12 17:02:03.555832 FINE ProfileController - Skipped existing default profile: profile:d30f5400ae52899d07b3 (Visualizer/Baseline LC)
+[main] 2026-01-12 17:02:03.556588 FINE ProfileController - Skipped existing default profile: profile:81362675c1acb7a0c13b (Baseline ULC)
+[main] 2026-01-12 17:02:03.556755 FINE ProfileController - Skipped existing default profile: profile:b73ce54592d667d00b31 (Adaptive v2)
+[main] 2026-01-12 17:02:03.556922 FINE ProfileController - Skipped existing default profile: profile:d497504d1363b7e568d0 (Cleaning/Forward Flush x5 2)
+[main] 2026-01-12 17:02:03.557042 FINE ProfileController - Skipped existing default profile: profile:16954d5fcc3b2991f89e (Cremina lever machine)
+[main] 2026-01-12 17:02:03.557226 FINE ProfileController - Skipped existing default profile: profile:59036f8846b1ed3b4255 (D-Flow / default)
+[main] 2026-01-12 17:02:03.557971 FINE ProfileController - Skipped existing default profile: profile:0389447f62b7185b3461 (Default1)
+[main] 2026-01-12 17:02:03.558094 FINE ProfileController - Skipped existing default profile: profile:8641f24a939ba6df163f (Gentle and sweet1)
+[main] 2026-01-12 17:02:03.558235 FINE ProfileController - Skipped existing default profile: profile:39d0edbfef1484caf152 (I Can't Believe It's Not Filter)
+[main] 2026-01-12 17:02:03.558418 FINE ProfileController - Skipped existing default profile: profile:ca3086783cd9569e128c (GHC/manual flow control)
+[main] 2026-01-12 17:02:03.558564 FINE ProfileController - Skipped existing default profile: profile:c2bfa7235bba32125f6f (GHC/manual pressure control)
+[main] 2026-01-12 17:02:03.559238 FINE ProfileController - Skipped existing default profile: profile:c9c08bc5264d1bfbbf87 (PSPH)
+[main] 2026-01-12 17:02:03.559345 FINE ProfileController - Skipped existing default profile: profile:1e2f9a1c3dd103f57b07 (Rao Allongé 3)
+[main] 2026-01-12 17:02:03.559478 FINE ProfileController - Skipped existing default profile: profile:731c8d53d844ff793b6f (Soup 58)
+[main] 2026-01-12 17:02:03.559487 INFO ProfileController - All default profiles already loaded (16 total)
+[main] 2026-01-12 17:02:03.559615 INFO ProfileController - ProfileController initialized
+[main] 2026-01-12 17:02:03.559631 INFO De1Controller - checking []
+[main] 2026-01-12 17:02:03.561125 INFO Webservice - starting webserver
+[main] 2026-01-12 17:02:03.561151 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:03.562679 INFO Webservice - called _init
+[main] 2026-01-12 17:02:03.563017 INFO Webservice - API Web server running on 0.0.0.0:8080
+[main] 2026-01-12 17:02:03.566855 INFO Webservice - ✅ API Docs server running at http://0.0.0.0:4001
+[main] 2026-01-12 17:02:03.567658 FINE De1StateManager - DE1 disconnected
+[main] 2026-01-12 17:02:03.567667 FINE De1StateManager - Cleaning up ShotController
+[main] 2026-01-12 17:02:03.583044 INFO BluePlusDiscoveryService - initialized
+[main] 2026-01-12 17:02:03.586100 INFO Serial service - Initializing
+[main] 2026-01-12 17:02:03.586118 INFO Serial service - found ports: [/dev/cu.debug-console, /dev/cu.Bluetooth-Incoming-Port, /dev/cu.wchusbserial535A0000011, /dev/cu.usbmodem535A0000011]
+[main] 2026-01-12 17:02:03.587982 INFO Serial service - Found ports: [/dev/cu.debug-console, /dev/cu.Bluetooth-Incoming-Port, /dev/cu.wchusbserial535A0000011, /dev/cu.usbmodem535A0000011]
+[main] 2026-01-12 17:02:03.588255 INFO Serial service - detecting: /dev/cu.debug-console ; null ; Native
+[main] 2026-01-12 17:02:03.588271 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:03.588344 INFO Serial service - detecting: /dev/cu.Bluetooth-Incoming-Port ; null ; Native
+[main] 2026-01-12 17:02:03.588357 INFO Device Controller - Service Instance of 'SimulatedDeviceService' scan completed
+[main] 2026-01-12 17:02:03.588367 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:03.588547 INFO Serial service - detecting: /dev/cu.wchusbserial535A0000011 ; null ; Native
+[main] 2026-01-12 17:02:03.588559 FINE Serial service - Inspecting: /dev/cu.wchusbserial535A0000011, null
+[main] 2026-01-12 17:02:03.588568 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:03.591329 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - port opened
+[main] 2026-01-12 17:02:03.591413 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - port subscribed: Instance of '_ControllerSubscription<Uint8List>'
+[main] 2026-01-12 17:02:03.593901 FINE PluginLoaderService - Updated bundled plugin: time-to-ready.reaplugin
+[main] 2026-01-12 17:02:03.595438 FINE PluginLoaderService - Updated bundled plugin: visualizer.reaplugin
+[main] 2026-01-12 17:02:03.597478 FINE PluginLoaderService - Updated bundled plugin: settings.reaplugin
+[main] 2026-01-12 17:02:03.597919 FINE PluginLoaderService - Found plugin: settings.reaplugin
+[main] 2026-01-12 17:02:03.598023 FINE PluginLoaderService - Found plugin: time-to-ready.reaplugin
+[main] 2026-01-12 17:02:03.598292 FINE PersistenceController - shots loaded: 28
+[main] 2026-01-12 17:02:03.598297 FINE PersistenceController - shots cleared: 0
+[main] 2026-01-12 17:02:03.598315 FINE PersistenceController - shots changed: 28
+[main] 2026-01-12 17:02:03.598392 FINE PluginLoaderService - Found plugin: visualizer.reaplugin
+[main] 2026-01-12 17:02:03.599277 FINE PluginManager - Plugin evaluation result: [object Object]
+[main] 2026-01-12 17:02:03.599293 FINE PluginManager - Is error: false
+[main] 2026-01-12 17:02:03.599300 INFO PluginManager - loaded: settings.reaplugin
+[main] 2026-01-12 17:02:03.599306 INFO PluginLoaderService - Plugin loaded: settings.reaplugin
+[main] 2026-01-12 17:02:03.599847 FINE PluginManager - Plugin evaluation result: [object Object]
+[main] 2026-01-12 17:02:03.599857 FINE PluginManager - Is error: false
+[main] 2026-01-12 17:02:03.599862 INFO PluginManager - loaded: time-to-ready.reaplugin
+[main] 2026-01-12 17:02:03.599866 INFO PluginLoaderService - Plugin loaded: time-to-ready.reaplugin
+[main] 2026-01-12 17:02:03.600397 FINE PluginManager - Plugin evaluation result: [object Object]
+[main] 2026-01-12 17:02:03.600409 FINE PluginManager - Is error: false
+[main] 2026-01-12 17:02:03.600414 INFO PluginManager - loaded: visualizer.reaplugin
+[main] 2026-01-12 17:02:03.600418 INFO PluginLoaderService - Plugin loaded: visualizer.reaplugin
+[main] 2026-01-12 17:02:03.600811 FINE WebUIStorage - Loaded 1 remote bundled skin IDs
+[main] 2026-01-12 17:02:03.601277 FINE WebUIStorage - Loaded metadata for 1 skins
+[main] 2026-01-12 17:02:03.601288 INFO WebUIStorage - Downloading remote bundled skin from: https://github.com/allofmeng/streamline_project/archive/refs/heads/main.zip
+[main] 2026-01-12 17:02:03.985947 FINE BluePlusDiscoveryService - 3E9212FF-C6BE-B3D2-0634-500C782BCA13: "Decent Scale" found!
+[main] 2026-01-12 17:02:03.986055 INFO BluePlusDiscoveryService - Device 3E9212FF-C6BE-B3D2-0634-500C782BCA13 added successfully
+[main] 2026-01-12 17:02:03.986099 FINE BluePlusDiscoveryService - duplicate device scanned 3E9212FF-C6BE-B3D2-0634-500C782BCA13, Decent Scale
+[main] 2026-01-12 17:02:03.986139 INFO Decent scale - on connect
+[main] 2026-01-12 17:02:03.986179 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:03.986191 INFO ScaleController - scale connection update: connecting
+[main] 2026-01-12 17:02:03.986219 INFO ScaleController - scale connection update: connecting
+[main] 2026-01-12 17:02:03.986229 INFO Decent scale - state: false
+[main] 2026-01-12 17:02:04.231007 FINE BluePlusDiscoveryService - duplicate device scanned 3E9212FF-C6BE-B3D2-0634-500C782BCA13, Decent Scale
+[main] 2026-01-12 17:02:04.393326 INFO Serial service - Collected serial data: [010100
+[M]18740000000057EC584C1A1E00580000010096
+[Q]18200100
+[M]188D0000000057D35839751E00580000010095
+[M]18A60000000057F5584BEA1E00580000010095
+[M]18BF0000000057E45849191E00580000010096
+[M]18D[M]19870000000057E4583D561E00580000010096
+[M]19A00000000057EC5846C01E00580000010096
+[Q]181D0100
+[M]19B90000000057DB5849511E00580000010096
+
+[main] 2026-01-12 17:02:04.393422 INFO Serial service - parsed into strings: [[010100, [M]18740000000057EC584C1A1E00580000010096, [Q]18200100, [M]188D0000000057D35839751E00580000010095, [M]18A60000000057F5584BEA1E00580000010095, [M]18BF0000000057E45849191E00580000010096, [M]18D[M]19870000000057E4583D561E00580000010096, [M]19A00000000057EC5846C01E00580000010096, [Q]181D0100, [M]19B90000000057DB5849511E00580000010096, ]
+[main] 2026-01-12 17:02:04.393637 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 4d, 3e, a)
+[main] 2026-01-12 17:02:04.393661 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+M>
+[main] 2026-01-12 17:02:04.535016 INFO WebUIStorage - Skin from https://github.com/allofmeng/streamline_project/archive/refs/heads/main.zip is up to date (ETag match)
+[main] 2026-01-12 17:02:04.535575 FINE WebUIStorage - Saved metadata for 1 skins
+[main] 2026-01-12 17:02:04.535793 FINE WebUIStorage - Found skin: streamline_project-main at /Users/markc/Library/Containers/net.tadel.reaprime/Data/Documents/web-ui/streamline_project-main
+[main] 2026-01-12 17:02:04.535816 INFO WebUIStorage - WebUIStorage initialized with 1 skins
+[main] 2026-01-12 17:02:04.636935 INFO Decent scale - state: true
+[main] 2026-01-12 17:02:04.637059 INFO ScaleController - scale connection update: connected
+[main] 2026-01-12 17:02:05.196059 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2d, 4d, 3e, a)
+[main] 2026-01-12 17:02:05.196127 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <-M>
+[main] 2026-01-12 17:02:05.196166 INFO Serial service - Detected: DE1 Machine
+[main] 2026-01-12 17:02:05.196495 INFO Serial service - detecting: /dev/cu.usbmodem535A0000011 ; DE1 ; USB
+[main] 2026-01-12 17:02:05.196537 INFO Serial service - Added devices: [Instance of 'UnifiedDe1', Instance of 'UnifiedDe1']
+[main] 2026-01-12 17:02:05.196551 INFO Device Controller - Service Instance of 'SerialServiceDesktop' scan completed
+[main] 2026-01-12 17:02:05.196574 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:05.196593 INFO SensorController - received sensors: []
+[main] 2026-01-12 17:02:05.386955 FINE Decent scale - heartbeat: (3, a, ff, f7, 40, 3, 3)
+[main] 2026-01-12 17:02:05.448432 FINE Decent scale - heartbeat: (3, a, ff, f7, 40, 3, 3)
+[main] 2026-01-12 17:02:06.284411 INFO De1Controller - resetting de1
+[main] 2026-01-12 17:02:06.284549 FINE De1Controller - found de1, connecting
+[main] 2026-01-12 17:02:06.284606 WARNING SerialPort:/dev/cu.wchusbserial535A0000011 - already open
+[main] 2026-01-12 17:02:06.285030 FINE De1StateManager - DE1 disconnected
+[main] 2026-01-12 17:02:06.285059 FINE De1StateManager - Cleaning up ShotController
+[main] 2026-01-12 17:02:06.285117 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 4e, 3e, a)
+[main] 2026-01-12 17:02:06.285136 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+N>
+[main] 2026-01-12 17:02:06.285157 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 4d, 3e, a)
+[main] 2026-01-12 17:02:06.285174 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+M>
+[main] 2026-01-12 17:02:06.285230 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 51, 3e, a)
+[main] 2026-01-12 17:02:06.285262 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+Q>
+[main] 2026-01-12 17:02:06.285305 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 4b, 3e, a)
+[main] 2026-01-12 17:02:06.285321 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+K>
+[main] 2026-01-12 17:02:06.285344 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 45, 3e, a)
+[main] 2026-01-12 17:02:06.285356 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+E>
+[main] 2026-01-12 17:02:06.285376 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 2b, 49, 3e, a)
+[main] 2026-01-12 17:02:06.285389 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <+I>
+[main] 2026-01-12 17:02:06.285414 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 42, 3e, 30, 32, a)
+[main] 2026-01-12 17:02:06.285428 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <B>02
+[main] 2026-01-12 17:02:06.285441 INFO DE1 - mmr read: v13Model
+[main] 2026-01-12 17:02:06.285474 FINE DE1 - sending read req [0, 80, 0, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.285540 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.285558 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 00 0c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.285589 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 30, 30, 30, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.285605 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080000c00000000000000000000000000000000
+[main] 2026-01-12 17:02:06.295989 FINE WebUIService - serving /Users/markc/Library/Containers/net.tadel.reaprime/Data/Documents/web-ui/streamline_project-main
+[main] 2026-01-12 17:02:06.296096 INFO LandingFeature - Now serving WebUI skin: streamline_project-main at http://localhost:3000
+[main] 2026-01-12 17:02:06.447082 INFO DE1 - listen event Result:  [4, 80, 0, c, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.447244 INFO DE1 - mmr read: ghcInfo
+[main] 2026-01-12 17:02:06.447295 FINE DE1 - sending read req [0, 80, 38, 1c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.447351 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.447389 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 1c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.447458 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 31, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.447495 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080381c00000000000000000000000000000000
+[main] 2026-01-12 17:02:06.543548 INFO DE1 - listen event Result:  [4, 80, 38, 1c, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.543667 INFO DE1 - mmr read: serialN
+[main] 2026-01-12 17:02:06.543708 FINE DE1 - sending read req [0, 80, 38, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.543751 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.543771 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 30 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.543820 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 33, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.543842 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080383000000000000000000000000000000000
+[main] 2026-01-12 17:02:06.613537 INFO DE1 - listen event Result:  [4, 80, 38, 30, 33, 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.613644 INFO DE1 - mmr read: cpuFirmwareBuild
+[main] 2026-01-12 17:02:06.613682 FINE DE1 - sending read req [0, 80, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.613716 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.613733 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.613766 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 30, 30, 31, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.613783 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080001000000000000000000000000000000000
+[main] 2026-01-12 17:02:06.695276 INFO DE1 - listen event Result:  [4, 80, 0, 10, 35, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.695390 INFO DE1 - mmr read: heaterV
+[main] 2026-01-12 17:02:06.695429 FINE DE1 - sending read req [0, 80, 38, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.695464 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.695485 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.695519 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 33, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.695536 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080383400000000000000000000000000000000
+[main] 2026-01-12 17:02:06.765201 INFO DE1 - listen event Result:  [4, 80, 38, 34, dc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.765281 INFO DE1 - mmr read: refillKitPresent
+[main] 2026-01-12 17:02:06.765301 FINE DE1 - sending read req [0, 80, 38, 5c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.765336 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.765353 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 5c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.765388 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 35, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.765402 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080385c00000000000000000000000000000000
+[main] 2026-01-12 17:02:06.827429 INFO DE1 - listen event Result:  [4, 80, 38, 5c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.827481 INFO DE1 - Info: {version: 1333, model: DE1Pro, serialNumber: 10035, GHC: true, extra: {refillKit: false, voltage: 220}}
+[main] 2026-01-12 17:02:06.827494 INFO DE1 - mmr write: refillKitPresent
+[main] 2026-01-12 17:02:06.827507 FINE DE1 - payload [2]
+[main] 2026-01-12 17:02:06.827528 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:06.827542 FINE UnifiedDe1Transport-45938110096 - payload: 01 80 38 5c 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.827571 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 31, 38, 30, 33, 38, 35, 63, 30, 32, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.827583 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>0180385c02000000000000000000000000000000
+[main] 2026-01-12 17:02:06.827690 FINE De1StateManager - DE1 connected, starting to listen for state changes
+[main] 2026-01-12 17:02:06.827733 INFO De1Controller - device Instance of 'UnifiedDe1' connected
+[main] 2026-01-12 17:02:06.828941 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:06.828964 INFO DE1 - TargetSteamTemp = 0
+[main] 2026-01-12 17:02:06.828979 INFO DE1 - TargetSteamLength = 0
+[main] 2026-01-12 17:02:06.828989 INFO DE1 - TargetWaterTemp = 0
+[main] 2026-01-12 17:02:06.828998 INFO DE1 - TargetWaterVolume = 0
+[main] 2026-01-12 17:02:06.829005 INFO DE1 - TargetWaterLength = 0
+[main] 2026-01-12 17:02:06.829016 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:06.829026 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:06.829043 INFO De1Controller - received shot settings
+[main] 2026-01-12 17:02:06.829058 INFO DE1 - mmr read: targetSteamFlow
+[main] 2026-01-12 17:02:06.829075 FINE DE1 - sending read req [0, 80, 38, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.829103 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.829120 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.829156 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 32, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.829169 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080382800000000000000000000000000000000
+[main] 2026-01-12 17:02:06.919686 INFO DE1 - listen event Result:  [4, 80, 38, 28, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.919803 INFO DE1 - mmr read: hotWaterFlowRate
+[main] 2026-01-12 17:02:06.919831 FINE DE1 - sending read req [0, 80, 38, 4c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.919877 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.919894 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 4c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.919934 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.919953 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384c00000000000000000000000000000000
+[main] 2026-01-12 17:02:06.989795 INFO DE1 - listen event Result:  [4, 80, 38, 4c, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.989962 INFO DE1 - mmr read: flushFlowRate
+[main] 2026-01-12 17:02:06.990020 FINE DE1 - sending read req [0, 80, 38, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:06.990083 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:06.990126 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:06.990197 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:06.990232 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384000000000000000000000000000000000
+[main] 2026-01-12 17:02:07.049921 INFO DE1 - listen event Result:  [4, 80, 38, 40, 3c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.050057 INFO DE1 - mmr read: flushTimeout
+[main] 2026-01-12 17:02:07.050093 FINE DE1 - sending read req [0, 80, 38, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.050143 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.050165 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.050210 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.050229 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384800000000000000000000000000000000
+[main] 2026-01-12 17:02:07.140303 INFO DE1 - listen event Result:  [4, 80, 38, 48, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.140455 INFO DE1 - mmr read: flushTemp
+[main] 2026-01-12 17:02:07.140499 FINE DE1 - sending read req [0, 80, 38, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.140550 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.140570 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 44 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.140613 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.140629 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384400000000000000000000000000000000
+[main] 2026-01-12 17:02:07.208541 INFO DE1 - listen event Result:  [4, 80, 38, 44, 84, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.208695 INFO DE1 - mmr write: fanThreshold
+[main] 2026-01-12 17:02:07.208725 FINE DE1 - payload [32, 0, 0, 0]
+[main] 2026-01-12 17:02:07.208761 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:07.208777 INFO DE1 - TargetSteamTemp = 0
+[main] 2026-01-12 17:02:07.208786 INFO DE1 - TargetSteamLength = 0
+[main] 2026-01-12 17:02:07.208800 INFO DE1 - TargetWaterTemp = 0
+[main] 2026-01-12 17:02:07.208812 INFO DE1 - TargetWaterVolume = 0
+[main] 2026-01-12 17:02:07.208821 INFO DE1 - TargetWaterLength = 0
+[main] 2026-01-12 17:02:07.208829 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:07.208844 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:07.208858 INFO De1Controller - received shot settings
+[main] 2026-01-12 17:02:07.208870 INFO DE1 - mmr read: targetSteamFlow
+[main] 2026-01-12 17:02:07.208886 FINE DE1 - sending read req [0, 80, 38, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.208906 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:07.208924 FINE UnifiedDe1Transport-45938110096 - payload: 04 80 38 08 32 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.208941 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.208957 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.208991 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 34, 38, 30, 33, 38, 30, 38, 33, 32, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209009 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>0480380832000000000000000000000000000000
+[main] 2026-01-12 17:02:07.209079 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 32, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209097 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080382800000000000000000000000000000000
+[main] 2026-01-12 17:02:07.209120 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:07.209142 INFO DE1 - TargetSteamTemp = 0
+[main] 2026-01-12 17:02:07.209152 INFO DE1 - TargetSteamLength = 0
+[main] 2026-01-12 17:02:07.209161 INFO DE1 - TargetWaterTemp = 0
+[main] 2026-01-12 17:02:07.209175 INFO DE1 - TargetWaterVolume = 0
+[main] 2026-01-12 17:02:07.209185 INFO DE1 - TargetWaterLength = 0
+[main] 2026-01-12 17:02:07.209193 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:07.209202 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:07.209229 INFO DE1 - mmr write: targetSteamFlow
+[main] 2026-01-12 17:02:07.209242 FINE DE1 - payload [50, 0, 0, 0]
+[main] 2026-01-12 17:02:07.209264 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:07.209277 FINE UnifiedDe1Transport-45938110096 - payload: 04 80 38 28 50 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.209305 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 34, 38, 30, 33, 38, 32, 38, 35, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209319 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>0480382850000000000000000000000000000000
+[main] 2026-01-12 17:02:07.209337 FINE UnifiedDe1Transport-45938110096 - about to write to shotSettings
+[main] 2026-01-12 17:02:07.209349 FINE UnifiedDe1Transport-45938110096 - payload: 00 96 32 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.209375 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 4b, 3e, 30, 30, 39, 36, 33, 32, 30, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209388 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <K>009632000000000000
+[main] 2026-01-12 17:02:07.209435 INFO DE1 - mmr write: hotWaterFlowRate
+[main] 2026-01-12 17:02:07.209448 FINE DE1 - payload [37, 0, 0, 0]
+[main] 2026-01-12 17:02:07.209471 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:07.209481 INFO DE1 - TargetSteamTemp = 150
+[main] 2026-01-12 17:02:07.209491 INFO DE1 - TargetSteamLength = 50
+[main] 2026-01-12 17:02:07.209500 INFO DE1 - TargetWaterTemp = 0
+[main] 2026-01-12 17:02:07.209512 INFO DE1 - TargetWaterVolume = 0
+[main] 2026-01-12 17:02:07.209520 INFO DE1 - TargetWaterLength = 0
+[main] 2026-01-12 17:02:07.209528 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:07.209538 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:07.209550 INFO De1Controller - received shot settings
+[main] 2026-01-12 17:02:07.209559 INFO DE1 - mmr read: targetSteamFlow
+[main] 2026-01-12 17:02:07.209572 FINE DE1 - sending read req [0, 80, 38, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.209594 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:07.209607 FINE UnifiedDe1Transport-45938110096 - payload: 04 80 38 4c 37 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.209626 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.209638 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.209689 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 34, 38, 30, 33, 38, 34, 63, 33, 37, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209706 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>0480384c37000000000000000000000000000000
+[main] 2026-01-12 17:02:07.209735 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 32, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209751 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080382800000000000000000000000000000000
+[main] 2026-01-12 17:02:07.209766 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:07.209780 INFO DE1 - TargetSteamTemp = 150
+[main] 2026-01-12 17:02:07.209789 INFO DE1 - TargetSteamLength = 50
+[main] 2026-01-12 17:02:07.209797 INFO DE1 - TargetWaterTemp = 0
+[main] 2026-01-12 17:02:07.209806 INFO DE1 - TargetWaterVolume = 0
+[main] 2026-01-12 17:02:07.209818 INFO DE1 - TargetWaterLength = 0
+[main] 2026-01-12 17:02:07.209827 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:07.209835 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:07.209868 FINE UnifiedDe1Transport-45938110096 - about to write to shotSettings
+[main] 2026-01-12 17:02:07.209881 FINE UnifiedDe1Transport-45938110096 - payload: 00 96 32 4b 32 1e 00 00 00
+[main] 2026-01-12 17:02:07.209907 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 4b, 3e, 30, 30, 39, 36, 33, 32, 34, 62, 33, 32, 31, 65, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.209919 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <K>0096324b321e000000
+[main] 2026-01-12 17:02:07.209958 INFO DE1 - mmr write: flushTimeout
+[main] 2026-01-12 17:02:07.209971 FINE DE1 - payload [64, 0, 0, 0]
+[main] 2026-01-12 17:02:07.210013 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:07.210024 INFO DE1 - TargetSteamTemp = 150
+[main] 2026-01-12 17:02:07.210033 INFO DE1 - TargetSteamLength = 50
+[main] 2026-01-12 17:02:07.210047 INFO DE1 - TargetWaterTemp = 75
+[main] 2026-01-12 17:02:07.210057 INFO DE1 - TargetWaterVolume = 50
+[main] 2026-01-12 17:02:07.210066 INFO DE1 - TargetWaterLength = 30
+[main] 2026-01-12 17:02:07.210075 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:07.210088 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:07.210097 INFO De1Controller - received shot settings
+[main] 2026-01-12 17:02:07.210107 INFO DE1 - mmr read: targetSteamFlow
+[main] 2026-01-12 17:02:07.210122 FINE DE1 - sending read req [0, 80, 38, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.210143 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:07.210159 FINE UnifiedDe1Transport-45938110096 - payload: 04 80 38 48 64 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.210174 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.210190 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.210224 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 34, 38, 30, 33, 38, 34, 38, 36, 34, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.210240 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>0480384864000000000000000000000000000000
+[main] 2026-01-12 17:02:07.210253 INFO DE1 - mmr write: flushFlowRate
+[main] 2026-01-12 17:02:07.210264 FINE DE1 - payload [3c, 0, 0, 0]
+[main] 2026-01-12 17:02:07.210288 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 32, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.210304 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080382800000000000000000000000000000000
+[main] 2026-01-12 17:02:07.210319 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:07.210334 FINE UnifiedDe1Transport-45938110096 - payload: 04 80 38 40 3c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.210363 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 34, 38, 30, 33, 38, 34, 30, 33, 63, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.210376 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>048038403c000000000000000000000000000000
+[main] 2026-01-12 17:02:07.210388 INFO DE1 - mmr write: flushTemp
+[main] 2026-01-12 17:02:07.210404 FINE DE1 - payload [84, 3, 0, 0]
+[main] 2026-01-12 17:02:07.210416 FINE UnifiedDe1Transport-45938110096 - about to write to writeToMMR
+[main] 2026-01-12 17:02:07.210432 FINE UnifiedDe1Transport-45938110096 - payload: 04 80 38 44 84 03 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.210454 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 46, 3e, 30, 34, 38, 30, 33, 38, 34, 34, 38, 34, 30, 33, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.210470 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <F>0480384484030000000000000000000000000000
+[main] 2026-01-12 17:02:07.210489 FINE UnifiedDe1Transport-45938110096 - about to write to headerWrite
+[main] 2026-01-12 17:02:07.210501 FINE UnifiedDe1Transport-45938110096 - payload: 01 03 02 00 c0
+[main] 2026-01-12 17:02:07.210519 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 4f, 3e, 30, 31, 30, 33, 30, 32, 30, 30, 63, 30, a)
+[main] 2026-01-12 17:02:07.210534 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <O>01030200c0
+[main] 2026-01-12 17:02:07.210546 FINE DE1 - encoding step Filling
+[main] 2026-01-12 17:02:07.210564 FINE DE1 - limiter: {value: 0.0, range: 0.2}
+[main] 2026-01-12 17:02:07.210582 FINE DE1 - exit: {type: pressure, condition: over, value: 1.5}
+[main] 2026-01-12 17:02:07.210596 FINE UnifiedDe1Transport-45938110096 - about to write to frameWrite
+[main] 2026-01-12 17:02:07.210610 FINE UnifiedDe1Transport-45938110096 - payload: 00 46 30 b0 99 18 04 64
+[main] 2026-01-12 17:02:07.210631 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 50, 3e, 30, 30, 34, 36, 33, 30, 62, 30, 39, 39, 31, 38, 30, 34, 36, 34, a)
+[main] 2026-01-12 17:02:07.210647 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <P>004630b099180464
+[main] 2026-01-12 17:02:07.210659 FINE DE1 - encoding step Infusing
+[main] 2026-01-12 17:02:07.210670 FINE DE1 - limiter: {value: 0.0, range: 0.2}
+[main] 2026-01-12 17:02:07.210683 FINE DE1 - exit: null
+[main] 2026-01-12 17:02:07.210695 FINE UnifiedDe1Transport-45938110096 - about to write to frameWrite
+[main] 2026-01-12 17:02:07.210705 FINE UnifiedDe1Transport-45938110096 - payload: 01 40 30 b0 bc 00 04 64
+[main] 2026-01-12 17:02:07.210729 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 50, 3e, 30, 31, 34, 30, 33, 30, 62, 30, 62, 63, 30, 30, 30, 34, 36, 34, a)
+[main] 2026-01-12 17:02:07.210742 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <P>014030b0bc000464
+[main] 2026-01-12 17:02:07.210756 FINE DE1 - encoding step Pouring
+[main] 2026-01-12 17:02:07.210767 FINE DE1 - limiter: {value: 8.5, range: 0.2}
+[main] 2026-01-12 17:02:07.210776 FINE DE1 - exit: null
+[main] 2026-01-12 17:02:07.210790 FINE UnifiedDe1Transport-45938110096 - about to write to frameWrite
+[main] 2026-01-12 17:02:07.210801 FINE UnifiedDe1Transport-45938110096 - payload: 02 41 1b b0 ff 00 04 00
+[main] 2026-01-12 17:02:07.210823 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 50, 3e, 30, 32, 34, 31, 31, 62, 62, 30, 66, 66, 30, 30, 30, 34, 30, 30, a)
+[main] 2026-01-12 17:02:07.210836 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <P>02411bb0ff000400
+[main] 2026-01-12 17:02:07.210850 FINE UnifiedDe1Transport-45938110096 - about to write to frameWrite
+[main] 2026-01-12 17:02:07.210862 FINE UnifiedDe1Transport-45938110096 - payload: 22 88 03 00 00 00 00 00
+[main] 2026-01-12 17:02:07.210883 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 50, 3e, 32, 32, 38, 38, 30, 33, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, a)
+[main] 2026-01-12 17:02:07.210896 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <P>2288030000000000
+[main] 2026-01-12 17:02:07.210910 FINE UnifiedDe1Transport-45938110096 - about to write to frameWrite
+[main] 2026-01-12 17:02:07.210922 FINE UnifiedDe1Transport-45938110096 - payload: 03 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.210942 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 50, 3e, 30, 33, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, a)
+[main] 2026-01-12 17:02:07.210955 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <P>0300000000000000
+[main] 2026-01-12 17:02:07.316512 INFO DE1 - listen event Result:  [4, 80, 38, 28, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.316578 INFO DE1 - mmr read: hotWaterFlowRate
+[main] 2026-01-12 17:02:07.316598 FINE DE1 - sending read req [0, 80, 38, 4c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.316635 INFO DE1 - listen event Result:  [4, 80, 38, 28, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.316652 INFO DE1 - mmr read: hotWaterFlowRate
+[main] 2026-01-12 17:02:07.316666 FINE DE1 - sending read req [0, 80, 38, 4c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.316690 INFO DE1 - listen event Result:  [4, 80, 38, 28, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.316702 INFO DE1 - mmr read: hotWaterFlowRate
+[main] 2026-01-12 17:02:07.316717 FINE DE1 - sending read req [0, 80, 38, 4c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.316731 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.316747 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 4c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.316763 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.316774 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 4c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.316790 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.316801 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 4c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.316830 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.316845 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384c00000000000000000000000000000000
+[main] 2026-01-12 17:02:07.316870 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.316884 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384c00000000000000000000000000000000
+[main] 2026-01-12 17:02:07.316907 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.316918 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384c00000000000000000000000000000000
+[main] 2026-01-12 17:02:07.695298 INFO DE1 - listen event Result:  [4, 80, 38, 4c, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.695457 INFO DE1 - mmr read: flushFlowRate
+[main] 2026-01-12 17:02:07.695502 FINE DE1 - sending read req [0, 80, 38, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.695603 INFO DE1 - listen event Result:  [4, 80, 38, 4c, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.695644 INFO DE1 - mmr read: flushFlowRate
+[main] 2026-01-12 17:02:07.695675 FINE DE1 - sending read req [0, 80, 38, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.695733 INFO DE1 - listen event Result:  [4, 80, 38, 4c, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.695762 INFO DE1 - mmr read: flushFlowRate
+[main] 2026-01-12 17:02:07.695795 FINE DE1 - sending read req [0, 80, 38, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.695830 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.695869 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.695906 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.695938 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.695971 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.696002 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.696061 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.696098 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384000000000000000000000000000000000
+[main] 2026-01-12 17:02:07.696165 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.696208 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384000000000000000000000000000000000
+[main] 2026-01-12 17:02:07.696264 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.696293 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384000000000000000000000000000000000
+[main] 2026-01-12 17:02:07.842359 INFO DE1 - listen event Result:  [4, 80, 38, 40, 3c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.842530 INFO DE1 - mmr read: flushTimeout
+[main] 2026-01-12 17:02:07.842578 FINE DE1 - sending read req [0, 80, 38, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.842666 INFO DE1 - listen event Result:  [4, 80, 38, 40, 3c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.842700 INFO DE1 - mmr read: flushTimeout
+[main] 2026-01-12 17:02:07.842740 FINE DE1 - sending read req [0, 80, 38, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.842826 INFO DE1 - listen event Result:  [4, 80, 38, 40, 3c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.842858 INFO DE1 - mmr read: flushTimeout
+[main] 2026-01-12 17:02:07.842887 FINE DE1 - sending read req [0, 80, 38, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:07.842933 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.842968 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.843015 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.843046 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.843090 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:07.843120 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:07.843191 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.843225 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384800000000000000000000000000000000
+[main] 2026-01-12 17:02:07.843320 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.843362 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384800000000000000000000000000000000
+[main] 2026-01-12 17:02:07.843411 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:07.843437 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384800000000000000000000000000000000
+[main] 2026-01-12 17:02:08.052193 INFO DE1 - listen event Result:  [4, 80, 38, 48, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.052365 INFO DE1 - mmr read: flushTemp
+[main] 2026-01-12 17:02:08.052412 FINE DE1 - sending read req [0, 80, 38, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.052494 INFO DE1 - listen event Result:  [4, 80, 38, 48, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.052527 INFO DE1 - mmr read: flushTemp
+[main] 2026-01-12 17:02:08.052562 FINE DE1 - sending read req [0, 80, 38, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.052612 INFO DE1 - listen event Result:  [4, 80, 38, 48, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.052647 INFO DE1 - mmr read: flushTemp
+[main] 2026-01-12 17:02:08.052674 FINE DE1 - sending read req [0, 80, 38, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.052712 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.052744 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 44 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.052792 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.052823 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 44 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.052859 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.052889 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 44 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.052952 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.052982 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384400000000000000000000000000000000
+[main] 2026-01-12 17:02:08.053042 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.053077 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384400000000000000000000000000000000
+[main] 2026-01-12 17:02:08.053133 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.053165 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384400000000000000000000000000000000
+[main] 2026-01-12 17:02:08.140017 FINE History - shots: (2025-12-05 15:27:53.727929, 2025-12-11 15:46:52.235609, 2025-12-11 15:47:33.517244, ..., 2025-12-31 13:15:17.478841, 2025-12-31 15:28:01.550372)
+[main] 2026-01-12 17:02:08.176122 FINE De1WebHandler - handling websocket connection
+[main] 2026-01-12 17:02:08.188211 FINE De1WebHandler - handling water levels connection
+[main] 2026-01-12 17:02:08.199399 FINE Webservice - handling websocket connection
+[main] 2026-01-12 17:02:08.212427 INFO PluginsHandler - handling Instance of 'Request'
+[main] 2026-01-12 17:02:08.225923 FINE De1WebHandler - handling shot settings connection
+[main] 2026-01-12 17:02:08.225973 INFO DE1 - SteamBits = 0
+[main] 2026-01-12 17:02:08.225988 INFO DE1 - TargetSteamTemp = 150
+[main] 2026-01-12 17:02:08.225998 INFO DE1 - TargetSteamLength = 50
+[main] 2026-01-12 17:02:08.226006 INFO DE1 - TargetWaterTemp = 75
+[main] 2026-01-12 17:02:08.226014 INFO DE1 - TargetWaterVolume = 50
+[main] 2026-01-12 17:02:08.226024 INFO DE1 - TargetWaterLength = 30
+[main] 2026-01-12 17:02:08.226031 INFO DE1 - TargetEspressoVolume = 0
+[main] 2026-01-12 17:02:08.226039 INFO DE1 - TargetGroupTemp = 0.0
+[main] 2026-01-12 17:02:08.230056 INFO DE1 - mmr read: fanThreshold
+[main] 2026-01-12 17:02:08.230087 FINE DE1 - sending read req [0, 80, 38, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.230117 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.230135 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 08 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.230163 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 30, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.230177 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080380800000000000000000000000000000000
+[main] 2026-01-12 17:02:08.257417 INFO DE1 - listen event Result:  [4, 80, 38, 44, 84, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.257553 INFO DE1 - listen event Result:  [4, 80, 38, 44, 84, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.257589 INFO DE1 - listen event Result:  [4, 80, 38, 44, 84, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.405885 INFO DE1 - listen event Result:  [4, 80, 38, 8, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.406024 INFO DE1 - mmr read: allowUSBCharging
+[main] 2026-01-12 17:02:08.406064 FINE DE1 - sending read req [0, 80, 38, 54, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.406120 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.406141 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 54 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.406188 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 35, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.406209 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080385400000000000000000000000000000000
+[main] 2026-01-12 17:02:08.497490 INFO DE1 - listen event Result:  [4, 80, 38, 54, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.497598 INFO DE1 - mmr read: flushTemp
+[main] 2026-01-12 17:02:08.497621 FINE DE1 - sending read req [0, 80, 38, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.497671 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.497686 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 44 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.497724 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 34, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.497741 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384400000000000000000000000000000000
+[main] 2026-01-12 17:02:08.557522 INFO DE1 - listen event Result:  [4, 80, 38, 44, 84, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.557637 INFO DE1 - mmr read: flushTimeout
+[main] 2026-01-12 17:02:08.557669 FINE DE1 - sending read req [0, 80, 38, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.557706 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.557725 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 48 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.557765 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.557780 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384800000000000000000000000000000000
+[main] 2026-01-12 17:02:08.647487 INFO DE1 - listen event Result:  [4, 80, 38, 48, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.647603 INFO DE1 - mmr read: flushFlowRate
+[main] 2026-01-12 17:02:08.647630 FINE DE1 - sending read req [0, 80, 38, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.647666 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.647684 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 40 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.647719 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 30, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.647737 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384000000000000000000000000000000000
+[main] 2026-01-12 17:02:08.707421 INFO DE1 - listen event Result:  [4, 80, 38, 40, 3c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.707483 INFO DE1 - mmr read: hotWaterFlowRate
+[main] 2026-01-12 17:02:08.707500 FINE DE1 - sending read req [0, 80, 38, 4c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.707534 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.707550 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 4c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.707586 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 34, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.707601 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080384c00000000000000000000000000000000
+[main] 2026-01-12 17:02:08.768145 INFO DE1 - listen event Result:  [4, 80, 38, 4c, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.768268 INFO DE1 - mmr read: targetSteamFlow
+[main] 2026-01-12 17:02:08.768296 FINE DE1 - sending read req [0, 80, 38, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.768332 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.768350 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 28 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.768385 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 32, 38, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.768403 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080382800000000000000000000000000000000
+[main] 2026-01-12 17:02:08.828040 INFO DE1 - listen event Result:  [4, 80, 38, 28, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.828098 INFO DE1 - mmr read: tankTemp
+[main] 2026-01-12 17:02:08.828114 FINE DE1 - sending read req [0, 80, 38, c, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:08.828139 FINE UnifiedDe1Transport-45938110096 - about to write to readFromMMR
+[main] 2026-01-12 17:02:08.828153 FINE UnifiedDe1Transport-45938110096 - payload: 00 80 38 0c 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+[main] 2026-01-12 17:02:08.828181 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: (3c, 45, 3e, 30, 30, 38, 30, 33, 38, 30, 63, 30, 30, 30, 30, 30, 30, ..., 30, a)
+[main] 2026-01-12 17:02:08.828193 FINE SerialPort:/dev/cu.wchusbserial535A0000011 - wrote: <E>0080380c00000000000000000000000000000000
+[main] 2026-01-12 17:02:08.911689 INFO DE1 - listen event Result:  [4, 80, 38, c, a, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[main] 2026-01-12 17:02:09.315664 FINE Decent scale - heartbeat: (3, a, ff, f7, 40, 3, 3)
+[main] 2026-01-12 17:02:09.872378 FINE History - shots: (2025-12-05 15:27:53.727929, 2025-12-11 15:46:52.235609, 2025-12-11 15:47:33.517244, ..., 2025-12-31 13:15:17.478841, 2025-12-31 15:28:01.550372)
+[main] 2026-01-12 17:02:13.337237 FINE Decent scale - heartbeat: (3, a, ff, f7, 40, 3, 3)

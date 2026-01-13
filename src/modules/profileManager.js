@@ -1,263 +1,67 @@
 import { logger } from './logger.js';
-import { sendProfile, getWorkflow, getValueFromStore, setValueInStore } from './api.js';
-import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio } from './ui.js';
+import { sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile } from './api.js';
+import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio ,showToast} from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
 
 const FAV_COUNT = 5;
 const PROFILES_PATH = '/src/profiles/';
-const LONG_PRESS_DURATION = 700; // ms
+const LONG_PRESS_DURATION = 800; // ms
 
 const SETTINGS_NAMESPACE = 'streamline-app';
 const FAVORITES_KEY = 'favorite-profiles';
 const UPLOADED_PROFILES_KEY = 'uploaded-profiles';
 const DEFAULT_PROFILES_KEY = 'default-profiles';
 const DEFAULT_PROFILES_MIGRATED_KEY = 'default-profiles-migrated';
-const HIDDEN_PROFILES_KEY = 'hidden-profiles';
+const PROFILES_CACHE_KEY = 'available-profiles-cache';
 
 
 let favoriteButtons = [];
 export let availableProfiles = {};
 let favoriteAssignments = {};
 let currentButtonIndex = null;
-let hiddenProfiles = [];
 
 // --- Helper Functions ---
 
-/**
- * Attempts to fetch a resource by trying multiple absolute path strategies.
- * This handles differences between a local dev server and the GitHub Pages environment.
- * @param {string} path - The base resource path (e.g., '/src/profiles/profile.json').
- * @returns {Promise<Response>}
- */
-async function fetchWithFallback(path) {
-    const githubPagesPath = `/streamline_project${path}`; // e.g., /streamline_project/src/profiles/profile.json
-    const localDevPath = path;                         // e.g., /src/profiles/profile.json
-
-    // 1. Try GitHub Pages specific path
-    try {
-        const response = await fetch(githubPagesPath);
-        if (response.ok) {
-            logger.info(`Fetched '${githubPagesPath}' successfully (GitHub Pages path).`);
-            return response;
-        }
-        logger.warn(`Fetch with GitHub Pages path '${githubPagesPath}' failed with status ${response.status}.`);
-    } catch (error) {
-        logger.warn(`Fetch with GitHub Pages path '${githubPagesPath}' threw an error.`, error);
-    }
-
-    // 2. Fallback to local dev path
-    logger.info(`Falling back to local dev path: '${localDevPath}'`);
-    return fetch(localDevPath);
-}
-
-async function saveHiddenProfiles() {
-    await Promise.allSettled([
-        setValueInStore(SETTINGS_NAMESPACE, HIDDEN_PROFILES_KEY, hiddenProfiles),
-        setSetting(HIDDEN_PROFILES_KEY, hiddenProfiles)
-    ]);
-}
-
-async function loadHiddenProfiles() {
-    const reaHidden = await getValueFromStore(SETTINGS_NAMESPACE, HIDDEN_PROFILES_KEY);
-    if (reaHidden) {
-        hiddenProfiles = reaHidden;
-        await setSetting(HIDDEN_PROFILES_KEY, hiddenProfiles);
-    } else {
-        const idbHidden = await getSetting(HIDDEN_PROFILES_KEY);
-        hiddenProfiles = idbHidden || [];
-    }
-    return hiddenProfiles;
-}
-
-export function getHiddenProfiles() {
-    return hiddenProfiles;
-}
-
-export async function unhideProfile(profileKey) {
-    const index = hiddenProfiles.indexOf(profileKey);
-    if (index > -1) {
-        hiddenProfiles.splice(index, 1);
-        await saveHiddenProfiles();
-        logger.info(`Unhid profile: ${profileKey}`);
-    }
-}
-
-export async function deleteOrHideProfile(profileKey) {
-    const profile = availableProfiles[profileKey];
-    if (!profile) {
-        console.error(`Profile '${profileKey}' not found.`);
-        return;
-    }
-
-    // Check if the profile is a default one
-    const defaultProfiles = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY) || {};
-    const isDefaultProfile = defaultProfiles.hasOwnProperty(profileKey);
-
-    if (isDefaultProfile) {
-        // HIDE LOGIC: Add to the hidden list if not already there
-        if (!hiddenProfiles.includes(profileKey)) {
-            hiddenProfiles.push(profileKey);
-            await saveHiddenProfiles();
-            logger.info(`Hid default profile: ${profileKey}`);
-        }
-    } else {
-        // DELETE LOGIC: Permanently remove from uploaded profiles
-        const uploaded = await getValueFromStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY) || {};
-        if (uploaded.hasOwnProperty(profileKey)) {
-            delete uploaded[profileKey];
-            delete availableProfiles[profileKey]; // Also remove from memory
-            
-            // Save the updated list of uploaded profiles
-            await setValueInStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY, uploaded);
-            await setSetting(UPLOADED_PROFILES_KEY, uploaded); // Update backup
-            logger.info(`Deleted user profile: ${profileKey}`);
-        }
-    }
-}
-
-
-export async function migrateDefaultProfilesToRea() {
-    try {
-        const migrationDone = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_MIGRATED_KEY);
-        if (migrationDone) {
-            logger.info('Default profiles already migrated to REA store. Skipping.');
-            return;
-        }
-
-        logger.info('Starting one-time migration of default profiles to REA store...');
-
-        const response = await fetchWithFallback(`${PROFILES_PATH}profile-manifest.json`);
-        if (!response.ok) throw new Error('Failed to fetch profile manifest for migration.');
-        
-        const profileFiles = [...new Set(await response.json())];
-        const defaultProfiles = {};
-
-        for (const fileName of profileFiles) {
-            try {
-                const res = await fetchWithFallback(`${PROFILES_PATH}${fileName}`);
-                if (!res.ok) throw new Error(`Failed to fetch ${fileName} for migration`);
-                const profileJson = await res.json();
-                const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
-                defaultProfiles[fileName] = profileContent;
-            } catch (error) {
-                logger.error(`Migration: Failed to load profile: ${fileName}`, error);
-            }
-        }
-        
-        if (Object.keys(defaultProfiles).length > 0) {
-            await setValueInStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY, defaultProfiles);
-            await setValueInStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_MIGRATED_KEY, true);
-            logger.info(`Successfully migrated ${Object.keys(defaultProfiles).length} default profiles to REA store.`);
-            // Also save to IndexedDB backup right away
-            await setSetting(DEFAULT_PROFILES_KEY, defaultProfiles);
-        }
-
-    } catch (error) {
-        logger.error('Failed during default profile migration:', error);
-    }
-}
-
 
 export async function loadAvailableProfiles() {
-    let defaultProfiles = {};
-    let uploadedProfiles = {};
-    let profilesfromREA = false;
-    let profilesfromIDB = false;
-    let profilesfromJSON = false;
     try {
-        // Try to load default profiles from REA store or fallback to IndexedDB
-        const reaDefaults = await getValueFromStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY);
-        if (reaDefaults) {
-            logger.info('Loaded default profiles from REA store.');
-            defaultProfiles = reaDefaults;
-            await setSetting(DEFAULT_PROFILES_KEY, defaultProfiles); // Update backup
-            profilesfromREA= true;
-        } else {
-            logger.warn('No default profiles in REA store, checking IndexedDB backup...');
-            const idbDefaults = await getSetting(DEFAULT_PROFILES_KEY);
-            if (idbDefaults) {
-                logger.info('Loaded default profiles from IndexedDB backup.');
-                defaultProfiles = idbDefaults;
-                // Attempt to sync back to REA. The migration logic should handle the primary load.
-                await setValueInStore(SETTINGS_NAMESPACE, DEFAULT_PROFILES_KEY, defaultProfiles);
-            }
+        logger.info('Attempting to load profiles from API...');
+        const profilesFromApi = await getProfiles(); // This is an array of ProfileRecords
+
+        // Process and populate in-memory cache
+        availableProfiles = {};
+        for (const profileRecord of profilesFromApi) {
+            availableProfiles[profileRecord.id] = profileRecord;
         }
 
-        // Try to load user-uploaded profiles from REA store or fallback to IndexedDB
-        const reaUploaded = await getValueFromStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY);
-        if (reaUploaded) {
-            logger.info('Loaded uploaded profiles from REA store.');
-            uploadedProfiles = reaUploaded;
-            await setSetting(UPLOADED_PROFILES_KEY, uploadedProfiles); // Update backup
-        } else {
-            logger.warn('No uploaded profiles in REA store, checking IndexedDB backup...');
-            const idbUploaded = await getSetting(UPLOADED_PROFILES_KEY);
-            if (idbUploaded) {
-                logger.info('Loaded uploaded profiles from IndexedDB backup.');
-                uploadedProfiles = idbUploaded;
-                await setValueInStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY, uploadedProfiles); // Sync back to REA
-            }
-        }
-    } catch (error) {
-        logger.error('Failed to load profiles from REA store. Falling back to IndexedDB.', error);
+        logger.info(`Successfully loaded ${Object.keys(availableProfiles).length} profiles from API.`);
+        
+        // Sync to IndexedDB as a fallback
+        await setSetting(PROFILES_CACHE_KEY, availableProfiles);
+        logger.info('Successfully synced profiles to IndexedDB cache.');
+
+        return { profilesFrom: 'API' };
+
+    } catch (apiError) {
+        logger.warn('API failed. Attempting to load profiles from IndexedDB fallback.', apiError);
+        
         try {
-            const idbDefaults = await getSetting(DEFAULT_PROFILES_KEY);
-            if (idbDefaults) defaultProfiles = idbDefaults;
-
-            const idbUploaded = await getSetting(UPLOADED_PROFILES_KEY);
-            if (idbUploaded) uploadedProfiles = idbUploaded;
-            
-            if(Object.keys(defaultProfiles).length > 0 || Object.keys(uploadedProfiles).length > 0) {
-                logger.info('Loaded profiles from IndexedDB backup during fallback.');
-                profilesfromIDB = true;
+            const profilesFromCache = await getSetting(PROFILES_CACHE_KEY);
+            if (profilesFromCache && Object.keys(profilesFromCache).length > 0) {
+                availableProfiles = profilesFromCache;
+                logger.info(`Successfully loaded ${Object.keys(availableProfiles).length} profiles from IndexedDB cache.`);
+                return { profilesFrom: 'IDB_CACHE' };
             } else {
-                logger.warn('No profiles found in IndexedDB backup either.');
+                logger.error('API failed and IndexedDB cache is empty. No profiles could be loaded.');
+                availableProfiles = {};
+                return { profilesFrom: 'NONE' };
             }
-
         } catch (idbError) {
-             logger.error('Failed to load profiles from IndexedDB backup as well.', idbError);
+            logger.error('CRITICAL: API failed and also failed to read from IndexedDB cache.', idbError);
+            availableProfiles = {};
+            return { profilesFrom: 'NONE' };
         }
     }
-    
-    // Merge all profiles into the main object
-    availableProfiles = { ...defaultProfiles, ...uploadedProfiles };
-
-    // If all sources failed, fall back to bundled profiles from manifest
-    if (Object.keys(availableProfiles).length === 0) {
-        logger.warn('No profiles found in REA or IndexedDB. Falling back to bundled manifest profiles.');
-        try {
-            const response = await fetchWithFallback(`${PROFILES_PATH}profile-manifest.json`);
-            if (!response.ok) throw new Error('Failed to fetch profile manifest for fallback.');
-            
-            const profileFiles = [...new Set(await response.json())];
-            const bundledProfiles = {};
-
-            for (const fileName of profileFiles) {
-                try {
-                    const res = await fetchWithFallback(`${PROFILES_PATH}${fileName}`);
-                    if (!res.ok) throw new Error(`Failed to fetch ${fileName} for fallback`);
-                    const profileJson = await res.json();
-                    const profileContent = fileName === 'test.json' ? profileJson.profile : profileJson;
-                    bundledProfiles[fileName] = profileContent;
-                } catch (error) {
-                    logger.error(`Fallback: Failed to load profile: ${fileName}`, error);
-                }
-            }
-            
-            if (Object.keys(bundledProfiles).length > 0) {
-                availableProfiles = bundledProfiles;
-                logger.info(`Successfully loaded ${Object.keys(bundledProfiles).length} bundled profiles as a fallback.`);
-                profilesfromJSON = true;
-            } else {
-                logger.error('Fallback failed: Could not load any profiles from the manifest.');
-            }
-        } catch (manifestError) {
-            logger.error('Failed to load profiles from bundled manifest.', manifestError);
-        }
-    }
-
-    logger.info('All available profiles loaded.', Object.keys(availableProfiles));
-    return { profilesfromIDB, profilesfromJSON, profilesfromREA };
 }
 
 export async function loadAssignments() {
@@ -345,10 +149,10 @@ export function updateButtonUI() {
     for (let i = 0; i < FAV_COUNT; i++) {
         const button = favoriteButtons[i];
         const profileKey = favoriteAssignments[i];
-        const profile = availableProfiles[profileKey];
+        const profileRecord = availableProfiles[profileKey];
 
-        if (button && profile) {
-            button.textContent = profile.title || 'Untitled';
+        if (button && profileRecord && profileRecord.profile) {
+            button.textContent = profileRecord.profile.title || 'Untitled';
         }
         else if (button) {
             button.textContent = '';
@@ -356,7 +160,7 @@ export function updateButtonUI() {
     }
 }
 
-async function verifyProfileChange(sentProfileTitle, retries = 5, delay = 300) {
+export async function verifyProfileChange(sentProfileTitle, retries = 5, delay = 300) {
     if (retries <= 0) {
         logger.error(`Profile verification failed after multiple retries. Sent '${sentProfileTitle}'.`);
         return false;
@@ -377,12 +181,15 @@ async function verifyProfileChange(sentProfileTitle, retries = 5, delay = 300) {
 
 async function handleProfileClick(index) {
     const profileKey = favoriteAssignments[index];
-    const profile = availableProfiles[profileKey];
+    const profileRecord = availableProfiles[profileKey];
 
-    if (!profile) {
-        logger.warn(`Button ${index} has no profile assigned.`);
+    if (!profileRecord || !profileRecord.profile) {
+        logger.warn(`Button ${index} has no profile assigned or profile data is missing.`);
+        showToast('Hold or double click to open profile selection.');
         return;
     }
+
+    const profile = profileRecord.profile;
 
     logger.info(`Sending profile '${profile.title}' to REA...`);
     try {
@@ -437,17 +244,31 @@ function openProfileSelectionModal(buttonIndex) {
     container.innerHTML = ''; // Clear previous list
 
     for (const profileKey in availableProfiles) {
-        const profile = availableProfiles[profileKey];
-        const item = document.createElement('button');
-        item.className = 'btn btn-ghost justify-start';
-        item.textContent = profile.title;
-        item.addEventListener('click', () => {
-            assignProfile(buttonIndex, profileKey);
-        });
-        container.appendChild(item);
+        const profileRecord = availableProfiles[profileKey];
+        if (profileRecord && profileRecord.profile) {
+            const item = document.createElement('button');
+            item.className = 'btn btn-ghost justify-start';
+            item.textContent = profileRecord.profile.title;
+            item.addEventListener('click', () => {
+                assignProfile(buttonIndex, profileKey);
+            });
+            container.appendChild(item);
+        }
     }
 
     modal.showModal();
+}
+
+async function handleDoubleClick(index) {
+    if (favoriteAssignments[index]) {
+        logger.info(`Double-click on assigned button ${index}. Clearing assignment.`);
+        favoriteAssignments[index] = null;
+        await saveAssignments();
+        updateButtonUI();
+    } else {
+        logger.info(`Double-click on unassigned button ${index}. Redirect to profile selector.`);
+        window.location.href = 'src/profiles/profile_selector.html';
+    }
 }
 
 async function handleLongPress(index) {
@@ -465,41 +286,116 @@ async function handleLongPress(index) {
     }
 }
 
-async function handleProfileUpload(event) {
+export async function handleProfileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     try {
         const fileContent = await file.text();
         const profile = JSON.parse(fileContent);
-        const fileName = file.name;
 
-        if (profile.title && profile.steps) {
-            availableProfiles[fileName] = profile;
-            logger.info(`Successfully loaded uploaded profile: ${profile.title}`);
-
-            const existingUploaded = await getSetting(UPLOADED_PROFILES_KEY);
-            const allUploaded = existingUploaded || {};
-            allUploaded[fileName] = profile;
-            
-            await Promise.allSettled([
-                setValueInStore(SETTINGS_NAMESPACE, UPLOADED_PROFILES_KEY, allUploaded),
-                setSetting(UPLOADED_PROFILES_KEY, allUploaded)
-            ]);
-            
-            logger.info(`Saved new profile '${fileName}' to REA store and IndexedDB backup.`);
-
-            if (currentButtonIndex !== null) {
-                openProfileSelectionModal(currentButtonIndex);
-            }
-        } else {
-            logger.error('Uploaded file is not a valid profile format.');
-            alert('Error: Uploaded file is not a valid profile.');
+        // Basic client-side validation before sending
+        if (!profile.title || !profile.steps) {
+            throw new Error('Uploaded file does not appear to be a valid profile.');
         }
+
+        logger.info(`Uploading new profile: ${profile.title}`);
+        
+        // Try API, then update local cache on success
+        const newProfileRecord = await uploadProfile(profile);
+
+        // API call succeeded, now update local state and cache
+        availableProfiles[newProfileRecord.id] = newProfileRecord;
+        await setSetting(PROFILES_CACHE_KEY, availableProfiles);
+        
+        logger.info(`Profile '${newProfileRecord.profile.title}' uploaded successfully with ID ${newProfileRecord.id}.`);
+        showToast(`Profile '${newProfileRecord.profile.title}' uploaded.`, 3000, 'success');
+
+        // Dispatch a custom event to notify the UI that the profile list has been updated.
+        // The page-specific JS (e.g., profile_selector.js) should listen for this.
+        document.dispatchEvent(new CustomEvent('profiles-updated'));
+
     } catch (error) {
-        logger.error('Failed to parse or save uploaded profile:', error);
-        alert('Error: Could not process the uploaded file.');
+        logger.error('Failed to upload profile:', error);
+        showToast(`Error uploading profile: ${error.message}`,1000,'alert');
+    } finally {
+        // Reset the input so the user can upload the same file again
+        event.target.value = '';
     }
+}
+
+export async function deleteOrHideProfile(profileId) {
+    const profileRecord = availableProfiles[profileId];
+    if (!profileRecord) {
+        logger.error(`Profile with ID ${profileId} not found in local cache.`);
+        showToast(`Error: Profile not found.`, 5000, 'error');
+        return;
+    }
+    const isDefault = profileRecord.isDefault;
+
+    logger.info(`Requesting action for profile ID: ${profileId}. Is default: ${isDefault}`);
+
+    if (isDefault) {
+        // HIDE a default profile
+        try {
+            const updatedProfile = await updateProfileVisibility(profileId, 'hidden');
+            availableProfiles[profileId] = updatedProfile;
+            await setSetting(PROFILES_CACHE_KEY, availableProfiles);
+            
+            logger.info(`Profile ${profileId} successfully hidden.`);
+            document.dispatchEvent(new CustomEvent('profiles-updated'));
+            showToast('Default profile hidden.', 3000, 'success');
+        } catch (error) {
+            logger.error(`Failed to hide profile ${profileId}:`, error);
+            showToast(`Error hiding profile: ${error.message}`, 5000, 'error');
+        }
+    } else {
+        // DELETE a user-uploaded profile
+        try {
+            await deleteProfile(profileId); 
+            
+            delete availableProfiles[profileId];
+            
+            await setSetting(PROFILES_CACHE_KEY, availableProfiles);
+
+            logger.info(`Profile ${profileId} successfully deleted from backend and removed from local cache.`);
+            
+            document.dispatchEvent(new CustomEvent('profiles-updated'));
+            showToast('Profile deleted.', 3000, 'success');
+
+        } catch (error) {
+            logger.error(`Failed to delete profile ${profileId}:`, error);
+            showToast(`Error deleting profile: ${error.message}`, 5000, 'error');
+        }
+    }
+}
+
+export async function unhideProfile(profileId) {
+    logger.info(`Requesting to unhide profile ID: ${profileId}`);
+    try {
+        // The new record is returned on success
+        const updatedProfileRecord = await updateProfileVisibility(profileId, "visible");
+        
+        // Update local cache with the returned record
+        availableProfiles[profileId] = updatedProfileRecord;
+        
+        // Update IndexedDB cache
+        await setSetting(PROFILES_CACHE_KEY, availableProfiles);
+
+        logger.info(`Profile ${profileId} successfully unhidden.`);
+        
+        // Dispatch event to notify UI
+        document.dispatchEvent(new CustomEvent('profiles-updated'));
+        showToast('Profile restored.', 3000, 'success');
+
+    } catch (error) {
+        logger.error(`Failed to unhide profile ${profileId}:`, error);
+        showToast(`Error: ${error.message}`, 5000, 'error');
+    }
+}
+
+export function getHiddenProfiles() {
+    return Object.values(availableProfiles).filter(p => p.visibility === 'hidden');
 }
 
 // --- Initialization ---
@@ -515,42 +411,60 @@ export async function init() {
 
         await openDB(); // Still needed for the backup functionality
 
-        await migrateDefaultProfilesToRea();
+      
         profileLoadStatus = await loadAvailableProfiles();
         await loadAssignments();
-        await loadHiddenProfiles();
         updateButtonUI();
 
         favoriteButtons.forEach((button, index) => {
             button.classList.add('no-select');
             let pressTimer = null;
+            let clickTimer = null;
+            const DOUBLE_CLICK_THRESHOLD = 300; // ms
 
-            const startPress = () => {
+            const startPress = (e) => {
+                e.preventDefault();
                 clearTimeout(pressTimer);
                 pressTimer = setTimeout(() => {
+                    pressTimer = null; // Long press occurred
                     handleLongPress(index);
-                    pressTimer = null; 
+                    
                 }, LONG_PRESS_DURATION);
+            };
+
+            const endPress = () => {
+                if (pressTimer !== null) { // It's a tap/click, not a long press
+                    clearTimeout(pressTimer);
+
+                    if (clickTimer) { // This is the second click
+                        clearTimeout(clickTimer);
+                        clickTimer = null;
+                        handleDoubleClick(index);
+                    } else { // This is the first click, wait for a potential second click
+                       
+                        clickTimer = setTimeout(() => {
+                            clickTimer = null;
+                            handleProfileClick(index);
+                        }, DOUBLE_CLICK_THRESHOLD);
+                    }
+                }
             };
 
             const cancelPress = () => {
                 clearTimeout(pressTimer);
             };
 
-            button.addEventListener('click', () => {
-                if (pressTimer !== null) { // Prevents click firing after long press
-                    handleProfileClick(index)
-                }
-            });
             button.addEventListener('mousedown', startPress);
-            button.addEventListener('mouseup', cancelPress);
+            button.addEventListener('mouseup', endPress);
             button.addEventListener('mouseleave', cancelPress);
-            button.addEventListener('touchstart', startPress, { passive: true });
-            button.addEventListener('touchend', cancelPress);
+            button.addEventListener('touchstart', startPress, { passive: false });
+            button.addEventListener('touchend', endPress);
+            button.addEventListener('touchcancel', cancelPress);
 
             button.addEventListener('contextmenu', e => e.preventDefault());
         });
 
+        // Note: This assumes a specific DOM structure which may not exist on all pages using this module.
         const uploadButton = document.getElementById('upload-profile-btn');
         const fileInput = document.getElementById('profile-upload-input');
         if (uploadButton && fileInput) {

@@ -294,6 +294,52 @@ export function connectTimeToReadyWebSocket(onData) {
     };
 }
 
+export async function getProfiles() {
+    const response = await fetch(`${API_BASE_URL}/profiles?includeHidden=true`);
+    if (!response.ok) {
+        throw new Error('Failed to get profiles');
+    }
+    return response.json();
+}
+
+export async function uploadProfile(profileData) {
+    const response = await fetch(`${API_BASE_URL}/profiles`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(profileData),
+    });
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Failed to upload profile. Status: ${response.status}, Body: ${errorBody}`);
+    }
+    return response.json();
+}
+
+export async function deleteProfile(profileId) {
+    const response = await fetch(`${API_BASE_URL}/profiles/${profileId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to delete profile ${profileId}`);
+    }
+}
+
+export async function updateProfileVisibility(profileId, visibility) {
+    const response = await fetch(`${API_BASE_URL}/profiles/${profileId}/visibility`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ visibility: visibility }),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to update visibility for profile ${profileId}`);
+    }
+    return response.json();
+}
+
 export async function getProfile() {
     const response = await fetch(`${API_BASE_URL}/workflow`, { targetAddressSpace: 'local' });
     if (!response.ok) {

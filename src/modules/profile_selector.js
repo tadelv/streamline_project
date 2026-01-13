@@ -1,9 +1,10 @@
-import { init as initProfileManager, unhideProfile,availableProfiles, assignProfile, deleteOrHideProfile, getHiddenProfiles, loadAssignments } from './profileManager.js';
+import { init as initProfileManager, unhideProfile,availableProfiles, assignProfile, deleteOrHideProfile, loadAssignments, handleProfileUpload , verifyProfileChange } from './profileManager.js';
 import { openDB } from './idb.js';
 import { logger } from './logger.js';
 import { initResizablePanels, showToast } from './ui.js';
 import { sendProfile, getWorkflow } from './api.js';
 import { initChart, plotProfile } from './chart.js';
+import { initI18n } from './i18n.js';
 
 let selectedProfileKey = null;
 let isShowingHidden = false; // State to track if hidden profiles should be shown
@@ -17,24 +18,24 @@ function getEyeIconSVG(strokeColor) {
 
 
 // Copied from profileManager.js to keep that module's interface clean
-async function verifyProfileChange(sentProfileTitle, retries = 5, delay = 300) {
-    if (retries <= 0) {
-        logger.error(`Profile verification failed after multiple retries. Sent '${sentProfileTitle}'.`);
-        return false;
-    }
+// async function verifyProfileChange(sentProfileTitle, retries = 5, delay = 300) {
+//     if (retries <= 0) {
+//         logger.error(`Profile verification failed after multiple retries. Sent '${sentProfileTitle}'.`);
+//         return false;
+//     }
 
-    const currentWorkflow = await getWorkflow();
-    const activeProfileTitle = currentWorkflow?.profile?.title;
+//     const currentWorkflow = await getWorkflow();
+//     const activeProfileTitle = currentWorkflow?.profile?.title;
 
-    if (sentProfileTitle === activeProfileTitle) {
-        logger.info('Verification successful. Active profile matches sent profile.');
-        return true;
-    } else {
-        logger.warn(`Verification attempt failed. Retrying... (${retries - 1} left). Sent: '${sentProfileTitle}', Active: '${activeProfileTitle}'`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return verifyProfileChange(sentProfileTitle, retries - 1, delay);
-    }
-}
+//     if (sentProfileTitle === activeProfileTitle) {
+//         logger.info('Verification successful. Active profile matches sent profile.');
+//         return true;
+//     } else {
+//         logger.warn(`Verification attempt failed. Retrying... (${retries - 1} left). Sent: '${sentProfileTitle}', Active: '${activeProfileTitle}'`);
+//         await new Promise(resolve => setTimeout(resolve, delay));
+//         return verifyProfileChange(sentProfileTitle, retries - 1, delay);
+//     }
+// }
 
 async function handleConfirm() {
     if (!selectedProfileKey) {
@@ -42,12 +43,14 @@ async function handleConfirm() {
         return;
     }
 
-    const profile = availableProfiles[selectedProfileKey];
-    if (!profile) {
+    const profileRecord = availableProfiles[selectedProfileKey];
+    if (!profileRecord || !profileRecord.profile) {
         logger.error(`Selected profile with key ${selectedProfileKey} not found!`);
         alert('An error occurred: selected profile not found.');
+        showToast(`An error occurred: selected profile not found.`, 3000, 'alert');
         return;
     }
+    const profile = profileRecord.profile;
 
     logger.info(`Confirming and sending profile: ${profile.title}`);
     try {
@@ -55,6 +58,7 @@ async function handleConfirm() {
         const verified = await verifyProfileChange(profile.title);
         if (verified) {
             logger.info('Profile sent and verified. Navigating to main page.');
+            showToast(`Profile Set`, 3000, 'success');
             window.location.href = '../../index.html';
         } else {
             alert('Failed to set the profile on the machine. Please try again.');
@@ -87,9 +91,10 @@ function updateSelectedProfileView(profileItem) {
         titleElement.textContent = profileTitle;
     }
     selectedProfileKey = profileItem.dataset.profileKey;
-    const profile = availableProfiles[selectedProfileKey];
+    const profileRecord = availableProfiles[selectedProfileKey];
 
-    if (profile) {
+    if (profileRecord && profileRecord.profile) {
+        const profile = profileRecord.profile;
         // Update notes
         const notesElement = document.getElementById('profile_notes');
         if (notesElement) {
@@ -111,13 +116,11 @@ function renderProfiles() {
         }
         container.innerHTML = ''; // Clear static content
 
-        const hiddenProfiles = getHiddenProfiles();
-        
         const profileEntries = Object.entries(availableProfiles);
 
         const sortedProfiles = profileEntries.sort(([, a], [, b]) => {
-            if (a.title && b.title) {
-                return a.title.localeCompare(b.title);
+            if (a.profile && a.profile.title && b.profile && b.profile.title) {
+                return a.profile.title.localeCompare(b.profile.title);
             }
             return 0;
         });
@@ -129,8 +132,11 @@ function renderProfiles() {
         }
 
         let visibleProfileCount = 0;
-        for (const [key, profile] of sortedProfiles) {
-            const isHidden = hiddenProfiles.includes(key);
+        for (const [key, profileRecord] of sortedProfiles) {
+            const profile = profileRecord.profile;
+            if (!profile) continue;
+            
+            const isHidden = profileRecord.visibility === 'hidden';
 
             if (!isShowingHidden && isHidden) {
                 continue; // Skip if we are not showing hidden profiles
@@ -168,7 +174,8 @@ function renderProfiles() {
                 const allItems = clickedItem.parentElement.children;
                 for(const item of allItems) {
                     item.classList.remove('bg-[#385a92]', 'text-white', 'rounded-[8px]', 'bg-gray-200', 'text-black');
-                     if (getHiddenProfiles().includes(item.dataset.profileKey)) {
+                    const itemKey = item.dataset.profileKey;
+                    if (itemKey && availableProfiles[itemKey] && availableProfiles[itemKey].visibility === 'hidden') {
                         item.classList.add('text-[var(--low-contrast-white)]');
                     } else {
                         item.classList.add('text-[#121212]');
@@ -222,19 +229,20 @@ async function initFavoriteButtons() {
 
         const startPress = () => {
             clearTimeout(pressTimer);
+            showToast(`Hold to assign profile.`, 1500, 'info');
             pressTimer = setTimeout(async () => {
                 if (selectedProfileKey) {
                     try {
                         await assignProfile(index, selectedProfileKey);
-                        const profile = availableProfiles[selectedProfileKey];
-                        if (profile) {
-                            showToast(`Assigned '${profile.title}' to favorite ${index + 1}`, 3000, 'success');
+                        const profileRecord = availableProfiles[selectedProfileKey];
+                        if (profileRecord && profileRecord.profile) {
+                            showToast(`Assigned '${profileRecord.profile.title}' to favorite ${index + 1}`, 3000, 'success');
                         }
                     } catch (e) {
                        logger.warn('Caught expected error from assignProfile modal close:', e.message);
-                       const profile = availableProfiles[selectedProfileKey];
-                       if (profile) {
-                           showToast(`Assigned '${profile.title}' to favorite ${index + 1}`, 3000, 'success');
+                       const profileRecord = availableProfiles[selectedProfileKey];
+                       if (profileRecord && profileRecord.profile) {
+                           showToast(`Assigned '${profileRecord.profile.title}' to favorite ${index + 1}`, 3000, 'success');
                        }
                     }
                 } else {
@@ -266,8 +274,13 @@ function initDeleteButton() {
             return;
         }
         
-        const profile = availableProfiles[selectedProfileKey];
-        const isDefault = !profile.hasOwnProperty('author') || profile.author === 'Decent';
+        const profileRecord = availableProfiles[selectedProfileKey];
+        if (!profileRecord || !profileRecord.profile) {
+            showToast("Cannot delete profile: data missing.", 3000, 'error');
+            return;
+        }
+        const profile = profileRecord.profile;
+        const isDefault = profileRecord.isDefault;
         const confirmationText = isDefault
             ? `Are you sure you want to hide '${profile.title}'?`
             : `Are you sure you want to permanently delete '${profile.title}'?`;
@@ -278,9 +291,23 @@ function initDeleteButton() {
 
         await deleteOrHideProfile(selectedProfileKey);
         
-        showToast(`'${profile.title}' has been removed.`, 3000, 'success');
-        selectedProfileKey = null; // Clear selection
-        renderProfiles();
+                const keyToActOn = selectedProfileKey; // Preserve key
+        await deleteOrHideProfile(keyToActOn);
+
+        // Re-rendering is handled by the 'profiles-updated' event.
+        // Now, find the element and re-establish selection to update the UI state.
+        const container = document.getElementById('profile-list');
+        if (container) {
+            const itemToReselect = container.querySelector(`[data-profile-key="${keyToActOn}"]`);
+            if (itemToReselect) {
+                // Clicking it will handle selection style and update the right pane view
+                itemToReselect.click();
+            } else {
+                // The item was deleted, not hidden, so clear the view
+                updateSelectedProfileView(null);
+            }
+        }
+ 
     });
 }
 
@@ -316,18 +343,37 @@ function initViewButton() {
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await initI18n();
     initChart();
     const profileLoadStatus = await initProfileManager();
     
-    if (profileLoadStatus?.profilesfromREA) {
-        showToast('Profiles loaded from REA store.', 3000, 'success');
-    } else if (profileLoadStatus?.profilesfromIDB) {
-        showToast('Profiles loaded from IndexedDB backup.', 3000, 'info');
-    } else if (profileLoadStatus?.profilesfromJSON) {
-        showToast('User profiles not found, loaded from bundled manifest.', 3000, 'warning');
+    if (profileLoadStatus?.profilesFrom === 'API') {
+        // Profiles loaded successfully from the primary source, no toast needed for the normal case.
+        logger.info('Profiles loaded successfully from API.');
+    } else if (profileLoadStatus?.profilesFrom === 'IDB_CACHE') {
+        showToast('Offline: Displaying cached profiles.', 3000, 'warning');
+    } else { // 'NONE'
+        showToast('Error: Could not load any profiles.', 3000, 'error');
     }
 
     renderProfiles();
+    
+    // Wire up add profile button
+    const addProfileButton = document.getElementById('add_profile');
+    const fileInput = document.getElementById('profile-upload-input');
+    if (addProfileButton && fileInput) {
+        addProfileButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', handleProfileUpload);
+    }
+
+    // Listen for profile updates from the manager
+    document.addEventListener('profiles-updated', () => {
+        logger.info('Received profiles-updated event, re-rendering profile list.');
+        renderProfiles();
+    });
+
     initResizablePanels('separator');
     document.getElementById('confirm-profile-btn')?.addEventListener('click', handleConfirm);
     document.getElementById('cancel-profile-btn')?.addEventListener('click', handleCancel);

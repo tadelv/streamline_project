@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profiles Selector</title>
-    <script src="src/modules/plotly-3.1.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/png" href="//fast.decentespresso.com/favicon-32x32.png" sizes="32x32">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css" rel="stylesheet" type="text/css" />
@@ -17,10 +16,10 @@
         <div id="scaled-content" class="w-[1920px] h-[1200px] relative  overflow-hidden flex flex-col">
             <div class="bg-base-200 overflow-hidden flex-grow flex flex-col">
                 <div class="flex justify-between items-center p-6 border-b border-base-300 h-[112px]">
-                    <h1 id="page_title" class="text-[28px] font-bold ">Profiles</h1>
+                    <h1 id="page_title" class="text-[28px] font-bold " >Profiles</h1>
                     <div class="flex items-center gap-[22px]">
-                        <button id="cancel-profile-btn" class="font-semibold text-xl">CANCEL</button>
-                        <button id="confirm-profile-btn" title="Pull next shot with this profile." class="bg-[var(--mimoja-blue)] text-white font-semibold text-xl px-9 py-3 rounded-full">CONFIRM</button>
+                        <button id="cancel-profile-btn" class="font-semibold text-xl" data-i18n-key="Cancel">CANCEL</button>
+                        <button id="confirm-profile-btn" title="Pull next shot with this profile." class="bg-[var(--mimoja-blue)] text-white font-semibold text-xl px-9 py-3 rounded-full" data-i18n-key="Confirm" >CONFIRM</button>
                     </div>
                 </div>
 
@@ -28,7 +27,7 @@
                     <div id="left-panel" class="flex flex-col border-r border-base-300">
                         <div class="flex justify-between p-6 border-b border-base-300 h-[121.5px]">
                             <div class="flex items-center gap-[30px]">
-                                <button id="add_profile" class="w-[82px] h-[82px] bg-white border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" title="New Profile">
+                                <button id="add_profile" class="w-[82px] h-[82px] bg-gray-200 border-2 border-[#c9c9c9] rounded-[15px] flex items-center justify-center" title="New Profile Editor Coming Soon.">
                                     <svg class="w-[50px] h-[50px]" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                                     </svg>
@@ -52,17 +51,7 @@
                                 </svg>
                             </button>
                         </div>
-                        <div id="profile-list" class="flex-1 overflow-y-auto p-3 space-y-1.5 text-[30px] text-[#121212]">
-                            <div class="p-3 text-[30px] text-[#121212]">80’s Espresso</div>
-                            <div class="p-3 text-[30px] text-[#959595]">Adaptive for Medium Roasts</div>
-                            <div class="p-3 text-[30px] text-white bg-[var(--mimoja-blue)] rounded-[8px] flex justify-between items-center">
-                                Advanced spring lever
-                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
-                            </div>
-                            <div class="p-3 text-[30px] text-[#121212]">Best overall pressure profile</div>
-                            <div class="p-3 text-[30px] text-[#121212]">Blooming Allonge</div>
-                            
-                            
+                        <div id="profile-list" class=" p-3 space-y-1.5 text-[30px] text-[#121212] overflow-y-auto min-h-0 h-[850px]" >
                         </div>
                         <div class="p-6 border-t border-base-300 flex items-center space-x-[22px]">
                             <button id='assign-fav-btn-0'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">1</button>
@@ -70,7 +59,7 @@
                             <button id='assign-fav-btn-2'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">3</button>
                             <button id='assign-fav-btn-3'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">4</button>
                             <button id='assign-fav-btn-4'class="w-[50px] h-[50px] rounded-full border-2 border-[var(--mimoja-blue)] flex items-center justify-center text-[var(--mimoja-blue)] text-2xl font-semibold">5</button>
-                            <span class="text-[var(--mimoja-blue)] font-semibold text-xl ml-2">Assign favourite</span>
+                            <span class="text-[var(--mimoja-blue)] font-semibold text-xl ml-2" data-i18n-key="Assign favourite" >Assign favourite</span>
                         </div>
                     </div>
                     <div id="separator" class="cursor-col-resize w-2 bg-gray-300 hover:bg-blue-500 transition-colors"></div>
@@ -81,8 +70,8 @@
                                 <svg id ='edit_profile_title' title="New Profile Name"   xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                             </div>
                             <div class="flex space-x-4">
-                                <button class="bg-white border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center">RESET</button>
-                                <button id='edit_profile' class="bg-white border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center">EDIT</button>
+                                <button class="bg-white border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center" data-i18n-key="Reset">RESET</button>
+                                <button id='edit_profile' class="bg-white border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[150px] h-[82px] flex items-center justify-center" data-i18n-key="Edit">EDIT</button>
                             </div>
                         </div>
                         <div class="border-t border-b border-[#c9c9c9] p-4">
@@ -101,6 +90,7 @@
             <span id="app-toast-message"></span>
         </div>
     </div>
+    <input type="file" id="profile-upload-input" class="hidden" accept=".json" />
     <script src="../modules/profile_selector.js" type="module" defer></script>
     <script type="module">
         import { initScaling } from '../modules/scaling.js';

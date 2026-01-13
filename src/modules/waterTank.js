@@ -43,10 +43,12 @@ export function initWaterTankSocket() {
     socket.onmessage = function(event) {
         try {
             const data = JSON.parse(event.data);
-            if (data.currentPercentage !== undefined) {
-                const percentage = data.currentPercentage;
-                tankVolElement.style.setProperty('--value', percentage);
-                tankVolElement.textContent = `${percentage}%`;
+            // logger.debug("water level data",data);
+            if (data.currentLevel !== undefined) {
+                const currnetwaterlevel = data.currentLevel
+                // const percentage = data.currentPercentage;
+                // tankVolElement.style.setProperty('--value', percentage);
+                tankVolElement.textContent = `${currnetwaterlevel}mm`;
             }
         } catch (e) {
             logger.error('Error parsing water level data:', e);
