@@ -198,7 +198,7 @@ function handleData(data) {
     ui.updateTemperatures({ mix: data.mixTemperature, group: data.groupTemperature, steam: data.steamTemperature });
 
     // Update Chart and Shot Data Table
-    if ([MachineState.ESPRESSO, MachineState.FLUSH, MachineState.STEAM, MachineState.HOT_WATER].includes(state)) {
+    if (MachineState.ESPRESSO.includes(state)) {
         if (!shotStartTime) {
             shotStartTime = new Date(data.timestamp);
             chart.clearChart();

@@ -404,21 +404,36 @@ export function getHiddenProfiles() {
 export async function init() {
     logger.info('Profile Manager init started.');
     let profileLoadStatus = {};
+
     try {
+        // Clear the existing button array to ensure we're working with fresh DOM elements
+        favoriteButtons = [];
+
         for (let i = 0; i < FAV_COUNT; i++) {
             const button = document.getElementById(`fav-profile-btn-${i}`);
-            if (button) favoriteButtons.push(button);
+            if (button) {
+                favoriteButtons.push(button);
+            } else {
+                logger.warn(`Favorite button fav-profile-btn-${i} not found in DOM`);
+            }
         }
 
         await openDB(); // Still needed for the backup functionality
 
-      
         profileLoadStatus = await loadAvailableProfiles();
         await loadAssignments();
         updateButtonUI();
 
-        favoriteButtons.forEach((button, index) => {
-            button.classList.add('no-select');
+        // Only attach event listeners to buttons that were found in the DOM
+        favoriteButtons.forEach((originalButton, index) => {
+            // Remove any existing listeners first to prevent duplicates by cloning the element
+            const clonedButton = originalButton.cloneNode(true);
+            originalButton.parentNode.replaceChild(clonedButton, originalButton);
+
+            // Update our reference to point to the cloned button
+            favoriteButtons[index] = clonedButton;
+
+            clonedButton.classList.add('no-select');
             let pressTimer = null;
             let clickTimer = null;
             const DOUBLE_CLICK_THRESHOLD = 300; // ms
@@ -429,7 +444,7 @@ export async function init() {
                 pressTimer = setTimeout(() => {
                     pressTimer = null; // Long press occurred
                     handleLongPress(index);
-                    
+
                 }, LONG_PRESS_DURATION);
             };
 
@@ -442,7 +457,7 @@ export async function init() {
                         clickTimer = null;
                         handleDoubleClick(index);
                     } else { // This is the first click, wait for a potential second click
-                       
+
                         clickTimer = setTimeout(() => {
                             clickTimer = null;
                             handleProfileClick(index);
@@ -455,21 +470,25 @@ export async function init() {
                 clearTimeout(pressTimer);
             };
 
-            button.addEventListener('mousedown', startPress);
-            button.addEventListener('mouseup', endPress);
-            button.addEventListener('mouseleave', cancelPress);
-            button.addEventListener('touchstart', startPress, { passive: false });
-            button.addEventListener('touchend', endPress);
-            button.addEventListener('touchcancel', cancelPress);
+            clonedButton.addEventListener('mousedown', startPress);
+            clonedButton.addEventListener('mouseup', endPress);
+            clonedButton.addEventListener('mouseleave', cancelPress);
+            clonedButton.addEventListener('touchstart', startPress, { passive: false });
+            clonedButton.addEventListener('touchend', endPress);
+            clonedButton.addEventListener('touchcancel', cancelPress);
 
-            button.addEventListener('contextmenu', e => e.preventDefault());
+            clonedButton.addEventListener('contextmenu', e => e.preventDefault());
         });
 
         // Note: This assumes a specific DOM structure which may not exist on all pages using this module.
         const uploadButton = document.getElementById('upload-profile-btn');
         const fileInput = document.getElementById('profile-upload-input');
         if (uploadButton && fileInput) {
-            uploadButton.addEventListener('click', (e) => {
+            // Remove existing listeners to prevent duplicates by cloning the element
+            const newUploadButton = uploadButton.cloneNode(true);
+            uploadButton.parentNode.replaceChild(newUploadButton, uploadButton);
+
+            newUploadButton.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();

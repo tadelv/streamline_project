@@ -150,7 +150,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
             // Use setTimeout to ensure DOM is fully updated before initialization
             setTimeout(async () => {
                 console.log('Router: About to initialize page. Page URL =', pageUrl);
-                
+
                 document.dispatchEvent(new CustomEvent('dynamic-content-loaded', {
                     detail: { pageUrl, containerSelector }
                 }));
@@ -178,7 +178,107 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         console.error('Router: Error initializing profile selector:', e);
                     }
                 } else {
-                    console.log('Router: Page does not match profile selector pattern, skipping initialization.');
+                    console.log('Router: Page does not match profile selector pattern, attempting to reinitialize main page components.');
+
+                    // For the main index page, we need to reinitialize UI components
+                    try {
+                        // Reinitialize theme toggle, translations, and other UI components
+                        const i18nModule = await import('/src/modules/i18n.js');
+                        const uiModule = await import('/src/modules/ui.js');
+                        const scalingModule = await import('/src/modules/scaling.js');
+                        const historyModule = await import('/src/modules/history.js');
+                        const profileManagerModule = await import('/src/modules/profileManager.js');
+                        const { initWaterTankSocket } = await import('/src/modules/waterTank.js');
+                        await i18nModule.initI18n(); // Reinitialize translations
+                        uiModule.initUI({ onWeightClick: window.handleWeightClick || (() => {}) }); // Reinitialize UI components
+                        scalingModule.initScaling(); // Reinitialize scaling
+                        await historyModule.initHistory(); // Reinitialize history
+                        initWaterTankSocket(); // Reinitialize water tank WebSocket
+                        // Wait a bit to ensure DOM is fully updated before initializing profile manager
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        await profileManagerModule.init(); // Reinitialize profile manager
+
+                        // Import and call loadInitialData directly to ensure profile information is updated
+                        const appModule = await import('/src/modules/app.js');
+                        if (appModule.loadInitialData) {
+                            // Add a small delay to ensure DOM is fully ready before calling loadInitialData
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            await appModule.loadInitialData(); // Reload initial data
+                        } else {
+                            // Fallback: try window.loadInitialData if direct import didn't work
+                            if (window.loadInitialData) {
+                                await window.loadInitialData();
+                            }
+                        }
+
+                        // Re-establish WebSocket connections that are needed for real-time data
+                        try {
+                            const apiModule = await import('/src/modules/api.js');
+                            const workflow = await apiModule.getWorkflow();
+                            const doseData = workflow?.doseData;
+                            const grinderData = workflow?.grinderData;
+                            const profile = workflow?.profile;
+                            const steamsettings = workflow?.steamSettings;
+                            const hotwatersettings = workflow?.hotWaterData;
+                            if (hotwatersettings) {
+                                        uiModule.updateHotWaterDisplay(hotwatersettings);
+                                    }
+                            if (steamsettings) {
+                                        uiModule.updateSteamDisplay(steamsettings);
+                                    }
+                            if (profile) {
+                                        uiModule.updateProfileName(profile.title || "Untitled Profile");
+                                        console.log('Profile name updated to:', profile.title);
+                                        if (profile.steps && profile.steps.length > 0) {
+                                                        uiModule.updateTemperatureDisplay(profile.steps[0].temperature || 0);
+                                                    }
+                                    }
+                            if (doseData) {
+                                        uiModule.updateDoseInDisplay(doseData.doseIn);
+                                        uiModule.updateDrinkOut(doseData.doseOut || 0);
+                                        uiModule.updateDrinkRatio();
+                                    }
+                            if (grinderData) {
+                                        uiModule.updateGrindDisplay(grinderData);
+                                    }
+                            // Re-establish the main WebSocket connection
+                            if (window.handleData && typeof apiModule.connectWebSocket === 'function') {
+                                apiModule.connectWebSocket(window.handleData, () => {
+                                    console.log('Main WebSocket reconnected. Resetting DE1 connection status.');
+                                    if (window.isDe1Connected !== undefined) {
+                                        window.isDe1Connected = false; // Reset DE1 connection status so handleData can detect reconnection
+                                    }
+                                });
+                            }
+
+                            // Re-establish scale WebSocket connection
+                            if (window.handleScaleData && typeof apiModule.connectScaleWebSocket === 'function') {
+                                apiModule.connectScaleWebSocket(
+                                    window.handleScaleData,
+                                    window.onScaleReconnect || (() => {}),
+                                    window.onScaleDisconnect || (() => {})
+                                );
+                            }
+
+                            // Re-establish shot settings WebSocket connection
+                            if (window.handleShotSettingsData && typeof apiModule.connectShotSettingsWebSocket === 'function') {
+                                apiModule.connectShotSettingsWebSocket(window.handleShotSettingsData);
+                            }
+
+                            // Re-establish time-to-ready WebSocket connection
+                            if (window.handleTimeToReadyData && typeof apiModule.connectTimeToReadyWebSocket === 'function') {
+                                apiModule.connectTimeToReadyWebSocket(window.handleTimeToReadyData);
+                            }
+
+                            console.log('WebSocket connections re-established.');
+                        } catch (wsError) {
+                            console.error('Error re-establishing WebSocket connections:', wsError);
+                        }
+
+                        console.log('Router: Main page components reinitialized.');
+                    } catch (e) {
+                        console.error('Router: Error reinitializing main page components:', e);
+                    }
                 }
             }, 100); // Small delay to ensure DOM is ready
         } else {

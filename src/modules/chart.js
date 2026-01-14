@@ -75,12 +75,14 @@ const lightLayout = {
     font: { color: 'black' },
     xaxis: { 
         gridcolor: '#E0E0E0',
-        dtick: 1
+        dtick: 1,
+        fixedrange: true
     },
     yaxis: {
         gridcolor: '#E0E0E0',
         range: [0, 10],
-        dtick: 1
+        dtick: 1,
+        fixedrange: true
     },
     autosize: true,
     margin: {
@@ -92,6 +94,7 @@ const lightLayout = {
         pad: 0
     },
     showlegend: false,
+    
 };
 
 const darkLayout = {
@@ -100,12 +103,14 @@ const darkLayout = {
     font: { color: '#e8e8e8' },
     xaxis: { 
         gridcolor: '#212227',
-        dtick: 1
+        dtick: 1,
+        fixedrange: true
     },
     yaxis: { 
         gridcolor: '#212227',
         range: [0, 10],
         dtick: 1
+        ,fixedrange: true
     },
     autosize: true,
     margin: {
@@ -181,7 +186,8 @@ function getAnnotations() {
             yanchor: 'middle',
             xshift: 5,
             font: {
-                color: candidate.color
+                color: candidate.color,
+                size: 16
             }
         });
 
@@ -191,18 +197,20 @@ function getAnnotations() {
     return annotations;
 }
 
-export function updateChart(shotStartTime, data, weight, filterToPouring) {
+export function updateChart(shotStartTime, data, weight, filterToPouring = true) {
     if (data && data.state && data.state.substate) { // Add safety check
         currentSubstate = data.state.substate;
     }
     const time = (new Date(data.timestamp) - shotStartTime) / 1000;
-    filterToPouring=true;
+
     if (filterToPouring) {
-        if (!(data.state.substate === 'preinfusion' || data.state.substate === 'pouring')) {
+        // Only chart during espresso-related states (preinfusion and pouring)
+        // Exclude steam, flush, hot water, and other non-espresso states
+        const espressoStates = ['preinfusion', 'pouring'];
+        if (!espressoStates.includes(data.state.substate)) {
             return;
         }
     }
-    //&& data.state.substate !== 'pouringDone'
     const pressureY = data.pressure;
     const flowY = data.flow;
     const targetPressureY = data.targetPressure;
@@ -237,10 +245,27 @@ export function updateChart(shotStartTime, data, weight, filterToPouring) {
         console.error('updateChart: chartElement not found in DOM');
         return;
     }
+    // Calculate appropriate x-axis tick spacing based on the current time
+    let dtickValue;
+    if (time < 10) {
+        dtickValue = 1;  // 1 second intervals for shots less than 10 seconds
+    } else if (time < 60) {
+        dtickValue = 5;  // 5 second intervals for shots less than 60 seconds
+    } else if (time < 100) {
+        dtickValue = 20; // 20 second intervals for shots less than 100 seconds
+    } else {
+        dtickValue = 30; // 30 second intervals for shots 100 seconds or longer
+    }
+
     Plotly.extendTraces(element, {
         x: [[time], [time], [time], [time], [time], [time]],
         y: [[pressureY], [flowY], [targetPressureY], [targetFlowY], [groupTemperatureY], [weightY]]
     }, [0, 1, 2, 3, 4, 5]);
+
+    // Update the x-axis tick spacing
+    Plotly.relayout(element, {
+        'xaxis.dtick': dtickValue
+    });
 }
 
 export function clearChart() {

@@ -400,9 +400,12 @@ export async function sendProfile(profileJson) {
 export async function getWorkflow() {
     const response = await fetch(`${API_BASE_URL}/workflow`);
     if (!response.ok) {
+        logger.info('Failed to get workflow');
         throw new Error('Failed to get workflow');
     }
+    logger.info('workflow returned');
     return response.json();
+    
 }
 
 export async function updateWorkflow(data) {

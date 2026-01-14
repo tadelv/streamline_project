@@ -174,11 +174,29 @@ function makeEditable(element, onCommit) {
         const input = document.createElement('input');
         input.type = 'number';
         input.value = currentValue;
-        input.className = 'text-[22.5px] font-bold text-center w-18 bg-transparent';
+        input.className = 'text-[22.5px] font-bold text-center w-18 bg-transparent absolute';
         input.name = element.id; // Recommended for accessibility and autofill
 
-        element.style.display = 'none';
-        element.parentNode.insertBefore(input, element);
+        // Position the input field exactly where the original element is
+        const elementRect = element.getBoundingClientRect();
+        const parentRect = element.parentNode.getBoundingClientRect();
+
+        input.style.position = 'absolute';
+        input.style.left = (element.offsetLeft) + 'px';
+        input.style.top = (element.offsetTop) + 'px';
+        input.style.width = element.offsetWidth + 'px';
+        input.style.height = element.offsetHeight + 'px';
+        input.style.display = 'flex';
+        input.style.alignItems = 'center';
+        input.style.justifyContent = 'center';
+        input.style.textAlign = 'center';
+        input.style.zIndex = '10'; // Ensure input appears above other elements
+
+        // Hide the original element but keep its space reserved
+        element.style.visibility = 'hidden';
+
+        // Insert the input into the same parent container
+        element.parentNode.appendChild(input);
         input.focus();
         input.select();
 
@@ -193,7 +211,9 @@ function makeEditable(element, onCommit) {
                 }
             }
 
-            element.style.display = '';
+            // Restore the original element
+            element.style.visibility = '';
+
             input.remove();
         };
 
@@ -239,6 +259,8 @@ export function updateHotWaterDisplay(data) {
 }
 
 function incrementHotWater() {
+    const hotWaterPlusBtn = document.getElementById('hot-water-vol-plus');
+    if (hotWaterPlusBtn) { flashPlusMinusButton(hotWaterPlusBtn); }
     if (hotWaterMode === 'volume') {
         if (currentHotWaterVolume < 255) {
             currentHotWaterVolume += 5;
@@ -255,6 +277,8 @@ function incrementHotWater() {
 }
 
 function decrementHotWater() {
+    const hotWaterMinusBtn = document.getElementById('hot-water-vol-minus');
+    if (hotWaterMinusBtn) { flashPlusMinusButton(hotWaterMinusBtn); }
     if (hotWaterMode === 'volume') {
         if (currentHotWaterVolume > 3) {
             currentHotWaterVolume -= 5;
@@ -410,6 +434,9 @@ export function updateSteamDisplay(data) {
 }
 
 function incrementSteam() {
+    const steamPlusBtn = document.getElementById('steam-plus'); 
+    if (steamPlusBtn) {  flashPlusMinusButton(steamPlusBtn);  
+    }
     if (steamMode === 'time') {
         currentSteamDuration += 1;
         setTargetSteamDuration(currentSteamDuration).catch(e => logger.error(e));
@@ -423,6 +450,8 @@ function incrementSteam() {
 }
 
 function decrementSteam() {
+    const steamMinusBtn = document.getElementById('steam-minus');
+    if (steamMinusBtn) { flashPlusMinusButton(steamMinusBtn); }
     if (steamMode === 'time') {
         if (currentSteamDuration > 0) {
             currentSteamDuration -= 1;

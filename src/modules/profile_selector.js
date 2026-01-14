@@ -71,7 +71,7 @@ async function handleConfirm() {
 }
 
 function handleCancel() {
-    window.location.href = '../../index.html';
+    loadPage('../../index.html');
 }
 
 
@@ -183,7 +183,7 @@ function renderProfiles() {
                 const unhideButton = document.createElement('button');
                 unhideButton.className = 'p-1 hover:bg-gray-200 rounded-full';
                 unhideButton.title = 'Show this profile';
-                unhideButton.innerHTML = `<svg class="w-6 h-6 text-gray-500" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="#959595" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="#959595" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                unhideButton.innerHTML = `<svg class="w-6 h-6" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
                 unhideButton.addEventListener('click', async (e) => {
                     e.stopPropagation();
@@ -193,7 +193,7 @@ function renderProfiles() {
                 });
                 div.appendChild(unhideButton);
             } else {
-                div.classList.add('text-[#121212]');
+                div.classList.add('text-[var(--text-primary)]');
             }
 
             div.addEventListener('click', (e) => {
@@ -207,12 +207,13 @@ function renderProfiles() {
                     if (itemKey && availableProfiles[itemKey] && availableProfiles[itemKey].visibility === 'hidden') {
                         item.classList.add('text-[var(--low-contrast-white)]');
                     } else {
-                        item.classList.add('text-[#121212]');
+                        item.classList.add('text-[var(--text-primary)]');
                     }
                 }
 
                 if (isHidden) {
                     clickedItem.classList.add('bg-gray-200', 'rounded-[8px]');
+                    clickedItem.classList.remove('text-white');
 
                 } else {
                     clickedItem.classList.add('bg-[#385a92]', 'text-white', 'rounded-[8px]');
@@ -385,9 +386,9 @@ function initViewButton() {
     const button = newViewButton;
 
     // Set initial state on load, corresponding to isShowingHidden = false (default bg, blue icon)
-    button.innerHTML = getEyeIconSVG('#385A92');
+    button.innerHTML = getEyeIconSVG('#385a92'); // Blue icon
     button.classList.remove("bg-[var(--mimoja-blue)]");
-    button.classList.add("bg-white"); // Ensure it starts with white background
+    button.classList.add("bg-[var(--button-grey)]"); // Use CSS variable for background
     console.log('initViewButton: Initial state set');
 
     button.addEventListener('click', () => {
@@ -396,20 +397,20 @@ function initViewButton() {
 
         if (isShowingHidden) {
             // State: SHOWING hidden profiles -> blue background, white icon
-            button.innerHTML = getEyeIconSVG('#FFFFFF');
+            button.innerHTML = getEyeIconSVG('currentColor');
             // Use direct style manipulation instead of Tailwind arbitrary values
             button.style.backgroundColor = 'var(--mimoja-blue)';
-            button.classList.remove("bg-white");
+            button.classList.remove("bg-[var(--button-grey)]");
             if (page_title) {
                 page_title.textContent = "All Profiles";
             }
             console.log('initViewButton: Now showing hidden profiles');
         } else {
             // State: HIDING hidden profiles -> default background, blue icon
-            button.innerHTML = getEyeIconSVG('#385A92');
+            button.innerHTML = getEyeIconSVG('#385a92');
             // Reset to default background
             button.style.backgroundColor = '';
-            button.classList.add("bg-white");
+            button.classList.add("bg-[var(--button-grey)]");
             if (page_title) {
                 page_title.textContent = "Profiles";
             }
