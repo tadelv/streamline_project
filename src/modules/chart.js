@@ -394,15 +394,45 @@ export function plotHistoricalShot(measurements) {
         }
     });
 
+    // Calculate the maximum time value to determine appropriate x-axis tick spacing
+    let maxTime = 0;
+    for (const traceName in tempChartData) {
+        const trace = tempChartData[traceName];
+        if (trace.x && trace.x.length > 0) {
+            const traceMaxTime = Math.max(...trace.x);
+            if (traceMaxTime > maxTime) {
+                maxTime = traceMaxTime;
+            }
+        }
+    }
+
+    // Determine appropriate x-axis tick spacing based on the maximum time
+    let dtickValue;
+    if (maxTime < 10) {
+        dtickValue = 1;  // 1 second intervals for shots less than 10 seconds
+    } else if (maxTime < 60) {
+        dtickValue = 5;  // 5 second intervals for shots less than 60 seconds
+    } else if (maxTime < 100) {
+        dtickValue = 20; // 20 second intervals for shots less than 100 seconds
+    } else {
+        dtickValue = 30; // 30 second intervals for shots 100 seconds or longer
+    }
+
     const theme = localStorage.getItem('theme') || 'light';
     const layout = theme === 'dark' ? darkLayout : lightLayout;
     layout.annotations = getAnnotations();
+
     const element = getChartElement();
     if (!element) {
         console.error('plotHistoricalShot: chartElement not found in DOM');
         return;
     }
     Plotly.react(element, Object.values(chartData), layout, {displayModeBar: false});
+
+    // Update the x-axis tick spacing for historical shot
+    Plotly.relayout(element, {
+        'xaxis.dtick': dtickValue
+    });
 }
 
 export function plotProfile(profile) {
