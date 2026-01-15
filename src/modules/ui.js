@@ -803,19 +803,19 @@ export function initUI(callbacks) {
     if (sleepButton) {
         sleepButton.addEventListener('click', () => {
             const currentState = machineStateEl.textContent.trim();
-            if (currentState == 'idle' || currentState == 'Idle') {
-                logger.info("current machine state in sleep button:", currentState);
-                setMachineState('sleeping').then(() => {
-                    logger.info('Machine state set to sleeping.');
-                }).catch(error => {
-                    logger.error('Failed to set machine state to sleeping:', error);
-                });
-            } else {
+            if (currentState.toLocaleLowerCase() == 'sleeping') {
                 setMachineState('idle').then(() => {
                     logger.info("current machine state in sleep button:", currentState);
                     logger.info('Machine state set to idle.');
                 }).catch(error => {
                     logger.error('Failed to set machine state to idle:', error);
+                });
+            } else {
+                setMachineState('sleeping').then(() => {
+                    logger.info("current machine state in sleep button:", currentState);
+                    logger.info('Machine state set to sleeping.');
+                }).catch(error => {
+                    logger.error('Failed to set machine state to sleeping:', error);
                 });
             }
         });
