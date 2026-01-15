@@ -268,7 +268,8 @@ async function handleDoubleClick(index) {
         updateButtonUI();
     } else {
         logger.info(`Double-click on unassigned button ${index}. Redirect to profile selector.`);
-        await loadPage('src/profiles/profile_selector.html');
+        handleLongPress(index);
+        // await loadPage('src/profiles/profile_selector.html');
     }
 }
 
@@ -282,8 +283,12 @@ async function handleLongPress(index) {
         updateButtonUI();
     }
     else {
-        logger.info(`Long press on favorite button ${index}, navigating to profile editor.`);
-    await loadPage('src/profiles/profile_selector.html');
+        logger.info(`Long press on unassigned favorite button ${index}, navigating to profile selector.`);
+        // Show the toast message before navigating
+        setTimeout(() => showToast(`Select a profile and press confirm to assign.`, 2400, 'info'), 500);
+        // Store the button index for later use when confirming a profile
+        sessionStorage.setItem('pendingAssignmentIndex', index);
+        loadPage('src/profiles/profile_selector.html');
     }
 }
 

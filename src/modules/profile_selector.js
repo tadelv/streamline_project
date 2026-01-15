@@ -55,12 +55,29 @@ async function handleConfirm() {
 
     logger.info(`Confirming and sending profile: ${profile.title}`);
     try {
+        // Check if there's a pending assignment from a long press on the main page
+        const pendingAssignmentIndex = sessionStorage.getItem('pendingAssignmentIndex');
+
+        if (pendingAssignmentIndex !== null) {
+            // Import the assignProfile function from profileManager
+            
+
+            // Assign the profile to the specific favorite button
+            await assignProfile(parseInt(pendingAssignmentIndex), selectedProfileKey);
+
+            // Clear the pending assignment
+            sessionStorage.removeItem('pendingAssignmentIndex');
+
+            // Show a success message
+            setTimeout(() => showToast(`Profile assigned to Favorite ${parseInt(pendingAssignmentIndex) + 1}`, 3000, 'success'), 1000  );
+        }
+
         await sendProfile(profile);
         const verified = await verifyProfileChange(profile.title);
         if (verified) {
             logger.info('Profile sent and verified. Navigating to main page.');
             showToast(`Profile Set`, 3000, 'success');
-            window.location.href = '../../index.html';
+            loadPage('../../index.html');
         } else {
             alert('Failed to set the profile on the machine. Please try again.');
         }
