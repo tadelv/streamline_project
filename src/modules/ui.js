@@ -567,7 +567,7 @@ export function initUI(callbacks) {
     const steamModeToggle = document.getElementById('steam-mode-toggle');
     const steamPresets = document.getElementById('steam-presets');
     const steamFlowPresetsEl = document.getElementById('steam-flow-presets');
-
+    const machineStateEl = document.getElementById('machine-status');
     if (tempPresets) {
         for (const button of tempPresets.children) {
             button.classList.add('no-select');
@@ -802,8 +802,9 @@ export function initUI(callbacks) {
 
     if (sleepButton) {
         sleepButton.addEventListener('click', () => {
-            const currentState = sleepButton.textContent.trim();
-            if (currentState === 'Sleep') {
+            const currentState = machineStateEl.textContent.trim();
+            if (currentState == 'idle' || currentState == 'Idle') {
+                logger.info("current machine state in sleep button:", currentState);
                 setMachineState('sleeping').then(() => {
                     logger.info('Machine state set to sleeping.');
                 }).catch(error => {
@@ -811,6 +812,7 @@ export function initUI(callbacks) {
                 });
             } else {
                 setMachineState('idle').then(() => {
+                    logger.info("current machine state in sleep button:", currentState);
                     logger.info('Machine state set to idle.');
                 }).catch(error => {
                     logger.error('Failed to set machine state to idle:', error);
