@@ -507,8 +507,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         logger.info('App initialization finished successfully.');
 
-        // Prompt user to enter fullscreen
-        if (!document.fullscreenElement && !sessionStorage.getItem('fullscreenPromptDismissed')) {
+        // Check if user is on desktop (Windows or macOS) to determine if we should show fullscreen prompt
+        const isDesktop = navigator.userAgent.includes('Win') || navigator.userAgent.includes('Mac');
+
+        // Prompt user to enter fullscreen only if not on desktop
+        if (!isDesktop && !document.fullscreenElement && !sessionStorage.getItem('fullscreenPromptDismissed')) {
             const toastContainer = document.getElementById('fullscreen-toast-container');
             if (toastContainer) {
                 toastContainer.style.display = 'grid'; // Use grid as per DaisyUI examples for centering
@@ -524,9 +527,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sessionStorage.setItem('fullscreenPromptDismissed', 'true');
                 };
             }
-     
-    }
-     document.getElementById('profile-name').onclick = () => {
+        }
+
+        // Add event listener to close the toast when fullscreen mode is entered
+        // This handles the case where the user clicks the fullscreen toggle directly
+        document.addEventListener('fullscreenchange', () => {
+            const toastContainer = document.getElementById('fullscreen-toast-container');
+            if (toastContainer && document.fullscreenElement) {
+                // If we're now in fullscreen mode, hide the toast
+                toastContainer.style.display = 'none';
+            }
+        });
+
+        // Also handle the WebKit-specific event for Safari
+        document.addEventListener('webkitfullscreenchange', () => {
+            const toastContainer = document.getElementById('fullscreen-toast-container');
+            if (toastContainer && document.webkitFullscreenElement) {
+                // If we're now in fullscreen mode, hide the toast
+                toastContainer.style.display = 'none';
+            }
+        });
+
+        document.getElementById('profile-name').onclick = () => {
             loadPage('src/profiles/profile_selector.html');
         };
     } catch (error) {
