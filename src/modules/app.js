@@ -7,6 +7,7 @@ import * as history from './history.js';
 import * as shotData from './shotData.js';
 import * as profileManager from './profileManager.js';
 import * as api from './api.js';
+import { loadPage } from './router.js'; 
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
 
@@ -56,9 +57,11 @@ function resetDataTimeout() {
         logger.warn('No WebSocket data received for 5 seconds. Assuming REA or WebSocket disconnection.');
         ui.updateMachineStatus("Disconnected");
         isDe1Connected = false;
-
+        devices =  scanForDevices();
+            de1Machine = devices.find(d => d.type === 'machine');
         if (de1DeviceId) {
-            logger.info('Attempting to reconnect DE1 machine...');
+            logger.info('DE1 machine connected no need to reconnect.');
+        } else {
             reconnectDevice(de1DeviceId);
         }
 
@@ -136,22 +139,34 @@ function handleData(data) {
     // Determine the status string based on state and substate
     if (state === MachineState.ERROR) {
         statusString = "Error";
-    } else if (isHeating) {
-        if (timeToReadyMessage) {
-            statusString = timeToReadyMessage;
-        } else {
-            const targetGroupTemp = data.targetGroupTemperature;
-            const currentGroupTemp = data.groupTemperature;
-            statusString = `Heating... (${currentGroupTemp.toFixed(0)}°c / ${targetGroupTemp.toFixed(0)}°c)`;
+    } else if (state === MachineState.SLEEPING) {
+        // Activate screensaver when machine enters sleep state
+        if (!ui.isScreensaverActive()) {
+            ui.activateScreensaver();
         }
+        statusString = "Sleeping";
     } else {
-        const formattedState = formatStateString(state);
-        const formattedSubstate = formatStateString(substate);
-        statusString = formattedState;
+        // Deactivate screensaver when machine wakes up from sleep (if it was active)
+        if (ui.isScreensaverActive()) {
+            ui.deactivateScreensaver();
+        }
+        if (isHeating) {
+            if (timeToReadyMessage) {
+                statusString = timeToReadyMessage;
+            } else {
+                const targetGroupTemp = data.targetGroupTemperature;
+                const currentGroupTemp = data.groupTemperature;
+                statusString = `Heating... (${currentGroupTemp.toFixed(0)}°c / ${targetGroupTemp.toFixed(0)}°c)`;
+            }
+        } else {
+            const formattedState = formatStateString(state);
+            const formattedSubstate = formatStateString(substate);
+            statusString = formattedState;
 
-        // Append substate if it's meaningful and not redundant
-        if (formattedSubstate && formattedSubstate.toLowerCase() !== 'idle' && formattedSubstate.toLowerCase() !== formattedState.toLowerCase()) {
-            statusString += ` (${formattedSubstate})`;
+            // Append substate if it's meaningful and not redundant
+            if (formattedSubstate && formattedSubstate.toLowerCase() !== 'idle' && formattedSubstate.toLowerCase() !== formattedState.toLowerCase()) {
+                statusString += ` (${formattedSubstate})`;
+            }
         }
     }
 
@@ -385,13 +400,13 @@ async function initializeDe1Connection() {
     try {
         logger.info('Attempting to find devices with fast method...');
         let devices = await getDevices();
-        let de1Machine = devices.find(d => d.type === 'machine');
+        let de1Machine = devices.find(d => d.type === 'machine' && d.state === 'connected');
 
         // If not found, try the slower, more reliable scan
         if (!de1Machine) {
             logger.warn('DE1 not found with fast method. Trying fallback scan...');
             devices = await scanForDevices();
-            de1Machine = devices.find(d => d.type === 'machine');
+            de1Machine = devices.find(d => d.type === 'machine' && d.state === 'connected');
         }
 
         if (de1Machine) {
@@ -403,7 +418,7 @@ async function initializeDe1Connection() {
                 logger.info('DE1 machine is already connected.');
             }
         } else {
-            logger.error('DE1 machine not found even after fallback scan.');
+            logger.error('DE1 machine not found or not connected even after fallback scan.');
         }
     } catch (error) {
         logger.error('Failed to initialize DE1 device ID:', error);
@@ -449,6 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await initI18n();
         ui.initUI({ onWeightClick: handleWeightClick });
+        ui.initScreensaver(); // Initialize screensaver functionality
         initScaling();
         logger.info('App DOMContentLoaded: UI initialized.');
 
@@ -508,7 +524,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sessionStorage.setItem('fullscreenPromptDismissed', 'true');
                 };
             }
-        }
+     
+    }
+     document.getElementById('profile-name').onclick = () => {
+            loadPage('src/profiles/profile_selector.html');
+        };
     } catch (error) {
         logger.error('CRITICAL: Unhandled error during application initialization:', error);
         // Optionally, display a user-friendly error message on the page

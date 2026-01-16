@@ -308,10 +308,11 @@ export async function uploadProfile(profileData) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(profileData),
+        body: JSON.stringify({ profile: profileData }), // Wrap the profile data as required by the API
     });
     if (!response.ok) {
         const errorBody = await response.text();
+        ui.showToast(`Error uploading profile: ${errorBody}`, 5000, 'error');
         throw new Error(`Failed to upload profile. Status: ${response.status}, Body: ${errorBody}`);
     }
     return response.json();

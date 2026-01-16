@@ -322,11 +322,11 @@ export function plotHistoricalShot(measurements) {
         }
     }
     
-    // Find the shot end time
+    // Find the shot end time - only consider actual espresso-related states
     let shotEndTime = null;
     for (let i = measurements.length - 1; i >= 0; i--) {
         const machineData = measurements[i].machine;
-        if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring' || machineData.state.substate === 'pouringDone')) {
+        if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring')) {
             shotEndTime = new Date(machineData.timestamp);
             break;
         }
@@ -345,11 +345,12 @@ export function plotHistoricalShot(measurements) {
     let lastScaleTime = 0;
     let localSmoothedWeightChange = 0;
 
-    measurements.forEach(dataPoint => {
+    for (const dataPoint of measurements) {
         const machineData = dataPoint.machine;
         const scaleData = dataPoint.scale;
-
-        if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring' || machineData.state.substate === 'pouringDone')) {
+        logger.info("plotHistoricalShot machineData",machineData);
+        if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring' )) {
+            // || machineData.state.substate === 'pouringDone'
             const time = (new Date(machineData.timestamp) - shotStartTime) / 1000;
             if (time >= 0) {
                 tempChartData.pressure.x.push(time);
@@ -367,8 +368,9 @@ export function plotHistoricalShot(measurements) {
 
         if (scaleData && scaleData.weight) {
             const scaleTimestamp = new Date(scaleData.timestamp);
+            // Only process scale data within the shot time range
             if (shotEndTime && scaleTimestamp > shotEndTime) {
-                return; // Stop processing scale data after the shot has ended
+                continue; // Skip this data point if it's after shot end time
             }
             const time = (scaleTimestamp - shotStartTime) / 1000;
             if (time >= 0) {
@@ -385,7 +387,7 @@ export function plotHistoricalShot(measurements) {
                 lastScaleTime = time;
             }
         }
-    });
+    }
 
     Object.keys(tempChartData).forEach(key => {
         if(chartData[key]) {

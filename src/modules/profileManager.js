@@ -1,5 +1,5 @@
 import { logger } from './logger.js';
-import { sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile } from './api.js';
+import { updateWorkflow,sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile } from './api.js';
 import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio ,showToast} from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
 import { loadPage } from './router.js'; // Singular and correctly formatted import
@@ -204,10 +204,27 @@ async function handleProfileClick(index) {
             if (profile.steps && profile.steps.length > 0) {
                 updateTemperatureDisplay(profile.steps[0].temperature);
             }
-            if (profile.target_weight) {
-                updateDrinkOut(profile.target_weight);
-                updateDrinkRatio();
-            }
+            // if (profile.target_weight) {
+            //     // updateDrinkOut(profile.target_weight);
+            //     // updateDrinkRatio();
+            //     updateDoseAndDrinkOutValue(profile.target_weight);
+            //     logger.info("profile click : update drink out and ratio", profile.target_weight);
+            // }
+             if (profile.target_weight) {
+                        const workflowUpdate = {
+                            profile: profile,
+                            doseData: {
+                                doseIn: profile.dose_weight || 18, // Default to 18g if not specified
+                                doseOut: parseFloat(profile.target_weight) // Use the profile's target weight
+                            }
+                        };
+                        await updateWorkflow(workflowUpdate);
+                        updateDrinkOut(profile.target_weight);
+                        updateDrinkRatio();
+                    } else {
+                        // Just update with the profile if no target weight is specified
+                        await updateWorkflow({ profile: profile });
+                    }
             favoriteButtons.forEach((btn, i) => {
                 const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
                 const activeTextClass = 'text-white';
@@ -323,7 +340,7 @@ export async function handleProfileUpload(event) {
 
     } catch (error) {
         logger.error('Failed to upload profile:', error);
-        showToast(`Error uploading profile: ${error.message}`,1000,'alert');
+        showToast(`Error uploading profile: ${error.message}`,5000,'error');
     } finally {
         // Reset the input so the user can upload the same file again
         event.target.value = '';

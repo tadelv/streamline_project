@@ -2,7 +2,7 @@ import { init as initProfileManager, unhideProfile,availableProfiles, assignProf
 import { openDB } from './idb.js';
 import { logger } from './logger.js';
 import { initResizablePanels, showToast, initFullscreenHandler } from './ui.js';
-import { sendProfile, getWorkflow } from './api.js';
+import { sendProfile, getWorkflow, updateWorkflow } from './api.js';
 import { initChart, plotProfile } from './chart.js';
 import { initI18n } from './i18n.js';
 import { loadPage } from './router.js'; // Singular and correctly formatted import
@@ -70,6 +70,22 @@ async function handleConfirm() {
 
             // Show a success message
             setTimeout(() => showToast(`Profile assigned to Favorite ${parseInt(pendingAssignmentIndex) + 1}`, 3000, 'success'), 1000  );
+        }
+
+        // Update workflow with profile's target weight before sending the profile
+        // This ensures that the target weight from the profile is applied to the workflow
+        if (profile.target_weight) {
+            const workflowUpdate = {
+                profile: profile,
+                doseData: {
+                    doseIn: profile.dose_weight || 18, // Default to 18g if not specified
+                    doseOut: parseFloat(profile.target_weight) // Use the profile's target weight
+                }
+            };
+            await updateWorkflow(workflowUpdate);
+        } else {
+            // Just update with the profile if no target weight is specified
+            await updateWorkflow({ profile: profile });
         }
 
         await sendProfile(profile);

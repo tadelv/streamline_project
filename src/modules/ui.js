@@ -49,7 +49,10 @@ let steamTimePresets = [15, 30, 45, 60];
 let steamFlowPresets = [0.5, 1.0, 1.5, 2.0];
 
 export function flashPlusMinusButton(button) {
-    const offColor = getComputedStyle(document.documentElement).getPropertyValue('--plus-minus-flash-off-color');
+    // Store the original background style to restore after the animation
+    const originalBgStyle = button.style.backgroundColor;
+
+    // Apply the flash animation
     button.style.backgroundColor = 'var(--plus-minus-flash-on-color2)';
     setTimeout(() => {
         button.style.backgroundColor = 'var(--plus-minus-flash-on-color)';
@@ -58,7 +61,9 @@ export function flashPlusMinusButton(button) {
         button.style.backgroundColor = 'var(--plus-minus-flash-on-color2)';
     }, 200);
     setTimeout(() => {
-        button.style.backgroundColor = offColor;
+        // Restore the original background style instead of using a fixed color
+        // This allows the button to properly reflect the current theme
+        button.style.backgroundColor = originalBgStyle;
     }, 280);
 }
 
@@ -82,7 +87,7 @@ function updateDoseValue(type, newValue) {
     });
 }
 
-function updateDoseAndDrinkOutValue(newDoseIn, newDrinkOut) {
+export function updateDoseAndDrinkOutValue(newDoseIn, newDrinkOut) {
     const payload = {
         doseData: {
             doseIn: newDoseIn,
@@ -243,14 +248,14 @@ export function updateHotWaterDisplay(data) {
 
     if (hotWaterMode === 'volume') {
         volEl.classList.remove('text-lg', 'text-neutral-400');
-        volEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900');
+        volEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]');
         tempEl.classList.remove('text-[22.5px]', 'font-bold');
         tempEl.classList.add('text-lg', 'text-neutral-400');
         modeVolEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTempEl.className = 'text-[var(--low-contrast-white)]';
     } else { // temperature mode
         tempEl.classList.remove('text-lg', 'text-neutral-400');
-        tempEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900','font-bold');
+        tempEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]','font-bold');
         volEl.classList.remove('text-[22.5px]', 'font-bold');
         volEl.classList.add('text-lg', 'text-neutral-400');
         modeTempEl.className = 'text-[var(--mimoja-blue-v2)]';
@@ -541,12 +546,65 @@ export function initScaleClick(callback) {
     }
 }
 
+// Screensaver functionality
+let screensaverActive = false;
+let screensaverElement = null;
+
+export function initScreensaver() {
+    // Create the screensaver element
+    screensaverElement = document.createElement('div');
+    screensaverElement.id = 'screensaver';
+    screensaverElement.style.position = 'fixed';
+    screensaverElement.style.top = '0';
+    screensaverElement.style.left = '0';
+    screensaverElement.style.width = '100vw';
+    screensaverElement.style.height = '100vh';
+    screensaverElement.style.backgroundImage = 'url("/src/ui/saver-1.jpg")';
+    screensaverElement.style.backgroundSize = 'cover';
+    screensaverElement.style.backgroundPosition = 'center';
+    screensaverElement.style.zIndex = '10000';
+    screensaverElement.style.display = 'none';
+    screensaverElement.style.justifyContent = 'center';
+    screensaverElement.style.alignItems = 'center';
+
+    // Add click/touch event to deactivate screensaver
+    screensaverElement.addEventListener('click', deactivateScreensaver);
+    screensaverElement.addEventListener('touchstart', deactivateScreensaver);
+
+    document.body.appendChild(screensaverElement);
+}
+
+export function activateScreensaver() {
+    if (!screensaverElement) {
+        console.error('Screensaver element not initialized');
+        return;
+    }
+
+    screensaverElement.style.display = 'flex';
+    screensaverActive = true;
+}
+
+export function deactivateScreensaver() {
+    if (!screensaverElement) {
+        console.error('Screensaver element not initialized');
+        return;
+    }
+    screensaverElement.style.display = 'none';
+    screensaverActive = false;
+    setMachineState('idle');
+}
+
+export function isScreensaverActive() {
+    return screensaverActive;
+}
+
 export function initUI(callbacks) {
     initThemeToggle();
     initFullscreenHandler();
     initSettingsModal();
     initLanguageSwitcher();
     initScaleClick(callbacks.onWeightClick);
+    initScreensaver(); // Initialize screensaver functionality
     const drinkOutValueEl = document.getElementById('drink-out-value');
     const tempValueEl = document.getElementById('temp-value');
     const doseInValueEl = document.getElementById('dose-in-value');
@@ -801,22 +859,28 @@ export function initUI(callbacks) {
     }
 
     if (sleepButton) {
-        sleepButton.addEventListener('click', () => {
+        sleepButton.addEventListener('click', async () => {
             const currentState = machineStateEl.textContent.trim();
             if (currentState.toLocaleLowerCase() == 'sleeping') {
-                setMachineState('idle').then(() => {
-                    logger.info("current machine state in sleep button:", currentState);
-                    logger.info('Machine state set to idle.');
-                }).catch(error => {
-                    logger.error('Failed to set machine state to idle:', error);
-                });
+                // Wake machine up
+                await setMachineState('idle');
+                logger.info("current machine state in sleep button:", currentState);
+                logger.info('Machine state set to idle.');
+
+                // Deactivate screensaver if it's active
+                if (isScreensaverActive()) {
+                    deactivateScreensaver();
+                }
             } else {
-                setMachineState('sleeping').then(() => {
-                    logger.info("current machine state in sleep button:", currentState);
-                    logger.info('Machine state set to sleeping.');
-                }).catch(error => {
-                    logger.error('Failed to set machine state to sleeping:', error);
-                });
+                // Put machine to sleep
+                await setMachineState('sleeping');
+                logger.info("current machine state in sleep button:", currentState);
+                logger.info('Machine state set to sleeping.');
+
+                // Activate screensaver
+                if (!isScreensaverActive()) {
+                    activateScreensaver();
+                }
             }
         });
     }
@@ -1011,7 +1075,7 @@ export function updateSleepButton(state) {
     const sleepButton = document.getElementById('sleep-button');
     if (sleepButton) {
         if (state === 'sleeping') {
-            sleepButton.textContent = getTranslation('awake');
+            sleepButton.textContent = getTranslation('Awake');
             sleepButton.setAttribute('data-i18n-key', 'awake');
         } else {
             sleepButton.textContent = getTranslation('Sleep');
@@ -1031,6 +1095,9 @@ export function updateMachineStatus(status) {
             machineStatusEl.classList.remove('text-[var(--green)]');
             machineStatusEl.classList.add('text-red-500');
         } else {
+            if (status === "Idle"){
+                machineStatusEl.textContent = "Ready";
+            }
             machineStatusEl.classList.remove('text-red-500');
             machineStatusEl.classList.add('text-[var(--green)]');
         }

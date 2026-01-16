@@ -211,6 +211,19 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                             }
                         }
 
+                        // Add the profile name click handler for the main index page
+                        const profileNameElement = document.getElementById('profile-name');
+                        if (profileNameElement) {
+                            // Remove any existing event listeners to prevent duplicates
+                            const newProfileNameElement = profileNameElement.cloneNode(true);
+                            profileNameElement.parentNode.replaceChild(newProfileNameElement, profileNameElement);
+
+                            // Add the click event listener to navigate to the profile selector
+                            newProfileNameElement.onclick = () => {
+                                loadPage('src/profiles/profile_selector.html');
+                            };
+                        }
+
                         // Re-establish WebSocket connections that are needed for real-time data
                         try {
                             const apiModule = await import('/src/modules/api.js');
