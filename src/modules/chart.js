@@ -247,7 +247,7 @@ export function updateChart(shotStartTime, data, weight, filterToPouring = true)
     }
     // Calculate appropriate x-axis tick spacing based on the current time
     let dtickValue;
-    if (time < 10) {
+    if (time < 15) {
         dtickValue = 1;  // 1 second intervals for shots less than 10 seconds
     } else if (time < 60) {
         dtickValue = 5;  // 5 second intervals for shots less than 60 seconds
