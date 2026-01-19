@@ -368,13 +368,13 @@ function setupPressAndHold(element, clickCallback, longPressCallback) {
             e.stopPropagation();
         }
     };
-    
+
     const cancelPress = () => {
         clearTimeout(timer);
     }
 
     element.addEventListener('contextmenu', e => e.preventDefault());
-    
+
     // Mouse events
     element.addEventListener('mousedown', startPress);
     element.addEventListener('mouseup', endPress);
@@ -439,8 +439,8 @@ export function updateSteamDisplay(data) {
 }
 
 function incrementSteam() {
-    const steamPlusBtn = document.getElementById('steam-plus'); 
-    if (steamPlusBtn) {  flashPlusMinusButton(steamPlusBtn);  
+    const steamPlusBtn = document.getElementById('steam-plus');
+    if (steamPlusBtn) {  flashPlusMinusButton(steamPlusBtn);
     }
     if (steamMode === 'time') {
         currentSteamDuration += 1;
@@ -517,12 +517,12 @@ export function initThemeToggle() {
         chart.setTheme(theme);
 
         if (theme === 'dark') {
-            btn.style.setProperty('--bg--togglebtn', '#FFFFFF'); // 
-            btn.style.setProperty('--btn-togglebgcolor', '#959595'); // 
-           
+            btn.style.setProperty('--bg--togglebtn', '#FFFFFF'); //
+            btn.style.setProperty('--btn-togglebgcolor', '#959595'); //
+
         } else {
-            btn.style.setProperty('--bg--togglebtn', '#121212'); // 
-            btn.style.setProperty('--btn-togglebgcolor', '#FFFFFF'); // 
+            btn.style.setProperty('--bg--togglebtn', '#121212'); //
+            btn.style.setProperty('--btn-togglebgcolor', '#FFFFFF'); //
         }
     };
 
@@ -643,7 +643,7 @@ export function initUI(callbacks) {
                 }
                 button.classList.remove('text-gray-400');
                 button.classList.add('text-black');
-                
+
                 flashElement(document.getElementById('temp-value'));
             };
 
@@ -744,7 +744,7 @@ export function initUI(callbacks) {
                 if (isTempMode) {
                     setTargetHotWaterTemp(newValue).catch(e => logger.error(e));
                     updateHotWaterDisplay({ targetHotWaterTemp: newValue });
-                   
+
                     flashElement(document.getElementById('hot-water-temp-value'));
 
                 } else {
@@ -760,7 +760,7 @@ export function initUI(callbacks) {
                 }
                 button.classList.remove('text-gray-400');
                 button.classList.add('text-black');
-                
+
             };
 
             const longPressCallback = () => {
@@ -987,7 +987,7 @@ export function initUI(callbacks) {
 
     if (flushValueEl) {
         makeEditable(flushValueEl, (newValue) => {
-            
+
             if (newValue > 255) {
                 alert('Flush time is limited to 255s.');
                 newValue = 255;
@@ -1226,7 +1226,7 @@ function toggleFullScreen() {
 
 export function updateFullscreenState() {
     const isFullScreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-    
+
     const enterIcon = document.querySelector('#fullscreen-toggle-btn .enter-fullscreen-icon');
     const exitIcon = document.querySelector('#fullscreen-toggle-btn .exit-fullscreen-icon');
 
@@ -1250,15 +1250,15 @@ export function initFullscreenHandler() {
 
     if (fullscreenButton) {
         const fsEnabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled;
-        
+
         if (fsEnabled) {
             fullscreenButton.addEventListener('click', toggleFullScreen);
-            
+
             document.addEventListener('fullscreenchange', updateFullscreenState);
             document.addEventListener('webkitfullscreenchange', updateFullscreenState);
             document.addEventListener('mozfullscreenchange', updateFullscreenState);
             document.addEventListener('MSFullscreenChange', updateFullscreenState);
-            
+
             updateFullscreenState(); // Set initial state
         } else {
             fullscreenButton.style.display = 'none'; // Hide button if not supported
@@ -1359,7 +1359,7 @@ function initSettingsModal() {
                 localStorage.removeItem('visualizerPassword');
                 return; // Stop here if credentials are bad
             }
-            
+
             visualizerStatusEl.textContent = 'Visualizer credentials valid.';
             visualizerStatusEl.className = 'text-green-500';
 
@@ -1369,7 +1369,7 @@ function initSettingsModal() {
 
             // If credentials are valid, proceed to save to plugin
             const autoUpload = visualizerAutoUploadEl.checked;
-            
+
             // 1. Save UI-only settings to localStorage
             localStorage.setItem('visualizerAutoUpload', autoUpload);
 
@@ -1385,7 +1385,7 @@ function initSettingsModal() {
                 await setPluginSettings(pluginId, settingsPayload);
                 visualizerStatusEl.textContent = 'Credentials saved successfully!';
                 visualizerStatusEl.className = 'text-green-500';
-                
+
                 // Hide status after a few seconds
                 setTimeout(() => {
                     visualizerStatusEl.textContent = '';
@@ -1406,7 +1406,7 @@ export function showToast(message, duration = 2400, type = 'info') {
     const messageEl = document.getElementById('app-toast-message');
     if (toastEl && messageEl) {
         messageEl.textContent = message;
-        
+
         const alertEl = toastEl.querySelector('.alert');
         if (alertEl) {
             alertEl.classList.remove('alert-info', 'alert-success', 'alert-error');
@@ -1414,7 +1414,7 @@ export function showToast(message, duration = 2400, type = 'info') {
         }
 
         toastEl.style.display = 'grid';
-        
+
         if (duration > 0) {
             setTimeout(() => {
                 hideToast();
@@ -1464,10 +1464,10 @@ export function initResizablePanels(separatorId) {
 
     const startDrag = (e) => {
         isDragging = true;
-        
+
         const clientX = e.clientX || e.touches[0].clientX;
         initialX = clientX;
-        
+
         initialLeftWidth = leftPanel.offsetWidth;
 
         document.body.style.cursor = 'col-resize';
@@ -1475,14 +1475,14 @@ export function initResizablePanels(separatorId) {
 
         document.addEventListener('mousemove', drag);
         document.addEventListener('mouseup', stopDrag);
-        
+
         document.addEventListener('touchmove', drag, { passive: false });
         document.addEventListener('touchend', stopDrag);
     };
 
     const drag = (e) => {
         if (!isDragging) return;
-        
+
         if (e.type === 'touchmove') {
             e.preventDefault();
         }
@@ -1493,19 +1493,21 @@ export function initResizablePanels(separatorId) {
             let newLeftWidth = initialLeftWidth + deltaX;
 
             const containerRect = container.getBoundingClientRect();
-            const minWidth = containerRect.width * 0.2; 
-            const maxWidth = containerRect.width * 0.5;
+            // Calculate minimum width to ensure right panel has enough space for buttons
+            const minRightPanelWidth = 300; // Minimum width needed for buttons in right panel
+            const minWidth = containerRect.width * 0.2;
+            const maxWidth = containerRect.width - minRightPanelWidth;
 
             if (newLeftWidth < minWidth) newLeftWidth = minWidth;
             if (newLeftWidth > maxWidth) newLeftWidth = maxWidth;
 
-            container.style.gridTemplateColumns = `${newLeftWidth}px auto 1fr`;
+            container.style.gridTemplateColumns = `${newLeftWidth}px auto minmax(${minRightPanelWidth}px, 1fr)`;
         });
     };
 
     const stopDrag = () => {
         isDragging = false;
-        
+
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
 
