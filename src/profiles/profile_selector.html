@@ -3,8 +3,8 @@
     <div class="flex justify-between items-center p-6 border-b border-base-300 bg-[var(--box-color)] h-[112px]">
         <h1 id="page_title" class="text-[28px] font-bold text-[var(--text-primary)]" >Profiles</h1>
         <div class="flex items-center gap-[22px]">
-            <button id="cancel-profile-btn" class="settings-button flex justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold" data-i18n-key="Cancel">CANCEL</button>
-            <button id="confirm-profile-btn" title="Pull next shot with this profile." class="relative bg-[var(--mimoja-blue)] text-white min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] font-semibold text-lg  rounded-[22.5px]" data-i18n-key="Confirm" >CONFIRM</button>
+            <button id="cancel-profile-btn" class="settings-button flex justify-center items-center min-h-0 w-[240px] h-[82.5px] px-[67.5px] py-[27px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[67.5px] font-bold text-[24px]" data-i18n-key="CANCEL">CANCEL</button>
+            <button id="confirm-profile-btn" title="Pull next shot with this profile." class="relative bg-[var(--mimoja-blue)] text-white min-h-0 w-[240px] h-[82.5px] px-[67.5px] py-[27px] font-bold text-[24px] rounded-[67.5px]" data-i18n-key="CONFIRM" >CONFIRM</button>
         </div>
         <button id="fullscreen-toggle-btn" title="Toggle fullscreen" class="absolute -top-1 -right-1 w-12 h-12 flex items-center justify-center text-[var(--mimoja-blue)]">
             <svg class="enter-fullscreen-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
@@ -53,21 +53,21 @@
         </div>
         <div id="separator" class="cursor-col-resize w-2 bg-gray-300 hover:bg-blue-500 transition-colors z-10" style="position: relative;"></div>
         <div id="right-panel" class="flex flex-col bg-[var(--profile-button-background-color)]">
-            <div class="flex justify-between items-center bg-[var(--box-color)] pl-[54px] pr-[30px]">
+            <div class="flex justify-between items-center profile-selector-bg pl-[54px] pr-[30px]">
                 <div class="flex items-center gap-4 h-[121.5px]">
                     <h2 class="text-[30px] font-bold text-[var(--mimoja-blue)]" id = 'selected_profile_name'>Pick a profile</h2>
                     <svg id ='edit_profile_title' title="New Profile Name" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--text-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 </div>
                 <div class="flex space-x-4">
-                    <button class="bg-[var(--profile-button-background-color)] border-2 border-[var(--border-color)] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[100px] h-[60px] flex items-center justify-center" data-i18n-key="Reset">RESET</button>
-                    <button id='edit_profile' class="bg-[var(--profile-button-background-color)] border-2 border-[var(--border-color)] text-[var(--mimoja-blue)] font-semibold rounded-[12px] text-xl w-[100px] h-[60px] flex items-center justify-center" data-i18n-key="Edit">EDIT</button>
+                    <button class="bg-[var(--profile-button-background-color)] border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[15px] text-[19.5px] w-[150px] h-[82.5px] px-[45px] py-[15px] flex items-center justify-center" data-i18n-key="RESET">RESET</button>
+                    <button id='edit_profile' class="bg-[var(--profile-button-background-color)] border-2 border-[#c9c9c9] text-[var(--mimoja-blue)] font-semibold rounded-[15px] text-[19.5px] w-[150px] h-[82.5px] px-[45px] py-[15px] flex items-center justify-center" data-i18n-key="EDIT">EDIT</button>
                 </div>
             </div>
-            <div class="border-t bg-[var(--box-color)] border-b  p-4">
-                <div class=" w-full bg-[var(--box-color)] rounded-lg p-4 relative h-[675px]" id="plotly-chart">
+            <div class="border-t profile-selector-bg border-b  p-4">
+                <div class=" w-full  rounded-lg p-4 relative h-[675px]" id="plotly-chart">
                 </div>
             </div>
-            <div class=" p-4 text-2xl bg-[var(--box-color)] overflow-y-auto h-[275px]" id="profile_notes">
+            <div class=" p-4 text-2xl profile-selector-bg overflow-y-auto h-[275px]" id="profile_notes">
             </div>
         </div>
     </div>

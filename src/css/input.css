@@ -1,3 +1,4 @@
 @import "tailwindcss";
-@source "./streamline_project/*.{html,js}";
+@source "../*.{html,js}";
+@source "../src/**/*.{html,js}";
 @plugin "daisyui";

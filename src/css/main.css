@@ -26,16 +26,16 @@ body {
 
 :root {
     --mimoja-blue-v2: #385A92;
-    --mimoja-blue: #385A92; 
+    --mimoja-blue: #385A92;
     --profile-button-outline-color: #c5cdda;
     --profile-button-background-color: #FFFFFF;
     --box-color: #f6f8fa;
-    
+    --profileselectorbg: #FFFFFF;
     --low-contrast-white: #959595;
     --dark-gray: #121212;
     --green: #0CA581;
     --button-grey: #EDEDED;
-    
+
     /* Plus Minus Flash Colors (Light Mode) */
     --plus-minus-flash-on-color: #b8b8b8;
     --plus-minus-flash-on-color2: #cfcfcf;
@@ -51,12 +51,18 @@ body {
     --profile-button-outline-color: #17191e;
     --profile-button-background-color: #292c38;
     --box-color: #17191e;
+    --profileselectorbg:#17191e;
     --button-grey: #101115;
     /* Plus Minus Flash Colors (Dark Mode) */
     --plus-minus-flash-on-color: #272A34;
     --plus-minus-flash-on-color2: #1a1d25;
     --plus-minus-flash-off-color: #101115;
     --bgmain-color : #101217;
+
+}
+
+.profile-selector-bg {
+    background-color: var(--profileselectorbg);
 }
 
 .flash {
