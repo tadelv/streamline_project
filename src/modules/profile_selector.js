@@ -60,7 +60,7 @@ async function handleConfirm() {
 
         if (pendingAssignmentIndex !== null) {
             // Import the assignProfile function from profileManager
-            
+
 
             // Assign the profile to the specific favorite button
             await assignProfile(parseInt(pendingAssignmentIndex), selectedProfileKey);
@@ -459,10 +459,265 @@ function initViewButton() {
     console.log('initViewButton: Event listener attached');
 }
 
+function initSearchButton() {
+    console.log('initSearchButton: Starting initialization');
+    const searchButton = document.getElementById('search_profile');
+    const deleteButton = document.getElementById('delete_profile');
+    console.log('initSearchButton: searchButton found:', !!searchButton);
+    console.log('initSearchButton: deleteButton found:', !!deleteButton);
+
+    if (!searchButton) {
+        console.error('initSearchButton: search_profile button not found');
+        return;
+    }
+
+    if (!deleteButton) {
+        console.error('initSearchButton: delete_profile button not found');
+        return;
+    }
+
+    // Remove any existing click listeners to prevent duplicates
+    // Create a new button element to clear all event listeners
+    const newSearchButton = searchButton.cloneNode(true);
+    searchButton.parentNode.replaceChild(newSearchButton, searchButton);
+
+    // Use the cloned button (which has no event listeners)
+    const button = newSearchButton;
+
+    // Set initial state on load (default bg, blue icon)
+    button.innerHTML = `<svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M57.7498 57.7508L45.9248 45.9258" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // Blue icon
+    button.classList.remove("bg-[var(--mimoja-blue)]");
+    button.classList.add("bg-[var(--button-grey)]"); // Use CSS variable for background
+    console.log('initSearchButton: Initial state set');
+
+    let isSearching = false;
+    let searchInput = null;
+
+    button.addEventListener('click', () => {
+        console.log('initSearchButton: Search button clicked, toggling search mode');
+        isSearching = !isSearching;
+
+        if (isSearching) {
+            // Enter search mode
+            button.innerHTML = `<svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M57.7498 57.7508L45.9248 45.9258" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // Blue icon
+            // Use direct style manipulation instead of Tailwind arbitrary values
+            button.style.backgroundColor = 'var(--mimoja-blue)';
+            button.classList.remove("bg-[var(--button-grey)]");
+
+            // Create search input field between search_profile and delete_profile buttons
+            if (button.parentNode && deleteButton) {
+                // Create input field
+                searchInput = document.createElement('input');
+                searchInput.type = 'text';
+                searchInput.placeholder = 'Search profiles...';
+                searchInput.className = 'w-[400px] h-[82px] mx-[30px] px-4 py-2 rounded-[20px] border border-solid border-[var(--border-color)] text-[var(--text-primary)] bg-[var(--profile-button-background-color)] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]';
+                searchInput.style.fontSize = '28px';
+                searchInput.style.fontWeight = 'bold';
+
+                // Insert the search input between the search and delete buttons
+                // Check if both buttons share the same parent
+                if (button.parentNode === deleteButton.parentNode) {
+                    button.parentNode.insertBefore(searchInput, deleteButton);
+                } else {
+                    // If they don't share the same parent, insert after the search button
+                    button.parentNode.insertBefore(searchInput, button.nextSibling);
+                }
+
+                // Focus the input
+                searchInput.focus();
+
+                // Add event listener to handle search input
+                let searchTimeout;
+                searchInput.addEventListener('input', (e) => {
+                    // Clear previous timeout
+                    clearTimeout(searchTimeout);
+
+                    // Set new timeout to debounce search
+                    searchTimeout = setTimeout(() => {
+                        const searchTerm = e.target.value.toLowerCase();
+                        console.log('initSearchButton: Searching for:', searchTerm);
+
+                        // Filter profiles based on search term
+                        filterProfiles(searchTerm);
+                    }, 300); // 300ms delay before triggering search
+                });
+
+                // Add event listener to handle Enter key
+                searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const searchTerm = e.target.value.toLowerCase();
+                        console.log('initSearchButton: Searching for (Enter pressed):', searchTerm);
+                        filterProfiles(searchTerm);
+                    }
+                });
+
+                // Add event listener to handle Escape key to exit search
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        exitSearchMode();
+                    }
+                });
+            }
+        } else {
+            // Exit search mode
+            exitSearchMode();
+        }
+    });
+    console.log('initSearchButton: Event listener attached');
+}
+
+function exitSearchMode(originalTitle = null) {
+    const searchButton = document.getElementById('search_profile');
+    const page_title = document.getElementById("page_title");
+    console.log('exitSearchMode: Exiting search mode');
+    if (searchButton) {
+        // Reset the search button to its original state
+        searchButton.innerHTML = `<svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M57.7498 57.7508L45.9248 45.9258" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // Blue icon
+        // Reset to default background
+        searchButton.style.backgroundColor = '';
+        searchButton.classList.add("bg-[var(--button-grey)]");
+    }
+
+    // Remove the search input if it exists
+    const searchInput = document.querySelector('#search_profile + input[type="text"]');
+    if (searchInput) {
+        searchInput.remove();
+    }
+
+    if (page_title) {
+        // Restore original title if needed
+        if (page_title.textContent !== 'Profiles') {
+            page_title.textContent = originalTitle || 'Profiles';
+        }
+    }
+
+    // Reset the search state and show all profiles
+    renderProfiles();
+}
+
+function filterProfiles(searchTerm) {
+    console.log('filterProfiles: Filtering profiles for term:', searchTerm);
+
+    const container = document.getElementById('profile-list');
+    if (!container) {
+        console.error('filterProfiles: Profile list container not found');
+        return;
+    }
+
+    // Clear the container
+    container.innerHTML = '';
+
+    // Get all available profiles
+    const profileEntries = Object.entries(availableProfiles);
+
+    // Filter profiles based on search term
+    const filteredProfiles = profileEntries.filter(([, profileRecord]) => {
+        if (!profileRecord.profile) return false;
+
+        const profileTitle = profileRecord.profile.title ? profileRecord.profile.title.toLowerCase() : '';
+        const isHidden = profileRecord.visibility === 'hidden';
+
+        // Only show profiles that match the search term and are visible (unless showing hidden profiles)
+        return profileTitle.includes(searchTerm) && (isShowingHidden || !isHidden);
+    });
+
+    // Sort the filtered profiles
+    const sortedProfiles = filteredProfiles.sort(([, a], [, b]) => {
+        if (a.profile && a.profile.title && b.profile && b.profile.title) {
+            return a.profile.title.localeCompare(b.profile.title);
+        }
+        return 0;
+    });
+
+    if (sortedProfiles.length === 0) {
+        console.log('filterProfiles: No profiles match the search term');
+        container.textContent = 'No profiles found.';
+        updateSelectedProfileView(null); // Clear right panel
+        return;
+    }
+
+    // Add filtered profiles to the container
+    for (const [key, profileRecord] of sortedProfiles) {
+        const profile = profileRecord.profile;
+        if (!profile) continue;
+
+        const isHidden = profileRecord.visibility === 'hidden';
+        console.log('filterProfiles: Adding profile to filtered list', profile.title, 'isHidden:', isHidden);
+
+        const div = document.createElement('div');
+        div.className = 'p-3 text-[30px] cursor-pointer flex justify-between items-center';
+        div.dataset.profileKey = key;
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = profile.title || 'Untitled Profile';
+        div.appendChild(titleSpan);
+
+        if (isHidden) {
+            div.classList.add('text-[var(--low-contrast-white)]');
+            const unhideButton = document.createElement('button');
+            unhideButton.className = 'p-1 hover:bg-gray-200 rounded-full';
+            unhideButton.title = 'Show this profile';
+            unhideButton.innerHTML = `<svg class="w-6 h-6" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+            unhideButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                console.log('filterProfiles: Unhide button clicked for profile', key);
+                await unhideProfile(key);
+                filterProfiles(searchTerm); // Re-filter after unhiding
+            });
+            div.appendChild(unhideButton);
+        } else {
+            div.classList.add('text-[var(--text-primary)]');
+        }
+
+        div.addEventListener('click', (e) => {
+            console.log('filterProfiles: Profile item clicked:', profile.title);
+            const clickedItem = e.currentTarget;
+
+            const allItems = clickedItem.parentElement.children;
+            for(const item of allItems) {
+                item.classList.remove('bg-[#385a92]', 'text-white', 'rounded-[8px]', 'bg-gray-200', 'text-black');
+                const itemKey = item.dataset.profileKey;
+                if (itemKey && availableProfiles[itemKey] && availableProfiles[itemKey].visibility === 'hidden') {
+                    item.classList.add('text-[var(--low-contrast-white)]');
+                } else {
+                    item.classList.add('text-[var(--text-primary)]');
+                }
+            }
+
+            if (isHidden) {
+                clickedItem.classList.add('bg-gray-200', 'rounded-[8px]');
+                clickedItem.classList.remove('text-white');
+
+            } else {
+                clickedItem.classList.add('bg-[#385a92]', 'text-white', 'rounded-[8px]');
+                clickedItem.classList.remove('text-[#121212]');
+            }
+
+            // Update the selected profile view first
+            updateSelectedProfileView(clickedItem);
+
+            // Then exit search mode to preserve the selection
+            exitSearchMode();
+        });
+
+        container.appendChild(div);
+    }
+
+    // Clear selection since we're in search mode
+    selectedProfileKey = null;
+
+    console.log('filterProfiles: Added', sortedProfiles.length, 'profiles to filtered list');
+}
+
 
 // Main initialization function that can be called externally
 export async function initializeProfileSelector() {
     console.log('initializeProfileSelector: Starting initialization');
+
+    // Reset the selected profile key to ensure first profile gets selected on page load
+    selectedProfileKey = null;
+
     await initI18n();
     console.log('initializeProfileSelector: i18n initialized');
 
@@ -562,6 +817,8 @@ export async function initializeProfileSelector() {
     initViewButton();
     console.log('initializeProfileSelector: Initializing favorite buttons');
     await initFavoriteButtons();
+    console.log('initializeProfileSelector: Initializing search button');
+    initSearchButton();
     console.log('initializeProfileSelector: Initializing fullscreen handler');
     initFullscreenHandler();
     console.log('initializeProfileSelector: Initialization complete');
@@ -574,6 +831,10 @@ document.addEventListener('DOMContentLoaded', initializeProfileSelector);
 document.addEventListener('dynamic-content-loaded', (event) => {
     // Check if this event is for profile selector
     if (event.detail.pageUrl && (event.detail.pageUrl.includes('profile_selector.html') || event.detail.pageUrl.endsWith('profile_selector.html'))) {
+        if (window.Plotly && document.getElementById('plotly-chart')) {
+         const chartDiv = document.getElementById('plotly-chart');
+         Plotly.purge(chartDiv);
+         }
         initializeProfileSelector();
     }
 });
