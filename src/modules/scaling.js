@@ -13,7 +13,7 @@ export function initScaling() {
         const scaleY = screenHeight / designHeight;
         const scale = Math.min(scaleX, scaleY);
 
-        content.style.transformOrigin = 'top left';
+        content.style.transformOrigin = 'top ';
         content.style.transform = `scale(${scale})`;
         
         viewport.style.width = `${designWidth * scale}px`;
