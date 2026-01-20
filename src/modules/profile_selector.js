@@ -9,6 +9,7 @@ import { loadPage } from './router.js'; // Singular and correctly formatted impo
 
 let selectedProfileKey = null;
 let isShowingHidden = false; // State to track if hidden profiles should be shown
+let isSearching = false; // State to track if search mode is active
 const LONG_PRESS_DURATION = 400; // ms
 const FAV_COUNT = 5;
 let favoriteButtons = [];
@@ -490,7 +491,6 @@ function initSearchButton() {
     button.classList.add("bg-[var(--button-grey)]"); // Use CSS variable for background
     console.log('initSearchButton: Initial state set');
 
-    let isSearching = false;
     let searchInput = null;
 
     button.addEventListener('click', () => {
@@ -509,18 +509,23 @@ function initSearchButton() {
                 // Create input field
                 searchInput = document.createElement('input');
                 searchInput.type = 'text';
-                searchInput.placeholder = 'Search profiles...';
+                searchInput.placeholder = 'Search profile names...';
                 searchInput.className = 'w-[400px] h-[82px] mx-[30px] px-4 py-2 rounded-[20px] border border-solid border-[var(--border-color)] text-[var(--text-primary)] bg-[var(--profile-button-background-color)] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]';
                 searchInput.style.fontSize = '28px';
                 searchInput.style.fontWeight = 'bold';
 
-                // Insert the search input between the search and delete buttons
-                // Check if both buttons share the same parent
-                if (button.parentNode === deleteButton.parentNode) {
-                    button.parentNode.insertBefore(searchInput, deleteButton);
+                // Find the element between search and delete buttons and insert the search input there
+                const parentElement = button.parentNode;
+                const searchIndex = Array.prototype.indexOf.call(parentElement.children, button);
+                const deleteIndex = Array.prototype.indexOf.call(parentElement.children, deleteButton);
+
+                // Ensure search button comes before delete button in the DOM
+                if (searchIndex < deleteIndex) {
+                    // Insert after the search button but before the delete button
+                    parentElement.insertBefore(searchInput, deleteButton);
                 } else {
-                    // If they don't share the same parent, insert after the search button
-                    button.parentNode.insertBefore(searchInput, button.nextSibling);
+                    // If delete button comes before search, insert after search button
+                    parentElement.insertBefore(searchInput, button.nextSibling);
                 }
 
                 // Focus the input
@@ -570,6 +575,10 @@ function exitSearchMode(originalTitle = null) {
     const searchButton = document.getElementById('search_profile');
     const page_title = document.getElementById("page_title");
     console.log('exitSearchMode: Exiting search mode');
+
+    // Reset the global search state
+    isSearching = false;
+
     if (searchButton) {
         // Reset the search button to its original state
         searchButton.innerHTML = `<svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M57.7498 57.7508L45.9248 45.9258" stroke="#385A92" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // Blue icon

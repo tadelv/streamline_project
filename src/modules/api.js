@@ -94,7 +94,7 @@ export async function reconnectDevice(deviceId) {
 //             if (reloadcount >= 10) { location.reload(); }
 //             logger.info("reload",reloadcount);
 //             throw new Error(`Failed to trigger scale scan/reconnect: ${response.statusText}`);
-//         } 
+//         }
 //         logger.info('Successfully triggered scale scan/reconnect.');
 //     } catch (error) {
 //         logger.error('Error during scale reconnection attempt:', error);
@@ -134,7 +134,7 @@ export async function tareScale() {
 }
 
 export function connectWebSocket(onData, onReconnect) {
-    reconnectingWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/de1/snapshot`, [], {
+    reconnectingWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/machine/snapshot`, [], {
         debug: true,
         reconnectInterval: 3000,
     }); // Enable debug logging
@@ -166,7 +166,7 @@ export function connectWebSocket(onData, onReconnect) {
         setTimeout(() => {
             logger.info('reloading now');
             // location.reload();
-            
+
         }, 6000);
     };
 
@@ -238,7 +238,7 @@ export function connectScaleWebSocket(onData, onReconnect, onDisconnect) {
 }
 
 export function connectShotSettingsWebSocket(onData) {
-    const shotSettingsWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/de1/shotSettings`, [], {
+    const shotSettingsWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/machine/shotSettings`, [], {
         debug: true,
         reconnectInterval: 3000,
     });
@@ -406,7 +406,7 @@ export async function getWorkflow() {
     }
     logger.info('workflow returned');
     return response.json();
-    
+
 }
 
 export async function updateWorkflow(data) {
@@ -424,7 +424,7 @@ export async function updateWorkflow(data) {
 }
 
 export async function setMachineState(newState) {
-    const response = await fetch(`${API_BASE_URL}/de1/state/${newState}`, {
+    const response = await fetch(`${API_BASE_URL}/machine/state/${newState}`, {
         method: 'PUT',
     });
     if (!response.ok) {
@@ -445,7 +445,7 @@ async function sendShotSettings() {
         groupTemp: parseFloat(currentShotSettings.groupTemp.toFixed(1)),
     };
 
-    const response = await fetch(`${API_BASE_URL}/de1/shotSettings`, {
+    const response = await fetch(`${API_BASE_URL}/machine/shotSettings`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -508,7 +508,7 @@ export async function getReaSettings() {
 
 export async function getDe1Settings() {
     try {
-        const response = await fetch(`${API_BASE_URL}/de1/settings`);
+        const response = await fetch(`${API_BASE_URL}/machine/settings`);
         if (!response.ok) {
             throw new Error(`Failed to get DE1 settings: ${response.statusText}`);
         }
@@ -521,7 +521,7 @@ export async function getDe1Settings() {
 
 export async function setDe1Settings(settings) {
     try {
-        const response = await fetch(`${API_BASE_URL}/de1/settings`, {
+        const response = await fetch(`${API_BASE_URL}/machine/settings`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

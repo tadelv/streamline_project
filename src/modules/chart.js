@@ -348,7 +348,7 @@ export function plotHistoricalShot(measurements) {
     for (const dataPoint of measurements) {
         const machineData = dataPoint.machine;
         const scaleData = dataPoint.scale;
-        logger.info("plotHistoricalShot machineData",machineData);
+        // logger.info("plotHistoricalShot machineData",machineData);
         if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring' )) {
             // || machineData.state.substate === 'pouringDone'
             const time = (new Date(machineData.timestamp) - shotStartTime) / 1000;

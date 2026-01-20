@@ -36,7 +36,7 @@ export async function loadAvailableProfiles() {
         }
 
         logger.info(`Successfully loaded ${Object.keys(availableProfiles).length} profiles from API.`);
-        
+
         // Sync to IndexedDB as a fallback
         await setSetting(PROFILES_CACHE_KEY, availableProfiles);
         logger.info('Successfully synced profiles to IndexedDB cache.');
@@ -45,7 +45,7 @@ export async function loadAvailableProfiles() {
 
     } catch (apiError) {
         logger.warn('API failed. Attempting to load profiles from IndexedDB fallback.', apiError);
-        
+
         try {
             const profilesFromCache = await getSetting(PROFILES_CACHE_KEY);
             if (profilesFromCache && Object.keys(profilesFromCache).length > 0) {
@@ -70,7 +70,7 @@ export async function loadAssignments() {
     try {
         // 1. Try to fetch from the primary source (REA store)
         const reaAssignments = await getValueFromStore(SETTINGS_NAMESPACE, FAVORITES_KEY);
-        
+
         if (reaAssignments) {
             logger.info('Loaded assignments from REA store.');
             favoriteAssignments = reaAssignments;
@@ -317,20 +317,21 @@ export async function handleProfileUpload(event) {
         const fileContent = await file.text();
         const profile = JSON.parse(fileContent);
 
-        // Basic client-side validation before sending
-        if (!profile.title || !profile.steps) {
-            throw new Error('Uploaded file does not appear to be a valid profile.');
+        // Enhanced client-side validation before sending
+        const validationResult = validateProfileStructure(profile);
+        if (!validationResult.isValid) {
+            throw new Error(validationResult.errorMessage);
         }
 
         logger.info(`Uploading new profile: ${profile.title}`);
-        
+
         // Try API, then update local cache on success
         const newProfileRecord = await uploadProfile(profile);
 
         // API call succeeded, now update local state and cache
         availableProfiles[newProfileRecord.id] = newProfileRecord;
         await setSetting(PROFILES_CACHE_KEY, availableProfiles);
-        
+
         logger.info(`Profile '${newProfileRecord.profile.title}' uploaded successfully with ID ${newProfileRecord.id}.`);
         showToast(`Profile '${newProfileRecord.profile.title}' uploaded.`, 3000, 'success');
 
@@ -345,6 +346,56 @@ export async function handleProfileUpload(event) {
         // Reset the input so the user can upload the same file again
         event.target.value = '';
     }
+}
+
+// Enhanced validation function to check for specific missing fields
+export function validateProfileStructure(profile) {
+    // Check if profile is a valid object
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+        return {
+            isValid: false,
+            errorMessage: 'Uploaded file does not contain a valid profile object.'
+        };
+    }
+
+    // Define required keys for a valid profile
+    const requiredKeys = [
+        'title',
+        'author',
+        'notes',
+        'beverage_type',
+        'steps',
+        'version',
+        'target_volume',
+        'target_weight',
+        'target_volume_count_start',
+        'tank_temperature'
+    ];
+
+    // Find missing keys
+    const missingKeys = requiredKeys.filter(key => !Object.prototype.hasOwnProperty.call(profile, key));
+
+    if (missingKeys.length > 0) {
+        const missingKeysString = missingKeys.join(', ');
+        return {
+            isValid: false,
+            errorMessage: `Uploaded profile is missing required field(s): ${missingKeysString}.`
+        };
+    }
+
+    // Validate that 'steps' is an array
+    if (!Array.isArray(profile.steps)) {
+        return {
+            isValid: false,
+            errorMessage: "Uploaded profile's 'steps' property is not an array."
+        };
+    }
+
+    // If all validations pass
+    return {
+        isValid: true,
+        errorMessage: null
+    };
 }
 
 export async function deleteOrHideProfile(profileId) {
@@ -364,7 +415,7 @@ export async function deleteOrHideProfile(profileId) {
             const updatedProfile = await updateProfileVisibility(profileId, 'hidden');
             availableProfiles[profileId] = updatedProfile;
             await setSetting(PROFILES_CACHE_KEY, availableProfiles);
-            
+
             logger.info(`Profile ${profileId} successfully hidden.`);
             document.dispatchEvent(new CustomEvent('profiles-updated'));
             showToast('Default profile hidden.', 3000, 'success');
@@ -375,14 +426,14 @@ export async function deleteOrHideProfile(profileId) {
     } else {
         // DELETE a user-uploaded profile
         try {
-            await deleteProfile(profileId); 
-            
+            await deleteProfile(profileId);
+
             delete availableProfiles[profileId];
-            
+
             await setSetting(PROFILES_CACHE_KEY, availableProfiles);
 
             logger.info(`Profile ${profileId} successfully deleted from backend and removed from local cache.`);
-            
+
             document.dispatchEvent(new CustomEvent('profiles-updated'));
             showToast('Profile deleted.', 3000, 'success');
 
@@ -398,15 +449,15 @@ export async function unhideProfile(profileId) {
     try {
         // The new record is returned on success
         const updatedProfileRecord = await updateProfileVisibility(profileId, "visible");
-        
+
         // Update local cache with the returned record
         availableProfiles[profileId] = updatedProfileRecord;
-        
+
         // Update IndexedDB cache
         await setSetting(PROFILES_CACHE_KEY, availableProfiles);
 
         logger.info(`Profile ${profileId} successfully unhidden.`);
-        
+
         // Dispatch event to notify UI
         document.dispatchEvent(new CustomEvent('profiles-updated'));
         showToast('Profile restored.', 3000, 'success');

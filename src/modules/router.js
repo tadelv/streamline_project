@@ -188,10 +188,16 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         const scalingModule = await import('/src/modules/scaling.js');
                         const historyModule = await import('/src/modules/history.js');
                         const profileManagerModule = await import('/src/modules/profileManager.js');
+                        const shotDataModule = await import('/src/modules/shotData.js');
                         const { initWaterTankSocket } = await import('/src/modules/waterTank.js');
+
                         await i18nModule.initI18n(); // Reinitialize translations
                         uiModule.initUI({ onWeightClick: window.handleWeightClick || (() => {}) }); // Reinitialize UI components
                         scalingModule.initScaling(); // Reinitialize scaling
+
+                        // Clear and reinitialize shot data table to prevent layout issues
+                        shotDataModule.clearShotData();
+
                         await historyModule.initHistory(); // Reinitialize history
                         initWaterTankSocket(); // Reinitialize water tank WebSocket
                         // Wait a bit to ensure DOM is fully updated before initializing profile manager

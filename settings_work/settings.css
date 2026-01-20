@@ -1,0 +1,31 @@
+.toggle-button {
+    background-color: #e8e8e8;
+    border: 2px solid #c9c9c9;
+    height: 62.88px;
+    position: relative;
+    border-radius: 2617.374px;
+    width: 104.8px;
+    cursor: pointer;
+}
+
+.toggle-button.on {
+    background-color: #385a92;
+    border-color: #385a92;
+}
+
+.toggle-button .toggle-circle {
+    position: absolute;
+    background-color: #c9c9c9;
+    left: calc(50% - 17.44px);
+    border-radius: 26197.318px;
+    width: 41.92px;
+    height: 41.92px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease-in-out;
+}
+
+.toggle-button.on .toggle-circle {
+    background-color: white;
+    left: calc(100% - 39.92px);
+}

@@ -31,7 +31,7 @@ export function initWaterTankSocket() {
         return;
     }
 
-    const socket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${window.location.hostname}:${REA_PORT}/ws/v1/de1/waterLevels`, [], {
+    const socket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${window.location.hostname}:${REA_PORT}/ws/v1/machine/waterLevels`, [], {
         debug: true,
         reconnectInterval: 3000,
     });
