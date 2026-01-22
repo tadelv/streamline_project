@@ -540,6 +540,61 @@ export async function setDe1Settings(settings) {
     }
 }
 
+export async function getDe1AdvancedSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/machine/settings/advanced`);
+        if (!response.ok) {
+            throw new Error(`Failed to get DE1 advanced settings: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        logger.error("Error in getDe1AdvancedSettings:", error);
+        return null;
+    }
+}
+
+export async function setDe1AdvancedSettings(settings) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/machine/settings/advanced`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to set DE1 advanced settings. Status: ${response.status}, Body: ${errorBody}`);
+        }
+        logger.info('DE1 advanced settings updated successfully:', settings);
+    } catch (error) {
+        logger.error('Error setting DE1 advanced settings:', error);
+        throw error; // Re-throw to allow calling code to handle
+    }
+}
+
+export async function setReaSettings(settings) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/settings`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to set REA settings. Status: ${response.status}, Body: ${errorBody}`);
+        }
+        logger.info('REA settings updated successfully:', settings);
+    } catch (error) {
+        logger.error('Error setting REA settings:', error);
+        throw error; // Re-throw to allow calling code to handle
+    }
+}
+
 export async function ensureGatewayModeTracking() {
     const settings = await getReaSettings();
     if (settings && settings.gatewayMode !== 'tracking') {

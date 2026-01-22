@@ -7,7 +7,7 @@ import * as history from './history.js';
 import * as shotData from './shotData.js';
 import * as profileManager from './profileManager.js';
 import * as api from './api.js';
-import { loadPage } from './router.js'; 
+import { loadPage } from './router.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
 
@@ -551,6 +551,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('profile-name').onclick = () => {
             loadPage('src/profiles/profile_selector.html');
         };
+
+        // Add event listener for the settings button
+        document.getElementById('settings-btn')?.addEventListener('click', () => {
+            loadPage('src/settings/settings.html');
+        });
     } catch (error) {
         logger.error('CRITICAL: Unhandled error during application initialization:', error);
         // Optionally, display a user-friendly error message on the page

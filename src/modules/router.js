@@ -177,6 +177,28 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                     } catch (e) {
                         console.error('Router: Error initializing profile selector:', e);
                     }
+                } else if (pageUrl.includes('settings.html') || pageUrl.endsWith('settings.html')) {
+                    console.log('Router: Initializing settings page...');
+                    try {
+                        // Import the settings module and call its initialization function
+                        const { initializeSettings } = await import('/src/settings/settings.js');
+                        if (initializeSettings) {
+                            await initializeSettings();
+                            console.log('Router: Settings page initialized successfully.');
+                        }
+                    } catch (e) {
+                        console.error('Router: Error initializing settings page:', e);
+                    }
+
+                    // Initialize scaling for the settings page
+                    try {
+                        const scalingModule = await import('/src/modules/scaling.js');
+                        if (scalingModule.initScaling) {
+                            scalingModule.initScaling();
+                        }
+                    } catch (e) {
+                        console.error('Router: Error initializing scaling for settings page:', e);
+                    }
                 } else {
                     console.log('Router: Page does not match profile selector pattern, attempting to reinitialize main page components.');
 
@@ -228,6 +250,16 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                             newProfileNameElement.onclick = () => {
                                 loadPage('src/profiles/profile_selector.html');
                             };
+                        }
+
+                        // Re-add event listener for the settings button
+                        const settingsBtn = document.getElementById('settings-btn');
+                        if (settingsBtn) {
+                            const newSettingsBtn = settingsBtn.cloneNode(true);
+                            settingsBtn.parentNode.replaceChild(newSettingsBtn, settingsBtn);
+                            newSettingsBtn.addEventListener('click', () => {
+                                loadPage('src/settings/settings.html');
+                            });
                         }
 
                         // Re-establish WebSocket connections that are needed for real-time data
