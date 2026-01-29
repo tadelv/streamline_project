@@ -37,7 +37,7 @@ const chartData = {
         name: 'Target Pressure',
         type: 'lines',
         mode: 'lines',
-        line: { color: '#17c29a', dash: 'dot' },
+        line: { color: '#bde2d5', dash: 'dot' },
         hoverinfo: 'name'
     },
     targetFlow: {
@@ -46,7 +46,7 @@ const chartData = {
         name: 'Target Flow',
         type: 'lines',
         mode: 'lines',
-        line: { color: '#0358cf', dash: 'dot' },
+        line: { color: '#cdd9f5', dash: 'dot' },
         hoverinfo: 'name'
     },
     groupTemperature: {
@@ -56,6 +56,15 @@ const chartData = {
         type: 'lines',
         mode: 'lines',
         line: {color: '#ff97a1'},
+        hoverinfo: 'name'
+    },
+    targetTemperature: {
+        x: [],
+        y: [],
+        name: 'Target °C',
+        type: 'lines',
+        mode: 'lines',
+        line: { color: '#F9ebec', dash: 'dot' },
         hoverinfo: 'name'
     },
     weight: {
@@ -73,7 +82,7 @@ const lightLayout = {
     plot_bgcolor: 'white',
     paper_bgcolor: 'white',
     font: { color: 'black' },
-    xaxis: { 
+    xaxis: {
         gridcolor: '#E0E0E0',
         dtick: 1,
         fixedrange: true
@@ -94,19 +103,19 @@ const lightLayout = {
         pad: 0
     },
     showlegend: false,
-    
+
 };
 
 const darkLayout = {
     plot_bgcolor: '#0d0e14',
     paper_bgcolor: '#0d0e14',
     font: { color: '#e8e8e8' },
-    xaxis: { 
+    xaxis: {
         gridcolor: '#212227',
         dtick: 1,
         fixedrange: true
     },
-    yaxis: { 
+    yaxis: {
         gridcolor: '#212227',
         range: [0, 10],
         dtick: 1
@@ -170,11 +179,11 @@ function getAnnotations() {
     // 3. Adjust positions to avoid overlap, moving from bottom up
     for (const candidate of labelCandidates) {
         let finalY = Math.max(candidate.y, minAxisBuffer);
-        
+
         if (lastY !== -Infinity && finalY - lastY < minVerticalSeparation) {
             finalY = lastY + minVerticalSeparation;
         }
-        
+
         annotations.push({
             x: candidate.x,
             y: finalY,
@@ -216,7 +225,7 @@ export function updateChart(shotStartTime, data, weight, filterToPouring = true)
     const targetPressureY = data.targetPressure;
     const targetFlowY = data.targetFlow;
     const groupTemperatureY = (data.groupTemperature / 100) * 10;
-    
+
     let weightY = 0;
     if (lastTime > 0 && time > lastTime) {
         const timeDiff = time - lastTime;
@@ -321,7 +330,7 @@ export function plotHistoricalShot(measurements) {
             return; // No data to plot.
         }
     }
-    
+
     // Find the shot end time - only consider actual espresso-related states
     let shotEndTime = null;
     for (let i = measurements.length - 1; i >= 0; i--) {
@@ -338,6 +347,7 @@ export function plotHistoricalShot(measurements) {
         targetPressure: { x: [], y: [] },
         targetFlow: { x: [], y: [] },
         groupTemperature: { x: [], y: [] },
+        targetTemperature: { x: [], y: [] },
         weight: { x: [], y: [] }
     };
 
@@ -363,6 +373,10 @@ export function plotHistoricalShot(measurements) {
                 tempChartData.targetFlow.y.push(machineData.targetFlow);
                 tempChartData.groupTemperature.x.push(time);
                 tempChartData.groupTemperature.y.push((machineData.groupTemperature / 100) * 10);
+
+                // Add target temperature data from targetGroupTemperature field
+                tempChartData.targetTemperature.x.push(time);
+                tempChartData.targetTemperature.y.push((machineData.targetGroupTemperature / 100) * 10);
             }
         }
 
@@ -457,7 +471,7 @@ export function plotProfile(profile) {
     const tempY = chartData.groupTemperature.y;
 
     let currentTime = 0;
-    
+
     // Start at 0,0, and initial temperature
     const initialTemp = (parseFloat(profile.steps[0].temperature || 0) / 100) * 10;
     tpX.push(0);
@@ -481,12 +495,12 @@ export function plotProfile(profile) {
         } else if (step.pump === 'flow') {
             flow = parseFloat(step.flow || 0);
         }
-        
+
         // Add points for the step. Plotly will create a step-chart effect.
         // A null value creates a break in the line.
         tpX.push(currentTime, nextTime);
         tpY.push(pressure, pressure);
-        
+
         tfX.push(currentTime, nextTime);
         tfY.push(flow, flow);
 
@@ -502,10 +516,10 @@ export function plotProfile(profile) {
     layout.annotations = []; // Annotations are for live data, not static profiles
     layout.xaxis.range = [0, currentTime];
     layout.xaxis.dtick = 10; // Set x-axis ticks to every 10 seconds
-    
+
     // Create a deep copy of traces to modify line style for this plot only
     const plotData = JSON.parse(JSON.stringify(Object.values(chartData)));
-    
+
     const targetPressureTrace = plotData.find(trace => trace.name === 'Target Pressure');
     if (targetPressureTrace) {
         targetPressureTrace.line.dash = 'solid';

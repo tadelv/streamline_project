@@ -1,6 +1,6 @@
 :root {
     --text-primary: #121212;
-    --border-color: #d6d3d1; /* stone-300 */
+    --border-color: #eaeaea; /* stone-300 */
 }
 
 [data-theme="dark"] {

@@ -1,0 +1,43 @@
+main category,subcategory,functions
+,,
+Quick Adjustments,Flow Multiplier,
+,Steam,Steam Purge Mode
+,Hot Water,Hot Water Flow (ml/s)/
+,Water Tank,Tank Temperature (°C)
+,Flush,Flush Temperature (°C)/Flush Flow (ml/s)
+Bluetooth,Espresso Machine,
+,Weighing Scale,
+,,
+Calibration,Default load settings,
+,Refill Kit,
+,Voltage,
+,Fan,Fan Threshold (°C)
+,Stop at weight,
+,Slow start,
+,Steam,
+,,
+Maintainance,Machine Descaling,
+,Transport mode,
+,,
+Skin,Skin 1,
+,,
+
+Language,Select Language,
+,,
+Extentions,Extention 1,
+,Extention 2,
+Miscellaneous,Rea settings,Gateway Mode/Log Level/Weight Flow Multiplier/ Volume Flow Multiplier/Web UI Path/Scale Power Management
+,Brightness,
+,App version,
+,Units settings,
+,Font size,
+,Resolution,
+,Smart Charging,USB Charger Mode 
+,Screen Saver,
+,Machine Advanced Settings,Heater Phase 1 Flow (ml/s)/Heater Phase 2 Flow (ml/s)/Heater Idle Temperature (°C)/Heater Phase 2 Timeout (s)
+
+Updates,Firmware update,
+,App Update,
+,
+User Manual,Online Help,
+,Tutorials,

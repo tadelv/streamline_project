@@ -9,12 +9,20 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css" rel="stylesheet" type="text/css" />
     <link href="src/css/dark-mode.css" rel="stylesheet" type="text/css" />
     <link href="src/css/main.css" rel="stylesheet" type="text/css" />
+    <link rel="preload" href="src/modules/ui.js" as ="script"/>
+    <link rel="preload" href="src/settings/settings.js" as ="script"/>
+    <link rel="preload" href="src/profiles/profile_selector.html" as="document">
+    <link rel="preload" href="src/settings/settings.html" as="document">
+    <link rel="preload" href="src/modules/profile_selector.js" as="script">
+    <link rel="preload" href="src/modules/plotly-3.1.0.min.js" as="script">
+    <link rel="preload" href="src/modules/router.js" as="script">
+    <link rel="preload" href="src/modules/api.js" as="script">
     <script src="src/modules/plotly-3.1.0.min.js"></script>
     <script src="src/modules/reconnecting-websocket.js" defer></script>
     <script src="src/modules/router.js" type="module"></script>
     <script src="src/modules/app.js" type="module"></script>
 </head>
-<body class="bg-gray-800 min-h-screen ">
+<body class="bg-[var(--bgmain-color)] min-h-screen ">
     <div id="scaling-container" class=" text-clip">
         <div id="scaled-content" class="w-[1920px] h-[1200px] ">
 
@@ -22,18 +30,14 @@
     <header class="bg-[var(--box-color)] border-b border-base-300 w-full h-[168px] relative">
         <!-- Profile Favorites -->
         <nav class="absolute left-[38px] top-[38px] flex gap-[15px]">
-            <button id="fav-profile-btn-0" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--mimoja-blue)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"> </button>
-            <button id="fav-profile-btn-1" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--mimoja-blue)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"> </button>
-            <button id="fav-profile-btn-2" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--mimoja-blue)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"> </button>
-            <button id="fav-profile-btn-3" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--mimoja-blue)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"></button>
-            <button id="fav-profile-btn-4" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--mimoja-blue)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"></button>
+            <button id="fav-profile-btn-0" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--profile-button-text-color)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"> </button>
+            <button id="fav-profile-btn-1" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--profile-button-text-color)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"> </button>
+            <button id="fav-profile-btn-2" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--profile-button-text-color)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"> </button>
+            <button id="fav-profile-btn-3" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--profile-button-text-color)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"></button>
+            <button id="fav-profile-btn-4" class="flex justify-center items-center text-balance  border-[var(--profile-button-outline-color)] bg-[var(--profile-button-background-color)] text-[var(--profile-button-text-color)]  w-[240px] h-[90px] text-[22.5px] rounded-[15px] border-2 font-semibold"></button>
         </nav>
         <!-- Right side controls -->
         <div class="absolute right-[38px] top-[57px] flex items-center gap-[21px]">
-            <div class="btn-status">
-                <input type="checkbox" name="theme-toggle" id="theme-toggle" class="hidden" />
-                <label for="theme-toggle" class="togglebtn-change flex items-center  rounded-full w-9 h-[18px] cursor-pointer"></label>
-            </div>
             <button id="settings-btn" class="settings-button flex justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold" data-i18n-key="Settings">Settings</button>
             <button id="sleep-button" class=" relative text-nowrap justify-center items-center min-h-0 w-[132px] px-[30px] pt-3 pb-[15px] border border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px] text-lg font-semibold" data-i18n-key="Sleep">Sleep</button>
             <button id="fullscreen-toggle-btn" title="Toggle fullscreen" class="absolute -top-9 -right-9 w-12 h-12 flex items-center justify-center   text-[var(--mimoja-blue)]">
@@ -77,10 +81,10 @@
                 </div>
             </div>
             <div id="drink-out-presets" class="w-[398px] h-[42px] flex justify-between items-center self-center">
-                <button id="drink-out-preset-1" class="justify-center text-neutral-400 text-lg font-semibold">18:36</button>
-                <button id="drink-out-preset-2" class="text-center justify-center text-neutral-400 text-lg font-semibold">20:40</button>
-                <button id="drink-out-preset-3" class="text-center justify-center text-neutral-400 text-lg font-semibold">22:44</button>
-                <button id="drink-out-preset-4" class="text-right justify-center  text-neutral-400 text-lg font-semibold">20:46</button>
+                <button id="drink-out-preset-1" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">18:36</button>
+                <button id="drink-out-preset-2" class="text-center justify-center text-[var(--preset-value-color)] text-lg font-semibold">20:40</button>
+                <button id="drink-out-preset-3" class="text-center justify-center text-[var(--preset-value-color)] text-lg font-semibold">22:44</button>
+                <button id="drink-out-preset-4" class="text-right justify-center  text-[var(--preset-value-color)] text-lg font-semibold">20:46</button>
             </div>
             <div class="divider my-0"></div>
             <!-- Temp -->
@@ -93,17 +97,17 @@
                 </div>
             </div>
             <div id="temp-presets" class="w-[398px] h-[42px] flex justify-between items-center self-center">
-                <button id="temp-preset-75" class="justify-center text-neutral-400 text-lg font-semibold">75°c</button>
-                <button id="temp-preset-80" class="justify-center text-neutral-400 text-lg font-semibold">80°c</button>
-                <button id="temp-preset-85" class="justify-center text-neutral-400 text-lg font-semibold">85°c</button>
-                <button id="temp-preset-92" class="justify-center text-neutral-400 text-lg font-semibold">92°c</button>
+                <button id="temp-preset-75" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">75°c</button>
+                <button id="temp-preset-80" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">80°c</button>
+                <button id="temp-preset-85" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">85°c</button>
+                <button id="temp-preset-92" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">92°c</button>
             </div>
              <div class="divider my-0"></div>
             <!-- Steam -->
             <div class="flex justify-start items-center gap-9">
                 <div class="w-[114px]">
                     <span class="text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold block" data-i18n-key="Steam">Steam</span>
-                    <span id="steam-mode-toggle" class="w-[114px] text-neutral-400 text-lg font-semibold text-nowrap block leading-6 cursor-pointer">
+                    <span id="steam-mode-toggle" class="w-[114px] text-[var(--low-contrast-white)] text-lg font-semibold text-nowrap block leading-6 cursor-pointer">
                         <span id="steam-mode-time" data-i18n-key="Time">Time</span> | <span id="steam-mode-flow" data-i18n-key="Flow">Flow</span>
                     </span>
                 </div>
@@ -117,16 +121,16 @@
                 </div>
             </div>
             <div id="steam-presets" class="w-[398px] h-[42px] flex justify-between items-center self-center">
-                <button id="steam-preset-1" class="justify-center text-neutral-400 text-lg font-semibold">15s</button>
-                <button id="steam-preset-2" class="justify-center text-neutral-400 text-lg font-semibold">30s</button>
-                <button id="steam-preset-3" class="justify-center text-neutral-400 text-lg font-semibold">45s</button>
-                <button id="steam-preset-4" class="justify-center text-neutral-400 text-lg font-semibold">60s</button>
+                <button id="steam-preset-1" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">15s</button>
+                <button id="steam-preset-2" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">30s</button>
+                <button id="steam-preset-3" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">45s</button>
+                <button id="steam-preset-4" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">60s</button>
             </div>
             <div id="steam-flow-presets" class="w-[398px] h-[42px] flex justify-between items-center self-center">
-                <button id="steam-flow-preset-1" class="justify-center text-neutral-400 text-lg font-semibold">0.5ml/s</button>
-                <button id="steam-flow-preset-2" class="justify-center text-neutral-400 text-lg font-semibold">1.0ml/s</button>
-                <button id="steam-flow-preset-3" class="justify-center text-neutral-400 text-lg font-semibold">1.5ml/s</button>
-                <button id="steam-flow-preset-4" class="justify-center text-neutral-400 text-lg font-semibold">2.0ml/s</button>
+                <button id="steam-flow-preset-1" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">0.5ml/s</button>
+                <button id="steam-flow-preset-2" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">1.0ml/s</button>
+                <button id="steam-flow-preset-3" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">1.5ml/s</button>
+                <button id="steam-flow-preset-4" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">2.0ml/s</button>
             </div>
             <div class="divider my-0"></div>
             <!-- Flush -->
@@ -139,10 +143,10 @@
                 </div>
             </div>
                 <div id="flush-presets" class="w-[398px] h-[42px] flex justify-between items-center self-center">
-                <button id="flush-preset-0" class="justify-center text-neutral-400 text-lg font-semibold">5s</button>
-                <button id="flush-preset-1" class="justify-center text-neutral-400 text-lg font-semibold">10s</button>
-                <button id="flush-preset-2" class="justify-center text-neutral-400 text-lg font-semibold">15s</button>
-                <button id="flush-preset-3" class="justify-center text-neutral-400 text-lg font-semibold">20s</button>
+                <button id="flush-preset-0" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">5s</button>
+                <button id="flush-preset-1" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">10s</button>
+                <button id="flush-preset-2" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">15s</button>
+                <button id="flush-preset-3" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">20s</button>
                 </div>
 
             <div class="divider my-0"></div>
@@ -150,7 +154,7 @@
             <div class="flex justify-start items-center gap-9">
                 <div class="w-[114px]">
                     <span class="text-[var(--mimoja-blue-v2)] text-[22.5px] font-bold block text-nowrap" data-i18n-key="Hot Water">Hot Water</span>
-                    <span id="hot-water-mode-toggle" class="w-[114px] text-neutral-400 text-lg font-semibold text-nowrap block leading-6 cursor-pointer">
+                    <span id="hot-water-mode-toggle" class="w-[114px] text-[var(--low-contrast-white)] text-lg font-semibold text-nowrap block leading-6 cursor-pointer">
                         <span id="hot-water-mode-temp" data-i18n-key="Temp">Temp</span> | <span id="hot-water-mode-vol" data-i18n-key="Vol">Vol</span>
                     </span>
                 </div>
@@ -164,10 +168,10 @@
                 </div>
             </div>
             <div id="hotwater-presets" class="w-[398px] h-[42px] flex justify-between items-center self-center">
-                <button id="hotwater-temp-preset0" class="justify-center text-neutral-400 text-lg font-semibold">75°c</button>
-                <button id="hotwater-temp-preset1" class="text-center justify-center text-neutral-400 text-lg font-semibold">80°c</button>
-                <button id="hotwater-temp-preset2" class="text-center justify-center text-neutral-400 text-lg font-semibold">85°c</button>
-                <button id="hotwater-temp-preset3" class="text-right justify-center text-neutral-400 text-lg font-semibold">92°c</button>
+                <button id="hotwater-temp-preset0" class="justify-center text-[var(--preset-value-color)] text-lg font-semibold">75°c</button>
+                <button id="hotwater-temp-preset1" class="text-center justify-center text-[var(--preset-value-color)] text-lg font-semibold">80°c</button>
+                <button id="hotwater-temp-preset2" class="text-center justify-center text-[var(--preset-value-color)] text-lg font-semibold">85°c</button>
+                <button id="hotwater-temp-preset3" class="text-right justify-center text-[var(--preset-value-color)] text-lg font-semibold">92°c</button>
             </div>
         </aside>
 
@@ -197,59 +201,62 @@
             <div id="plotly-chart" class="w-full h-[675px]"></div>
 
             <!-- Footer: Shot History and Data -->
-            <div class="w-[385px] h-60 left-[479px] top-[955px] absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
-                <div id= 'shot-history-label'class="w-[156px] left-[115px] top-[46px] absolute text-center justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="SHOT HISTORY">SHOT HISTORY</div>
+            <div class="w-[385px] h-60 left-[479px] top-[955px] absolute bg-[var(--bgmain-color)] border border-b-0 border-[var(--border-color)]">
+                <div id= 'shot-history-label'class="w-[156px] left-[115px] top-[46px] absolute text-center justify-start text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6" data-i18n-key="SHOT HISTORY">SHOT HISTORY</div>
                 <div class="w-72 left-[45px] top-[92px] absolute inline-flex justify-between items-center">
                     <button id="history-prev-btn" ><svg class="w-6 h-6 rotate-180" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="text-center ">
-                        <p id="history-date" class="text-[22.5px] font-bold font-['Inter'] text-[var(--text-primary)]">Tue, 14 Sept, 18:45</p>
-                        <p id="history-profile-name" class="text-[22.5px] font-normal font-['Inter'] text-[var(--text-primary)] overflow-hidden text-clip">Londinium</p>
+                        <p id="history-date" class=" pb-4 text-[20px] font-bold font-['Inter'] text-[var(--text-primary)]">Tue, 14 Sept, 18:45</p>
+                        <p id="history-profile-name" class="text-[20px] font-semibold font-['Inter'] text-[var(--text-primary)] overflow-hidden text-clip">Londinium</p>
                     </div>
-                    <button id="history-next-btn" ><svg class="w-6 h-6" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button id="history-next-btn" ><svg class="w-6 h-6 " viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
-            <div class="w-[1050px] h-60 left-[863px] top-[955px] absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
-                <div class="grid grid-cols-6 gap-x-[27px] left-[198px] top-[35px] absolute">
-                    <div class="w-12 h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center" data-i18n-key="Time">Time</div>
-                    <div class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center" data-i18n-key="Weight">Weight</div>
-                    <div class="w-18 h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center" data-i18n-key="Volume">Volume</div>
-                    <div class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center" data-i18n-key="Temp">Temp</div>
-                    <div class="w-[120px] h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center" data-i18n-key="Flow">Flow</div>
-                    <div class="w-42 h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center" data-i18n-key="Pressure">Pressure</div>
+            <div class="w-[1050px] h-60 left-[863px] top-[955px] border-r-0 border-b-0 absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
+                <div class="grid grid-cols-7 w-full left-[198px] top-[35px] absolute" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="Time">Time</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="Grams">Grams</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL">mL</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="°C">°C</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL/s">mL/s</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="Pressure">Pressure</div>
                 </div>
 
-                <div class="left-[45px] top-[88px] absolute flex flex-col justify-start items-start gap-[21px] ">
-                    <div class="grid grid-cols-6 gap-x-[27px] w-full">
-                        <div class="w-[120px] h-9 text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 flex items-center" data-i18n-key="Preinfusion">Preinfusion</div>
-                        <div class="col-span-5 grid grid-cols-6 gap-x-[27px] w-full">
-                            <div id="shot-data-pi-time" class="w-12 h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">15s </div>
-                            <div id="shot-data-pi-weight" class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">10g</div>
-                            <div id="shot-data-pi-volume" class="w-18 h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">17ml</div>
-                            <div id="shot-data-pi-temp" class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">90°c</div>
-                            <div id="shot-data-pi-flow" class="w-[120px] h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">0–8.1 ml/s</div>
-                            <div id="shot-data-pi-pressure" class="w-42 h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">0–3.3 bar</div>
+                <div class="left-[20px] top-[88px] absolute flex flex-col justify-start items-start gap-[15px] ">
+                    <div class="grid grid-cols-7 w-full" style="grid-template-columns: 150px 30px repeat(5, 1fr);">
+                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 flex items-center justify-end" data-i18n-key="Preinfusion">Preinfusion</div>
+                        <div class="h-9"></div> <!-- Empty column for spacing -->
+                        <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
+                            <div id="shot-data-pi-time" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">15s </div>
+                            <div id="shot-data-pi-weight" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">10g</div>
+                            <div id="shot-data-pi-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">17ml</div>
+                            <div id="shot-data-pi-temp" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">90°c</div>
+                            <div id="shot-data-pi-flow" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">0–8.1 ml/s</div>
+                            <div id="shot-data-pi-pressure" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">0–3.3 bar</div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-6 gap-x-[27px] w-full">
-                        <div class="w-[120px] h-9 text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 flex items-center" data-i18n-key="Extraction">Extraction</div>
-                        <div class="col-span-5 grid grid-cols-6 gap-x-[27px] w-full">
-                            <div id="shot-data-ex-time" class="w-12 h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">30s </div>
-                            <div id="shot-data-ex-weight" class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">29g</div>
-                            <div id="shot-data-ex-volume" class="w-18 h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">30ml</div>
-                            <div id="shot-data-ex-temp" class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">90°–80°c</div>
-                            <div id="shot-data-ex-flow" class="w-[120px] h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">0.4–2.5 ml/s</div>
-                            <div id="shot-data-ex-pressure" class="w-42 h-9 text-[var(--text-primary)] text-lg font-normal font-['Inter'] leading-6 text-center flex items-center justify-center">3–9 bar</div>
+                    <div class="grid grid-cols-7 w-full" style="grid-template-columns: 150px 30px repeat(5, 1fr);">
+                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 flex items-center justify-end" data-i18n-key="Extraction">Extraction</div>
+                        <div class="h-9"></div> <!-- Empty column for spacing -->
+                        <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
+                            <div id="shot-data-ex-time" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">30s </div>
+                            <div id="shot-data-ex-weight" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">29g</div>
+                            <div id="shot-data-ex-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">30ml</div>
+                            <div id="shot-data-ex-temp" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">90°–80°c</div>
+                            <div id="shot-data-ex-flow" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">0.4–2.5 ml/s</div>
+                            <div id="shot-data-ex-pressure" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">3–9 bar</div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-6 gap-x-[27px] w-full">
-                        <div class="w-[120px] h-9 text-right justify-start text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 flex items-center" data-i18n-key="Total">Total</div>
-                        <div class="col-span-5 grid grid-cols-6 gap-x-[27px] w-full">
-                            <div id="shot-data-total-time" class="w-12 h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center">45s </div>
-                            <div id="shot-data-total-weight" class="w-[108px] h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center">39g (1:2.5)</div>
-                            <div id="shot-data-total-volume" class="w-18 h-9 text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6 text-center flex items-center justify-center">57ml</div>
-                            <div class="w-[108px] h-9 text-center flex items-center justify-center invisible">Temp</div>
-                            <div class="w-[120px] h-9 text-center flex items-center justify-center invisible">Flow</div>
-                            <div class="w-42 h-9 text-center flex items-center justify-center invisible">Pressure</div>
+                    <div class="grid grid-cols-7 w-full" style="grid-template-columns: 150px 30px repeat(5, 1fr);">
+                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 flex items-center justify-end" data-i18n-key="Total">Total</div>
+                        <div class="h-9"></div> <!-- Empty column for spacing -->
+                        <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
+                            <div id="shot-data-total-time" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start">45s </div>
+                            <div id="shot-data-total-weight" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start">39g (1:2.5)</div>
+                            <div id="shot-data-total-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start">57ml</div>
+                            <div class="h-9 text-left flex items-center justify-start invisible">Temp</div>
+                            <div class="h-9 text-left flex items-center justify-start invisible">Flow</div>
+                            <div class="h-9 text-left flex items-center justify-start invisible">Pressure</div>
                         </div>
                     </div>
                 </div>
@@ -276,8 +283,8 @@
         </div>
     </dialog>
 
-    <!-- <dialog id="settings_modal" class="modal"> 
-        
+    <!-- <dialog id="settings_modal" class="modal">
+
             </div>
             <div class="divider"></div>
             <div class="py-3">
@@ -328,7 +335,7 @@
                 </form>
             </div>
         </div>
-    </dialog> --> 
+    </dialog> -->
 
     <!-- Fullscreen Prompt Toast -->
     <div id="fullscreen-toast-container" class="toast toast-center toast-middle" style="z-index: 10000; display: none;">

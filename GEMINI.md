@@ -52,3 +52,5 @@ You are also required to check reaprime_api.md and rewrite_roadmap.md in your re
 * * bug fixes and code suggestions. 
 ## Gemini Added Memories
 - When updating Plotly charts, use Plotly.update() instead of Plotly.react() for better performance.
+
+

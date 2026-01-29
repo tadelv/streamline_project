@@ -17,47 +17,6 @@ let settingsCache = {
     de1AdvancedError: null
 };
 
-let activeSettingsCategory = null; // New global variable to track the currently active category
-
-// Render generic loading state
-function renderLoadingState(title) {
-    return `
-        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
-                <p class="leading-[1.2]">${title}</p>
-            </div>
-            <div class="text-[var(--text-primary)] p-4 text-[32px] text-center w-full">Loading settings...</div>
-        </div>
-    `;
-}
-
-// Render generic error state
-function renderErrorState(title, message) {
-    return `
-        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
-                <p class="leading-[1.2]">${title}</p>
-            </div>
-            <div class="text-red-500 p-4 text-[32px] text-center w-full">Failed to load settings: ${message}</div>
-            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold mx-auto mt-4" onclick="window.retryLoadSettings()">Retry</button>
-        </div>
-    `;
-}
-
-// Helper function to update the settings content area in the DOM
-function updateSettingsContentArea(category) {
-    const contentArea = document.getElementById('settings-content-area');
-    if (contentArea) {
-        contentArea.innerHTML = renderSettingsContent(category);
-        // Initialize theme toggle if we're on the appearance/skin settings
-        if (category === 'appearance') {
-            setTimeout(() => {
-                ui.initThemeToggle();
-            }, 100); // Small delay to ensure DOM is updated
-        }
-    }
-}
-
 // Define the tree structure for settings navigation
 const settingsTree = {
     'quickadjustments': {
@@ -66,7 +25,7 @@ const settingsTree = {
             { id: 'flowmultiplier', name: 'Flow Multiplier', settingsCategory: 'flowmultiplier' },
             { id: 'steam', name: 'Steam', settingsCategory: 'steam' },
             { id: 'hotwater', name: 'Hot Water', settingsCategory: 'hotwater' },
-            { id: 'watertank', name: 'Water Tank', settingsCategory: 'watertank' },
+            { id: 'watertank', name: 'Water Tank', settingsCategory: 'de1' },
             { id: 'flush', name: 'Flush', settingsCategory: 'flush' }
         ]
     },
@@ -106,7 +65,7 @@ const settingsTree = {
     'skin': {
         name: 'Skin',
         subcategories: [
-            { id: 'skin1', name: 'Theme', settingsCategory: 'appearance' }
+            { id: 'skin1', name: 'Skin 1', settingsCategory: 'appearance' }
         ]
     },
     'language': {
@@ -152,42 +111,146 @@ const settingsTree = {
     }
 };
 
-// Cache for loading promise to prevent multiple simultaneous requests
-let settingsLoadingPromise = null;
+// Cache for loading promises to prevent multiple simultaneous requests
+let settingsLoadingPromises = {};
 
-// Load all settings data
-export async function loadSettings() {
-    // If we're already loading, return the same promise
-    if (settingsLoadingPromise) {
-        return settingsLoadingPromise;
+// Preload all settings in the background
+export async function preloadSettings() {
+    // If we're already preloading, return the existing promise
+    if (settingsLoadingPromises.preload) {
+        return settingsLoadingPromises.preload;
     }
 
-    settingsLoadingPromise = _loadSettingsInternal();
-    return settingsLoadingPromise;
+    settingsLoadingPromises.preload = _preloadSettingsInternal();
+    return settingsLoadingPromises.preload;
+}
+
+// Internal function to preload all settings
+async function _preloadSettingsInternal() {
+    try {
+        // Set loading flags
+        settingsCache.reaLoading = true;
+        settingsCache.de1Loading = true;
+        settingsCache.de1AdvancedLoading = true;
+        
+        // Reset error flags
+        settingsCache.reaError = null;
+        settingsCache.de1Error = null;
+        settingsCache.de1AdvancedError = null;
+
+        // Fetch all settings in parallel
+        const [reaSettings, de1Settings, de1AdvancedSettings] = await Promise.all([
+            getReaSettings().catch(error => {
+                console.error('Error loading REA settings:', error);
+                settingsCache.reaError = error.message;
+                return null;
+            }),
+            getDe1Settings().catch(error => {
+                console.error('Error loading DE1 settings:', error);
+                settingsCache.de1Error = error.message;
+                return null;
+            }),
+            getDe1AdvancedSettings().catch(error => {
+                console.error('Error loading DE1 advanced settings:', error);
+                settingsCache.de1AdvancedError = error.message;
+                return null;
+            })
+        ]);
+
+        // Update cache with results
+        settingsCache.rea = reaSettings;
+        settingsCache.de1 = de1Settings;
+        settingsCache.de1Advanced = de1AdvancedSettings;
+
+        // Update loading flags
+        settingsCache.reaLoading = false;
+        settingsCache.de1Loading = false;
+        settingsCache.de1AdvancedLoading = false;
+
+        return { reaSettings, de1Settings, de1AdvancedSettings };
+    } catch (error) {
+        console.error('Error during settings preload:', error);
+        ui.showToast('Failed to preload settings', 5000, 'error');
+        
+        // Ensure loading flags are reset even in case of error
+        settingsCache.reaLoading = false;
+        settingsCache.de1Loading = false;
+        settingsCache.de1AdvancedLoading = false;
+        
+        return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
+    } finally {
+        // Clear the preload promise after completion
+        delete settingsLoadingPromises.preload;
+    }
+}
+
+// Load individual settings with proper loading state management
+export async function loadSettings() {
+    // If we're already loading, return the same promise
+    if (settingsLoadingPromises.load) {
+        return settingsLoadingPromises.load;
+    }
+
+    settingsLoadingPromises.load = _loadSettingsInternal();
+    return settingsLoadingPromises.load;
 }
 
 // Internal function to actually load settings
 async function _loadSettingsInternal() {
     try {
+        // Set loading flags
+        settingsCache.reaLoading = true;
+        settingsCache.de1Loading = true;
+        settingsCache.de1AdvancedLoading = true;
+        
+        // Reset error flags
+        settingsCache.reaError = null;
+        settingsCache.de1Error = null;
+        settingsCache.de1AdvancedError = null;
+
         // Fetch all settings in parallel
         const [reaSettings, de1Settings, de1AdvancedSettings] = await Promise.all([
-            getReaSettings(),
-            getDe1Settings(),
-            getDe1AdvancedSettings()
+            getReaSettings().catch(error => {
+                console.error('Error loading REA settings:', error);
+                settingsCache.reaError = error.message;
+                return null;
+            }),
+            getDe1Settings().catch(error => {
+                console.error('Error loading DE1 settings:', error);
+                settingsCache.de1Error = error.message;
+                return null;
+            }),
+            getDe1AdvancedSettings().catch(error => {
+                console.error('Error loading DE1 advanced settings:', error);
+                settingsCache.de1AdvancedError = error.message;
+                return null;
+            })
         ]);
 
+        // Update cache with results
         settingsCache.rea = reaSettings;
         settingsCache.de1 = de1Settings;
         settingsCache.de1Advanced = de1AdvancedSettings;
+
+        // Update loading flags
+        settingsCache.reaLoading = false;
+        settingsCache.de1Loading = false;
+        settingsCache.de1AdvancedLoading = false;
 
         return { reaSettings, de1Settings, de1AdvancedSettings };
     } catch (error) {
         console.error('Error loading settings:', error);
         ui.showToast('Failed to load settings', 5000, 'error');
+        
+        // Ensure loading flags are reset even in case of error
+        settingsCache.reaLoading = false;
+        settingsCache.de1Loading = false;
+        settingsCache.de1AdvancedLoading = false;
+        
         return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
     } finally {
         // Clear the loading promise after completion
-        settingsLoadingPromise = null;
+        delete settingsLoadingPromises.load;
     }
 }
 
@@ -205,9 +268,6 @@ export async function updateReaSetting(key, value) {
         await setReaSettings(payload);
         settingsCache.rea[key] = value;
         ui.showToast('REA setting updated successfully', 3000, 'success');
-        if (activeSettingsCategory) { // Re-render the current view to reflect changes
-            updateSettingsContentArea(activeSettingsCategory);
-        }
     } catch (error) {
         console.error('Error updating REA setting:', error);
         ui.showToast(`Failed to update REA setting: ${error.message}`, 5000, 'error');
@@ -221,9 +281,6 @@ export async function updateDe1Setting(key, value) {
         await setDe1Settings(payload);
         settingsCache.de1[key] = value;
         ui.showToast('DE1 setting updated successfully', 3000, 'success');
-        if (activeSettingsCategory) { // Re-render the current view to reflect changes
-            updateSettingsContentArea(activeSettingsCategory);
-        }
     } catch (error) {
         console.error('Error updating DE1 setting:', error);
         ui.showToast(`Failed to update DE1 setting: ${error.message}`, 5000, 'error');
@@ -237,22 +294,51 @@ export async function updateDe1AdvancedSetting(key, value) {
         await setDe1AdvancedSettings(payload);
         settingsCache.de1Advanced[key] = value;
         ui.showToast('DE1 advanced setting updated successfully', 3000, 'success');
-        if (activeSettingsCategory) { // Re-render the current view to reflect changes
-            updateSettingsContentArea(activeSettingsCategory);
-        }
     } catch (error) {
         console.error('Error updating DE1 advanced setting:', error);
         ui.showToast(`Failed to update DE1 advanced setting: ${error.message}`, 5000, 'error');
     }
 }
 
+// Render loading state
+function renderLoadingState(title) {
+    return `
+        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
+                <p class="leading-[1.2]">${title}</p>
+            </div>
+            <div class="flex justify-center items-center w-full p-4">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#385a92]"></div>
+                <span class="ml-3 text-[32px] text-[#2d2d2d]">Loading settings...</span>
+            </div>
+        </div>
+    `;
+}
+
+// Render error state
+function renderErrorState(title, errorMessage) {
+    return `
+        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
+                <p class="leading-[1.2]">${title}</p>
+            </div>
+            <div class="text-red-500 p-4 text-[32px]">
+                Error: ${errorMessage}
+            </div>
+            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold"
+                    onclick="window.retryLoadSettings()">
+                Retry
+            </button>
+        </div>
+    `;
+}
 
 // Render settings content based on selected category
 export function renderSettingsContent(category) {
     // Determine loading state for the specific category
     let isLoading = false;
     let error = null;
-
+    
     switch(category) {
         case 'rea':
         case 'quickadjustments':
@@ -287,8 +373,8 @@ export function renderSettingsContent(category) {
 
     // Show error state if there was an error loading the required settings
     if (error && (
-        category === 'rea' ||
-        category === 'quickadjustments' ||
+        category === 'rea' || 
+        category === 'quickadjustments' || 
         category === 'flowmultiplier' ||
         category === 'de1' ||
         category === 'fanthreshold' ||
@@ -308,7 +394,7 @@ export function renderSettingsContent(category) {
             return renderReaSettingsForm(settingsCache.rea);
         case 'quickadjustments':
         case 'flowmultiplier':
-            return renderFlowMultiplierSettings(settingsCache.rea);
+            return renderReaSettingsForm(settingsCache.rea);
         case 'steam':
             return renderSteamSettings();
         case 'hotwater':
@@ -334,7 +420,7 @@ export function renderSettingsContent(category) {
         case 'transportmode':
             return renderMaintenanceSettings();
         case 'skin':
-        case 'appearance':
+        case 'skin1':
             return renderSkinSettings();
         case 'language':
         case 'selectlanguage':
@@ -378,12 +464,30 @@ export function renderSettingsContent(category) {
     }
 }
 
+// Helper function to get title for a category
+function getCategoryTitle(category) {
+    switch(category) {
+        case 'rea': return 'REA Application Settings';
+        case 'quickadjustments': return 'Quick Adjustments';
+        case 'flowmultiplier': return 'Flow Multiplier Settings';
+        case 'steam': return 'Steam Settings';
+        case 'hotwater': return 'Hot Water Settings';
+        case 'watertank': return 'Water Tank Settings';
+        case 'flush': return 'Flush Settings';
+        case 'de1': return 'DE1 Settings';
+        case 'fanthreshold': return 'Fan Threshold Settings';
+        case 'usbchargermode': return 'USB Charger Mode Settings';
+        case 'de1advanced': return 'Machine Advanced Settings';
+        default: return 'Settings';
+    }
+}
+
 // Render Flow Multiplier settings
 export function renderFlowMultiplierSettings(settings) {
     if (!settings) {
         return `
             <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
                     <p class="leading-[1.2]">Flow Multiplier Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load flow multiplier settings</div>
@@ -393,7 +497,7 @@ export function renderFlowMultiplierSettings(settings) {
 
     return `
         <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
                 <p class="leading-[1.2]">Flow Multiplier Settings</p>
             </div>
 
@@ -418,7 +522,7 @@ export function renderFlowMultiplierSettings(settings) {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full max-w-full break-words">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full max-w-full break-words">
                         Multiplier for projected weight calculation. Higher values stop shots earlier.
                     </p>
                 </div>
@@ -445,7 +549,7 @@ export function renderFlowMultiplierSettings(settings) {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full max-w-full break-words">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full max-w-full break-words">
                         Look-ahead time in seconds for projected volume calculation. Accounts for system lag.
                     </p>
                 </div>
@@ -459,7 +563,7 @@ export function renderReaSettingsForm(settings) {
     if (!settings) {
         return `
             <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
                     <p class="leading-[1.2]">REA Application Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load REA settings</div>
@@ -469,7 +573,7 @@ export function renderReaSettingsForm(settings) {
 
     return `
         <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
                 <p class="leading-[1.2]">REA Application Settings</p>
             </div>
 
@@ -480,29 +584,18 @@ export function renderReaSettingsForm(settings) {
 
             <div class="flex flex-col items-start relative w-full max-w-full">
                 <div class="flex flex-col gap-[40px] items-start relative w-full max-w-full">
-                    <div class="flex flex-col items-start relative w-full max-w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[40px] mb-[20px]">
+                    <div class="flex items-center justify-between relative w-full max-w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[40px]">
                             <p class="leading-[1.2]">Gateway Mode</p>
                         </div>
-                        <div class="flex items-center justify-between w-full max-w-[885px] ">
-                            <button class="h-[120px] w-[295px] rounded-[10px] font-['Inter:Bold',sans-serif] font-bold text-[40px] flex items-center justify-center cursor-pointer transition-colors duration-200
-                                ${settings.gatewayMode === 'disabled' ? 'bg-[var(--mimoja-blue)] text-white' : 'bg-[var(--box-color)] border border-[var(--profile-button-outline-color)] text-[#b6c3d7]'}"
-                                onclick="window.updateReaSetting('gatewayMode', 'disabled')">
-                                Disabled
-                            </button>
-                            <button class="h-[120px] w-[295px] rounded-[10px] font-['Inter:Bold',sans-serif] font-bold text-[40px] flex items-center justify-center cursor-pointer transition-colors duration-200
-                                ${settings.gatewayMode === 'tracking' ? 'bg-[var(--mimoja-blue)] text-white' : 'bg-[var(--box-color)] border border-[var(--profile-button-outline-color)] text-[#b6c3d7]'}"
-                                onclick="window.updateReaSetting('gatewayMode', 'tracking')">
-                                Tracking
-                            </button>
-                            <button class="h-[120px] w-[295px] rounded-[10px] font-['Inter:Bold',sans-serif] font-bold text-[40px] flex items-center justify-center cursor-pointer transition-colors duration-200
-                                ${settings.gatewayMode === 'full' ? 'bg-[var(--mimoja-blue)] text-white' : 'bg-[var(--box-color)] border border-[var(--profile-button-outline-color)] text-[#b6c3d7]'}"
-                                onclick="window.updateReaSetting('gatewayMode', 'full')">
-                                Full
-                            </button>
-                        </div>
+                        <select id="gatewayModeSelect" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2 max-w-[200px]"
+                                onchange="window.updateReaSetting('gatewayMode', this.value)">
+                            <option value="disabled" ${settings.gatewayMode === 'disabled' ? 'selected' : ''}>Disabled</option>
+                            <option value="tracking" ${settings.gatewayMode === 'tracking' ? 'selected' : ''}>Tracking</option>
+                            <option value="full" ${settings.gatewayMode === 'full' ? 'selected' : ''}>Full</option>
+                        </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full max-w-full break-words">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full max-w-full break-words">
                         Controls how the gateway monitors and controls the espresso machine
                     </p>
                 </div>
@@ -533,7 +626,7 @@ export function renderReaSettingsForm(settings) {
                             <option value="OFF" ${settings.logLevel === 'OFF' ? 'selected' : ''}>OFF</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full max-w-full break-words">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full max-w-full break-words">
                         Sets the verbosity of application logging output
                     </p>
                 </div>
@@ -562,7 +655,7 @@ export function renderReaSettingsForm(settings) {
                             <option value="disconnect" ${settings.scalePowerMode === 'disconnect' ? 'selected' : ''}>Disconnect</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full max-w-full break-words">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full max-w-full break-words">
                         Controls automatic scale power management when machine sleeps. Display Off: turn off scale display. Disconnect: disconnect scale completely.
                     </p>
                 </div>
@@ -577,7 +670,7 @@ export function renderFlushSettingsForm(settings) {
     if (!settings) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Flush Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load flush settings</div>
@@ -587,7 +680,7 @@ export function renderFlushSettingsForm(settings) {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Flush Settings</p>
             </div>
 
@@ -599,12 +692,12 @@ export function renderFlushSettingsForm(settings) {
             <div class="content-stretch flex flex-col items-center relative w-full">
                 <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px]">
                     <div class="content-stretch flex items-center relative shrink-0">
-                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[34px]">
+                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[#121212] text-[34px]">
                             Flush Temperature
                         </p>
                     </div>
                     <div class="content-stretch flex gap-[20px] h-[96px] items-center justify-center relative shrink-0 w-full">
-                        <button id="flush-temp-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-temp-minus" class="w-[96px] h-[96px] bg-[#ededed] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushTemp(-5);">
                             <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -618,26 +711,26 @@ export function renderFlushSettingsForm(settings) {
                                    onchange="window.updateDe1Setting('flushTemp', parseFloat(this.value))">
                             <span class="ml-2">°C</span>
                         </div>
-                        <button id="flush-temp-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-temp-plus" class="w-[96px] h-[96px] bg-[#ededed] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushTemp(5);">
                             <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full text-center">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full text-center">
                         Temperature for flush cycles
                     </p>
                 </div>
 
                 <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px] mt-[30px]">
                     <div class="content-stretch flex items-center relative shrink-0">
-                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[34px]">
+                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[#121212] text-[34px]">
                             Flush Flow
                         </p>
                     </div>
                     <div class="content-stretch flex gap-[20px] h-[96px] items-center justify-center relative shrink-0 w-full">
-                        <button id="flush-flow-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-flow-minus" class="w-[96px] h-[96px] bg-[#ededed] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushFlow(-1);">
                             <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -651,14 +744,14 @@ export function renderFlushSettingsForm(settings) {
                                    onchange="window.updateDe1Setting('flushFlow', parseFloat(this.value))">
                             <span class="ml-2 text-nowrap">ml/s</span>
                         </div>
-                        <button id="flush-flow-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-flow-plus" class="w-[96px] h-[96px] bg-[#ededed] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushFlow(1);">
                             <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full text-center">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full text-center">
                         Flow rate for flush cycles
                     </p>
                 </div>
@@ -672,7 +765,7 @@ export function renderFanThresholdSettings(settings) {
     if (!settings) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Fan Threshold Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load DE1 settings</div>
@@ -682,7 +775,7 @@ export function renderFanThresholdSettings(settings) {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Fan Threshold Settings</p>
             </div>
 
@@ -707,7 +800,7 @@ export function renderFanThresholdSettings(settings) {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Temperature threshold at which the fan turns on
                     </p>
                 </div>
@@ -721,7 +814,7 @@ export function renderUsbChargerModeSettings(settings) {
     if (!settings) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">USB Charger Mode Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load DE1 settings</div>
@@ -731,7 +824,7 @@ export function renderUsbChargerModeSettings(settings) {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">USB Charger Mode Settings</p>
             </div>
 
@@ -752,7 +845,7 @@ export function renderUsbChargerModeSettings(settings) {
                             <option value="disable" ${!settings.usb ? 'selected' : ''}>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Controls whether the USB port provides power for charging devices
                     </p>
                 </div>
@@ -766,7 +859,7 @@ export function renderDe1AdvancedSettingsForm(settings) {
     if (!settings) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Machine Advanced Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load DE1 advanced settings</div>
@@ -776,7 +869,7 @@ export function renderDe1AdvancedSettingsForm(settings) {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Machine Advanced Settings</p>
             </div>
 
@@ -801,7 +894,7 @@ export function renderDe1AdvancedSettingsForm(settings) {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Flow rate during heater phase 1
                     </p>
                 </div>
@@ -828,7 +921,7 @@ export function renderDe1AdvancedSettingsForm(settings) {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Flow rate during heater phase 2
                     </p>
                 </div>
@@ -842,7 +935,7 @@ export function renderDe1AdvancedSettingsForm(settings) {
 export function renderUserManualSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">User Manual</p>
             </div>
 
@@ -856,7 +949,7 @@ export function renderUserManualSettings() {
                             Visit
                         </a>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Get support and submit tickets for assistance
                     </p>
                 </div>
@@ -877,7 +970,7 @@ export function renderUserManualSettings() {
                             View
                         </a>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Learn how to get started with your espresso machine
                     </p>
                 </div>
@@ -890,7 +983,7 @@ export function renderUserManualSettings() {
 export function renderMiscellaneousSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Miscellaneous Settings</p>
             </div>
 
@@ -905,7 +998,7 @@ export function renderMiscellaneousSettings() {
                             <option>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Enable or disable screen saver functionality
                     </p>
                 </div>
@@ -924,7 +1017,7 @@ export function renderMiscellaneousSettings() {
                         </div>
                         <input type="range" min="0" max="100" value="75" class="w-[200px] h-[40px]">
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Adjust screen brightness level
                     </p>
                 </div>
@@ -945,7 +1038,7 @@ export function renderMiscellaneousSettings() {
                             1.0.0
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Current application version
                     </p>
                 </div>
@@ -967,7 +1060,7 @@ export function renderMiscellaneousSettings() {
                             <option>Imperial</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Select measurement units for the application
                     </p>
                 </div>
@@ -990,7 +1083,7 @@ export function renderMiscellaneousSettings() {
                             <option>Large</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Adjust the font size for better readability
                     </p>
                 </div>
@@ -1013,7 +1106,7 @@ export function renderMiscellaneousSettings() {
                             <option>1024x768</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set the display resolution
                     </p>
                 </div>
@@ -1035,7 +1128,7 @@ export function renderMiscellaneousSettings() {
                             <option>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Enable smart charging for connected devices
                     </p>
                 </div>
@@ -1048,7 +1141,7 @@ export function renderMiscellaneousSettings() {
 export function renderBluetoothSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Bluetooth Settings</p>
             </div>
 
@@ -1063,7 +1156,7 @@ export function renderBluetoothSettings() {
                             <option>Connected</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Connect to your espresso machine via Bluetooth
                     </p>
                 </div>
@@ -1085,7 +1178,7 @@ export function renderBluetoothSettings() {
                             <option>Connected</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Connect to your weighing scale via Bluetooth
                     </p>
                 </div>
@@ -1099,7 +1192,7 @@ export function renderSteamSettings() {
     if (!settingsCache.de1) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Steam Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load DE1 settings</div>
@@ -1109,7 +1202,7 @@ export function renderSteamSettings() {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Steam Settings</p>
             </div>
 
@@ -1125,7 +1218,7 @@ export function renderSteamSettings() {
                             <option value="1" ${settingsCache.de1.steamPurgeMode === 1 ? 'selected' : ''}>Two Tap Stop</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set the steam purge mode for the machine
                     </p>
                 </div>
@@ -1139,7 +1232,7 @@ export function renderHotWaterSettings() {
     if (!settingsCache.de1) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Hot Water Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load DE1 settings</div>
@@ -1149,7 +1242,7 @@ export function renderHotWaterSettings() {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Hot Water Settings</p>
             </div>
 
@@ -1161,12 +1254,12 @@ export function renderHotWaterSettings() {
             <div class="content-stretch flex flex-col items-center relative w-full">
                 <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px]">
                     <div class="content-stretch flex items-center relative shrink-0">
-                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[34px]">
+                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[#121212] text-[34px]">
                             Hot Water Flow
                         </p>
                     </div>
                     <div class="content-stretch flex gap-[20px] h-[96px] items-center justify-center relative shrink-0 w-full">
-                        <button id="hot-water-flow-minus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="hot-water-flow-minus" class="w-[96px] h-[96px] bg-[#ededed] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustHotWaterFlow(-0.1);">
                             <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1180,14 +1273,14 @@ export function renderHotWaterSettings() {
                                    onchange="window.updateDe1Setting('hotWaterFlow', parseFloat(this.value))">
                             <span class="ml-2 text-nowrap">ml/s</span>
                         </div>
-                        <button id="hot-water-flow-plus" class="w-[96px] h-[96px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="hot-water-flow-plus" class="w-[96px] h-[96px] bg-[#ededed] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustHotWaterFlow(0.1);">
                             <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full text-center">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full text-center">
                         Flow rate for hot water
                     </p>
                 </div>
@@ -1201,7 +1294,7 @@ export function renderWaterTankSettings() {
     if (!settingsCache.de1) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Water Tank Settings</p>
                 </div>
                 <div class="text-red-500 p-4 text-[32px]">Failed to load DE1 settings</div>
@@ -1211,7 +1304,7 @@ export function renderWaterTankSettings() {
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Water Tank Settings</p>
             </div>
 
@@ -1222,17 +1315,16 @@ export function renderWaterTankSettings() {
                             <p class="leading-[1.2]">Tank Temperature (°C)</p>
                         </div>
                         <div class="flex items-center gap-4">
-                            <input type="number" id="tankTempInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                            <input type="number" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
                                    value="${settingsCache.de1.tankTemp !== undefined ? settingsCache.de1.tankTemp : 80}"
                                    step="1" min="0" max="100"
                                    onchange="window.updateDe1Setting('tankTemp', parseInt(this.value))">
-                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
-                                    onclick="window.updateDe1Setting('tankTemp', parseInt(document.getElementById('tankTempInput').value))">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold">
                                 Save
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set the water tank temperature in degrees Celsius
                     </p>
                 </div>
@@ -1245,7 +1337,7 @@ export function renderWaterTankSettings() {
 export function renderQuickAdjustmentsSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Quick Adjustments</p>
             </div>
 
@@ -1262,7 +1354,7 @@ export function renderQuickAdjustmentsSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Adjust the flow multiplier for shot timing
                     </p>
                 </div>
@@ -1286,7 +1378,7 @@ export function renderQuickAdjustmentsSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set steam temperature
                     </p>
                 </div>
@@ -1310,7 +1402,7 @@ export function renderQuickAdjustmentsSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set water temperature
                     </p>
                 </div>
@@ -1334,7 +1426,7 @@ export function renderQuickAdjustmentsSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set brewing time limit
                     </p>
                 </div>
@@ -1347,7 +1439,7 @@ export function renderQuickAdjustmentsSettings() {
 export function renderCalibrationSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Calibration Settings</p>
             </div>
 
@@ -1361,7 +1453,7 @@ export function renderCalibrationSettings() {
                             Reset
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Reset to default calibration values
                     </p>
                 </div>
@@ -1382,7 +1474,7 @@ export function renderCalibrationSettings() {
                             Calibrate
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Calibrate refill kit settings
                     </p>
                 </div>
@@ -1406,7 +1498,7 @@ export function renderCalibrationSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set voltage calibration
                     </p>
                 </div>
@@ -1430,7 +1522,7 @@ export function renderCalibrationSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set fan threshold temperature
                     </p>
                 </div>
@@ -1454,7 +1546,7 @@ export function renderCalibrationSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set weight target for stopping shots
                     </p>
                 </div>
@@ -1476,7 +1568,7 @@ export function renderCalibrationSettings() {
                             <option>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Enable slow start for smoother extraction
                     </p>
                 </div>
@@ -1500,7 +1592,7 @@ export function renderCalibrationSettings() {
                             </button>
                         </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Set steam calibration
                     </p>
                 </div>
@@ -1513,7 +1605,7 @@ export function renderCalibrationSettings() {
 export function renderMaintenanceSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Maintenance Settings</p>
             </div>
 
@@ -1527,7 +1619,7 @@ export function renderMaintenanceSettings() {
                             Start
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Run a descaling cycle to remove mineral buildup
                     </p>
                 </div>
@@ -1549,7 +1641,7 @@ export function renderMaintenanceSettings() {
                             <option>Enabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Enable transport mode for safe transportation
                     </p>
                 </div>
@@ -1562,25 +1654,8 @@ export function renderMaintenanceSettings() {
 export function renderSkinSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Skin Settings</p>
-            </div>
-
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[40px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[40px]">
-                            <p class="leading-[1.2]">Theme</p>
-                        </div>
-                        <div class="btn-status">
-                            <input type="checkbox" name="theme-toggle" id="theme-toggle" class="hidden" />
-                            <label for="theme-toggle" class="togglebtn-change flex items-center  rounded-full w-9 h-[18px] cursor-pointer"></label>
-                        </div>
-                    </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
-                        Toggle between light and dark themes
-                    </p>
-                </div>
             </div>
 
             <div class="content-stretch flex flex-col items-start relative w-full">
@@ -1593,7 +1668,7 @@ export function renderSkinSettings() {
                             Apply
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Apply the first skin/theme
                     </p>
                 </div>
@@ -1633,7 +1708,7 @@ export function renderLanguageSettings() {
 
     return `
         <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[48px] text-center w-full">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[#121212] text-[48px] text-center w-full">
                 <p class="leading-[1.2]">Language Settings</p>
             </div>
             <div class="h-0 relative w-full"><hr class="border-t border-[#c9c9c9] w-full" /></div>
@@ -1647,13 +1722,12 @@ export function renderLanguageSettings() {
                             <option>Loading...</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full max-w-full break-words">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full max-w-full break-words">
                         Choose the language for the application interface.
                     </p>
                 </div>
             </div>
-
-
+        </div>
     `;
 }
 
@@ -1661,7 +1735,7 @@ export function renderLanguageSettings() {
 export function renderExtensionsSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Extensions Settings</p>
             </div>
 
@@ -1676,7 +1750,7 @@ export function renderExtensionsSettings() {
                             <option>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Manage the first extension
                     </p>
                 </div>
@@ -1698,7 +1772,7 @@ export function renderExtensionsSettings() {
                             <option>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Manage the second extension
                     </p>
                 </div>
@@ -1720,7 +1794,7 @@ export function renderExtensionsSettings() {
                             <option>Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Manage the third extension
                     </p>
                 </div>
@@ -1733,7 +1807,7 @@ export function renderExtensionsSettings() {
 export function renderUpdatesSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Updates Settings</p>
             </div>
 
@@ -1747,7 +1821,7 @@ export function renderUpdatesSettings() {
                             Check
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Check for firmware updates
                     </p>
                 </div>
@@ -1768,7 +1842,7 @@ export function renderUpdatesSettings() {
                             Check
                         </button>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[#2d2d2d] text-[32px] w-full">
                         Check for application updates
                     </p>
                 </div>
@@ -1781,11 +1855,11 @@ export function renderUpdatesSettings() {
 export function renderGeneralSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[#121212] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">General Settings</p>
             </div>
 
-            <div class="text-[32px] text-[var(--text-primary)] p-4">
+            <div class="text-[32px] text-[#2d2d2d] p-4">
                 Select a category from the navigation panel to view and edit settings.
             </div>
         </div>
@@ -1862,98 +1936,6 @@ function initResizableSubNav() {
 }
 
 
-// Cache for loading promises to prevent multiple simultaneous requests
-let settingsLoadingPromises = {};
-
-// Preload all settings in the background
-export async function preloadSettings() {
-    // If we're already preloading, return the existing promise
-    if (settingsLoadingPromises.preload) {
-        return settingsLoadingPromises.preload;
-    }
-
-    settingsLoadingPromises.preload = _preloadSettingsInternal();
-    return settingsLoadingPromises.preload;
-}
-
-// Internal function to preload all settings
-async function _preloadSettingsInternal() {
-    try {
-        // Set loading flags
-        settingsCache.reaLoading = true;
-        settingsCache.de1Loading = true;
-        settingsCache.de1AdvancedLoading = true;
-
-        // Reset error flags
-        settingsCache.reaError = null;
-        settingsCache.de1Error = null;
-        settingsCache.de1AdvancedError = null;
-
-        // Fetch all settings in parallel
-        const [reaSettings, de1Settings, de1AdvancedSettings] = await Promise.all([
-            getReaSettings().catch(error => {
-                console.error('Error loading REA settings:', error);
-                settingsCache.reaError = error.message;
-                return null;
-            }),
-            getDe1Settings().catch(error => {
-                console.error('Error loading DE1 settings:', error);
-                settingsCache.de1Error = error.message;
-                return null;
-            }),
-            getDe1AdvancedSettings().catch(error => {
-                console.error('Error loading DE1 advanced settings:', error);
-                settingsCache.de1AdvancedError = error.message;
-                return null;
-            })
-        ]);
-
-        // Update cache with results
-        settingsCache.rea = reaSettings;
-        settingsCache.de1 = de1Settings;
-        settingsCache.de1Advanced = de1AdvancedSettings;
-
-        // Update loading flags
-        settingsCache.reaLoading = false;
-        settingsCache.de1Loading = false;
-        settingsCache.de1AdvancedLoading = false;
-
-        return { reaSettings, de1Settings, de1AdvancedSettings };
-    } catch (error) {
-        console.error('Error during settings preload:', error);
-        ui.showToast('Failed to preload settings', 5000, 'error');
-
-        // Ensure loading flags are reset even in case of error
-        settingsCache.reaLoading = false;
-        settingsCache.de1Loading = false;
-        settingsCache.de1AdvancedLoading = false;
-
-        return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
-    } finally {
-        // Clear the preload promise after completion
-        delete settingsLoadingPromises.preload;
-    }
-}
-
-
-// Helper function to get title for a category
-function getCategoryTitle(category) {
-    switch(category) {
-        case 'rea': return 'REA Application Settings';
-        case 'quickadjustments': return 'Quick Adjustments';
-        case 'flowmultiplier': return 'Flow Multiplier Settings';
-        case 'steam': return 'Steam Settings';
-        case 'hotwater': return 'Hot Water Settings';
-        case 'watertank': return 'Water Tank Settings';
-        case 'flush': return 'Flush Settings';
-        case 'de1': return 'DE1 Settings';
-        case 'fanthreshold': return 'Fan Threshold Settings';
-        case 'usbchargermode': return 'USB Charger Mode Settings';
-        case 'de1advanced': return 'Machine Advanced Settings';
-        default: return 'Settings';
-    }
-}
-
 // Initialize the settings page
 export async function initializeSettings() {
     // Preload all settings in the background before initializing the UI
@@ -1983,7 +1965,7 @@ export async function initializeSettings() {
             });
             this.classList.remove('text-[#959595]'); // Explicitly remove default color
             this.classList.add('text-white', 'bg-[#2c4a7a]');
-
+            
             const mainCategoryKey = this.id.replace(/-btn$/, '').replace(/-/g, '');
 
             // Render subcategories
@@ -2006,43 +1988,26 @@ export async function initializeSettings() {
                         this.classList.add('bg-[#d7dee9]', 'text-[var(--mimoja-blue)]');
 
                         const settingsCategory = this.dataset.category;
-                        activeSettingsCategory = settingsCategory; // Set the active category
-                        updateSettingsContentArea(settingsCategory); // Use the new helper function
+                        const contentArea = document.getElementById('settings-content-area');
+                        if (contentArea) {
+                            contentArea.innerHTML = renderSettingsContent(settingsCategory);
+                        }
                     });
                 });
             }
 
-            // After rendering subcategories, attempt to click the first one if it exists
-            const firstSubCategoryBtn = subCategoriesPanel?.querySelector('.settings-subnav-btn');
-            if (firstSubCategoryBtn) {
-                firstSubCategoryBtn.click();
-            } else {
-                // If no subcategories, clear the content area and set activeSettingsCategory to null
-                const contentArea = document.getElementById('settings-content-area');
-                if (contentArea) {
-                    contentArea.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8">
-                        <p class="text-[var(--text-primary)] text-[28px]">Select a sub-category from the menu</p>
-                    </div>`;
-                    activeSettingsCategory = null;
-                }
+            // Clear content area when a main category is clicked
+            const contentArea = document.getElementById('settings-content-area');
+            if (contentArea) {
+                contentArea.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8">
+                    <p class="text-[var(--text-primary)] text-[28px]">Select a sub-category from the menu</p>
+                </div>`;
             }
         });
     });
 
-    // Initial load of settings content: Simulate a click on the first main category button
-    const firstMainCategoryBtn = document.querySelector('.settings-nav-btn');
-    if (firstMainCategoryBtn) {
-        firstMainCategoryBtn.click();
-    } else {
-        // Fallback if no main category buttons are found
-        const contentArea = document.getElementById('settings-content-area');
-        if (contentArea) {
-             contentArea.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8">
-                 <p class="text-[var(--text-primary)] text-[28px]">No settings categories found.</p>
-             </div>`;
-             activeSettingsCategory = null;
-        }
-    }
+    // Initialize with REA settings & load first category
+    document.querySelector('.settings-nav-btn')?.click();
 
     // Apply translations to the settings page
     setLanguage(getCurrentLanguage());

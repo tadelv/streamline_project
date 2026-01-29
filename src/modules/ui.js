@@ -49,21 +49,13 @@ let steamTimePresets = [15, 30, 45, 60];
 let steamFlowPresets = [0.5, 1.0, 1.5, 2.0];
 
 export function flashPlusMinusButton(button) {
-    // Store the original background style to restore after the animation
-    const originalBgStyle = button.style.backgroundColor;
+    // Add the flash animation class
+    button.classList.add('flash-animation');
 
-    // Apply the flash animation
-    button.style.backgroundColor = 'var(--plus-minus-flash-on-color2)';
+    // Remove the class after the animation duration (280ms as defined in CSS)
+    // This allows the button to revert to its original styling
     setTimeout(() => {
-        button.style.backgroundColor = 'var(--plus-minus-flash-on-color)';
-    }, 40);
-    setTimeout(() => {
-        button.style.backgroundColor = 'var(--plus-minus-flash-on-color2)';
-    }, 200);
-    setTimeout(() => {
-        // Restore the original background style instead of using a fixed color
-        // This allows the button to properly reflect the current theme
-        button.style.backgroundColor = originalBgStyle;
+        button.classList.remove('flash-animation');
     }, 280);
 }
 
@@ -247,17 +239,17 @@ export function updateHotWaterDisplay(data) {
     tempEl.textContent = `${currentHotWaterTemp}°C`;
 
     if (hotWaterMode === 'volume') {
-        volEl.classList.remove('text-lg', 'text-neutral-400');
+        volEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
         volEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]');
         tempEl.classList.remove('text-[22.5px]', 'font-bold');
-        tempEl.classList.add('text-lg', 'text-neutral-400');
+        tempEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
         modeVolEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTempEl.className = 'text-[var(--low-contrast-white)]';
     } else { // temperature mode
-        tempEl.classList.remove('text-lg', 'text-neutral-400');
+        tempEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
         tempEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]','font-bold');
         volEl.classList.remove('text-[22.5px]', 'font-bold');
-        volEl.classList.add('text-lg', 'text-neutral-400');
+        volEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
         modeTempEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeVolEl.className = 'text-[var(--low-contrast-white)]';
     }
@@ -419,20 +411,20 @@ export function updateSteamDisplay(data) {
     }
 
     durationEl.textContent = `${currentSteamDuration}s`;
-    flowEl.textContent = `${currentSteamFlow.toFixed(1)}ml/s`;
+    flowEl.textContent = `${currentSteamFlow.toFixed(1)}`;
 
     if (steamMode === 'time') {
-        durationEl.classList.remove('text-lg', 'text-neutral-400');
-        durationEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900');
+        durationEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        durationEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]');
         flowEl.classList.remove('text-[22.5px]', 'font-bold');
-        flowEl.classList.add('text-lg', 'text-neutral-400');
+        flowEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
         modeTimeEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeFlowEl.className = 'text-[var(--low-contrast-white)]';
     } else { // flow mode
-        flowEl.classList.remove('text-lg', 'text-neutral-400');
-        flowEl.classList.add('text-[22.5px]', 'font-bold','text-neutral-900','font-bold');
+        flowEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        flowEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]','font-bold');
         durationEl.classList.remove('text-[22.5px]', 'font-bold');
-        durationEl.classList.add('text-lg', 'text-neutral-400');
+        durationEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
         modeFlowEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTimeEl.className = 'text-[var(--low-contrast-white)]';
     }
@@ -675,9 +667,9 @@ export function initUI(callbacks) {
                     // Update preset styles
                     for (const btn of drinkOutPresets.children) {
                         btn.classList.remove('text-black');
-                        btn.classList.add('text-gray-400');
+                        btn.classList.add('text-[var(--preset-value-color)]');
                     }
-                    button.classList.remove('text-gray-400');
+                    button.classList.remove('text-[var(--preset-value-color)]');
                     button.classList.add('text-black');
                 }
             };

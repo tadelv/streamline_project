@@ -50,6 +50,65 @@ theme switching.
 *   **Left Hand Side Control Panel:** Width = 25% of screen width, Height = 85% of device height.                                                                                                
 *   **Top Header Container:** Height = 13.8% of device height, Full screen width.                                                                                                                 
      
+### Data Card Dimensions and Spacing
+
+The data card layout in `skin.tcl` defines sizes and spacings using absolute coordinates (x, y) and explicit width values, often scaled by `rescale_x_skin`. All measurements below are in abstract units relative to the UI's base resolution, where `rescale_x_skin` would convert them to actual pixels (likely 2560 pixels wide as hinted by comments in `skin.tcl`).
+
+*   **Overall Container/Background:**
+    *   The data card area appears to be within the bottom-center region of the UI.
+    *   A vertical grey line in the data card is defined: `streamline_rectangle $::pages 1151 1274 1151 1600 $::box_line_color`
+    *   A grey line on the bottom of the main content area is defined: `streamline_rectangle $::pages 626 1274 2560 1274 $::box_line_color`
+    *   These suggest the data card spans roughly from X=626 to 2560 horizontally, and from Y=1274 to 1600 vertically.
+
+*   **History Section (Left Part of Data Card - Center Justified around X=890):**
+    *   **'HISTORY' Label:**
+        *   Position (X, Y): 890, 1348
+        *   Width: 400 (scaled by rescale_x_skin)
+    *   **History Date Format:**
+        *   Position (X, Y): 890, 1410
+        *   Width: 500 (scaled by rescale_x_skin)
+        *   Vertical spacing from 'HISTORY' Label: 62 units (1410 - 1348)
+    *   **History Profile Name:**
+        *   Position (X, Y): 890, 1474
+        *   Width: 1000 (scaled by rescale_x_skin)
+        *   Vertical spacing from History Date: 64 units (1474 - 1410)
+    *   **History Third Line:**
+        *   Position (X, Y): 890, 1536
+        *   Width: 1000 (scaled by rescale_x_skin)
+        *   Vertical spacing from History Profile Name: 62 units (1536 - 1474)
+
+*   **Shot Data Table (Right Part of Data Card - Column-based):**
+    This table consists of 6 columns and 4 rows (1 header row + 3 data rows).
+
+    *   **Column X-Coordinates (start positions):**
+        *   Column 1 (Time): 1416
+        *   Column 2 (Grams): 1532
+        *   Column 3 (mL): 1680
+        *   Column 4 (Temperature): 1800
+        *   Column 5 (Flow): 1970
+        *   Column 6 (Pressure): 2230
+
+    *   **Horizontal Spacing (between column starts):**
+        *   Col1 to Col2: 116 units
+        *   Col2 to Col3: 148 units
+        *   Col3 to Col4: 120 units
+        *   Col4 to Col5: 170 units
+        *   Col5 to Col6: 260 units
+
+    *   **Row Y-Coordinates (for top of each row):**
+        *   Row 1 (Headers - 'Time', 'Grams', etc.): Y=1328
+        *   Row 2 (Preinfusion values): Y=1388 (60 units below headers)
+        *   Row 3 (Extraction values): Y=1452 (64 units below Preinfusion)
+        *   Row 4 (Total values): Y=1514 (62 units below Extraction)
+
+    *   **Element Widths within Columns (scaled by rescale_x_skin):**
+        *   **Column 1 (Time):** Labels and values have a width of 300.
+        *   **Column 2 (Grams):** Labels and values have a width of 300.
+        *   **Column 3 (mL):** Labels and values have a width of 150.
+        *   **Column 4 (Temperature):** Labels and values have a width of 300.
+        *   **Column 5 (Flow):** Label has a width of 300, values have a width of 260.
+        *   **Column 6 (Pressure):** Label has a width of 230, values have a width of 300.                                                                                                                 
+     
                                                                                                                                                                                                 
 ### 4. UI Components & Data Display                                                                                                                                                             
 This is the most important part of the file, using commands like `add_de1_variable`, `add_de1_text`, and `add_de1_button`.                                                                      
@@ -119,7 +178,7 @@ ct.
     }                                                                                                                                                                                           
     ```                                                                                                                                                                                         
                                                                                                                                                                                                 
-4.  **Main Render Function**: Create a single main `render()` function that calls all of your individual UI update functions. This function is responsible for synchronizing the entire UI with 
+4.  **Main Render Function**: Create a single main `render()` function that calls all of your individual UI update functions. This is responsible for synchronizing the entire UI with 
 the current `appState`.                                                                                                                                                                         
                                                                                                                                                                                                 
     ```javascript                                                                                                                                                                               
@@ -139,27 +198,41 @@ This "State Object + Manual Render" pattern provides a clear and manageable stru
  the main `render()` function after every single change to the `appState` object.                                                                                                               
                                                                                                                                                                                                 
                                                                                                                                                                                                 
-### 6. Font Assignments                                                                                                                                                                         
-                                                                                                                                                                                                
-The `skin.tcl` file uses `load_font` to create font aliases. This section maps those aliases to the font files and the UI elements they style. This is crucial for recreating the UI with correc
-t typography in CSS.                                                                                                                                                                            
-                                                                                                                                                                                                
-| UI Element                             | Tcl Font Alias        | Font File                    | Weight in CSS  | Notes                                  |                                     
-| ------------------------------------ | --------------------- | ---------------------------- | -------------- | -------------------------------------- |                                       
-| Left Sidebar Labels (Grind, Dose)    | `Inter-Bold16`        | `Inter-SemiBold.ttf`         | `600`          | Font size is 14.                       |                                       
-| Left Sidebar Values (1.4, 20g)       | `Inter-Bold16`        | `Inter-SemiBold.ttf`         | `600`          | Font size is 16.                       |                                       
-| Profile Buttons (Top Favorites)      | `Inter-Bold13`        | `Inter-Bold.ttf`             | `Bold (700)`   | Font size is 13. Used for dbutton elements. |                                       
-| Profile Name (Main Content)          | `Inter-HeavyBold24`   | `Inter-SemiBold.ttf`         | `600`          | Font size is 17.                       |                                       
-| Status Message (Top Right)           | `Inter-HeavyBold24`   | `Inter-SemiBold.ttf`         | `600`          | Font size is 17. Also uses `mono18`.     |                                     
-| **+/- Buttons**                      | **`Inter-Bold24`**    | **`Inter-ExtraLight.ttf`**   | **`200`**      | Font size is **29**. This is a key style. |                                    
-| Data Line Labels (Mix, Group)        | `Inter-Bold18`        | `Inter-SemiBold.ttf`         | `600`          | Font size is 13.                       |                                       
-| Data Line Values (Temperatures)      | `mono12`, `mono8`     | `NotoSansMono-SemiBold.ttf`  | `600`          | Font sizes 13 and 10 respectively.     |                                       
-| Shot Data Row Labels (Preinfusion, Extraction, Total) | `Inter-Bold17` | `Inter-SemiBold.ttf` | `600` | Font size is 12. |
-| Shot Data Column Headers (Time, Grams, mL, °C, mL/s, Pressure) | `Inter-Bold17` | `Inter-SemiBold.ttf` | `600` | Font size is 12. |
-| Shot Data Values     | `mono10`| `NotoSansMono-SemiBold.ttf` | `600` | Font size is 12. |                  
-                                                                                                                                                                                                
-### 7. Color Assignments                                                                                                                                                                        
-                                                                                                                                                                                                
+### 6. Font Assignments
+
+The `skin.tcl` file uses `load_font` to create font aliases. This section maps those aliases to the font files and the UI elements they style. This is crucial for recreating the UI with correct typography in CSS.
+
+## Font Families
+
+The two primary font families used are `Inter` and a monospace font `mono`.
+
+### Inter Font Family
+
+| Font Style          | Weight    | Size | Element/Usage                                                                 |
+| ------------------- | --------- | ---- | ----------------------------------------------------------------------------- |
+| `Inter-HeavyBold24` | HeavyBold | 24   | Status messages (`status_msg_text_green`, `status_msg_text_red`)                |
+| `Inter-HeavyBold30` | HeavyBold | 30   | Data entry page cancel/confirm buttons                                        |
+| `Inter-HeavyBold35` | HeavyBold | 35   | Data entry page previous value buttons                                        |
+| `Inter-HeavyBold40` | HeavyBold | 40   | Data entry page title                                                           |
+| `Inter-HeavyBold50` | HeavyBold | 50   | Data entry page value                                                           |
+| `Inter-Bold18`      | Bold      | 18   | Dataline labels (Mix, Group, Steam, Tank, Clock, Calib, Weight, Temp, Flow, etc.), Data Card - History Date Format |
+| `Inter-Bold16`      | Bold      | 16   | Dataline separators                                                             |
+| `Inter-Bold30`      | Bold      | 30   | Data entry page numpad buttons                                                  |
+| `Inter-Bold40`      | Bold      | 40   | Data entry page numpad buttons                                                  |
+| `Inter-SemiBold18`  | SemiBold  | 18   | Dataline separators and labels, Data Card - History Profile Name & Third Line   |
+| `Inter-Regular6`    | Regular   | 6    | Progress bar text (commented out)                                               |
+| `Inter-Regular20`   | Regular   | 20   | Data entry hint, "Previous Values" label                                        |
+
+### Mono Font Family
+
+| Font Style | Weight  | Size | Element/Usage                                            |
+| ---------- | ------- | ---- | -------------------------------------------------------- |
+| `mono18`   | Regular | 18   | Clickable status messages (`status_msg_text_clickable`)  |
+| `mono12`   | Regular | 12   | Dataline data (temperature, time, flow, weight, etc.)    |
+| `mono8`    | Regular | 8    | Dataline units (ml/s, bar, g, etc.)                      |
+| `mono10`   | Regular | 12   | Shot Data Values (Time, Grams, mL, Temp, Flow, Pressure) |
+
+### 7. Color Assignments                                                                                                                                                                                                
 The `skin.tcl` file defines all colors as variables. Below is a summary of these colors for both Light and Dark modes. These should be translated into CSS Custom Properties for the rewrite.   
                                                                                                                                                                                                 
 #### Light Mode                                                                                                                                                                                 
@@ -399,3 +472,47 @@ The two primary font families used are `Inter` and a monospace font `mono`.
 | `mono18`   | Regular | 18   | Clickable status messages (`status_msg_text_clickable`)  |
 | `mono12`   | Regular | 12   | Dataline data (temperature, time, flow, weight, etc.)    |
 | `mono8`    | Regular | 8    | Dataline units (ml/s, bar, g, etc.)                      |
+
+### 9. Disabled State Colors
+
+This section outlines the colors used for UI elements when they are in a "disabled" state. This typically occurs when a machine process (like pouring, steaming, or flushing) is active, preventing user interaction with certain controls.
+
+| UI Element / Purpose | Tcl Variable Name | Light Mode | Dark Mode | Usage Notes |
+| --- | --- | --- | --- | --- |
+| Left Panel Labels Text | `::left_label_color2_disabled` | `#d0d8e5` | `#202c4c` | Used for the text of labels like "Grind", "Dose", and "Brew" when they are inactive. |
+| Left Panel Values Text | `::plus_minus_value_text_color_disabled` | `#c8cacc` | `#4a4a4a` | Used for the numeric values (e.g., "94°C") next to the left panel labels when inactive. |
+| Left Panel Preset Text | `::preset_value_color_disabled` | `#e3e4e6` | `#262a2c` | Used for the text inside the small preset buttons (e.g., "90°", "92°") when inactive. |
+| General Disabled Background | `::plus_minus_flash_off_color_disabled` | `#f4f6f7` | `#14151b` | A fallback color used for the `-disabledfill` property on many core UI background rectangles and buttons. |
+| GHC Disabled Button Fill | `::ghc_disabled_button_fill` | `#f8fafb` | `#101115` | The background color of a Group Head Control button when it is disabled. |
+| GHC Disabled Button Text | `::ghc_disabled_button_text` | `#c5d0df` | `#202635` | The text color of a Group Head Control button when it is disabled. |
+| GHC Disabled Button Outline | `::ghc_disabled_button_outline` | `#c5d0df` | `#17191e` | The border/outline color of a Group Head Control button when it is disabled. |
+| GHC Disabled Stop Button Text | `::ghc_disabled_stop_button_text_color`| `#f9f8fc` | `#5d5050` | The text color for the "Stop" GHC button when it is disabled. |
+
+---
+**Condition for Disabled State:**
+
+In `skin.tcl`, the primary condition for applying these disabled colors is the current page context. The left panel controls and their labels are duplicated. One set is shown on the `off` page with interactive colors. The other set is shown on action-specific pages (`espresso`, `steam`, `water`, `flush`, `hotwaterrinse`) and is styled with the `_disabled` color variables.
+
+**Example Implementation:**
+
+When recreating this in CSS, you could apply a class like `.controls-disabled` to a parent container when the machine is active.
+
+```css
+.left-panel-label {
+  color: var(--left-label-color2);
+}
+
+.controls-disabled .left-panel-label {
+  color: var(--left-label-color2-disabled);
+}
+
+.left-panel-value {
+  color: var(--plus-minus-value-text-color);
+}
+
+.controls-disabled .left-panel-value {
+  color: var(--plus-minus-value-text-color-disabled);
+}
+```
+
+This approach centralizes the state logic in JavaScript (adding/removing the `.controls-disabled` class) while keeping the styling concerns in CSS.

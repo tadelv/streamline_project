@@ -60,14 +60,21 @@ function displayShot(index) {
     const historyLabelEl = document.getElementById('shot-history-label');
 
     if (dateEl) {
-        dateEl.textContent = new Date(shot.timestamp).toLocaleString();
+        const date = new Date(shot.timestamp);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+
+        dateEl.textContent = `${year}/${month}/${day} ${hours}:${minutes}`;
     }
     if (profileNameEl && shot.workflow && shot.workflow.profile) {
         profileNameEl.textContent = shot.workflow.profile.title;
     }
     if (historyLabelEl) {
         if (index === 0) {
-            historyLabelEl.textContent = 'LATEST';
+            historyLabelEl.textContent = 'NEWEST';
         } else if (index === shots.length - 1) {
             historyLabelEl.textContent = 'OLDEST';
         } else {
@@ -87,7 +94,7 @@ function displayShot(index) {
     const nextBtn = document.getElementById('history-next-btn');
 
     if (prevBtn) {
-        
+
         prevBtn.classList.toggle('invisible', currentShotIndex >= shots.length - 1);
     }
     if (nextBtn) {

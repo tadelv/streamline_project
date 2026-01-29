@@ -53,18 +53,21 @@ function onScaleDisconnect() {
 // Sets a timer. If no data is received within 5 seconds, it assumes a stale connection.
 function resetDataTimeout() {
     clearTimeout(dataTimeout);
-    dataTimeout = setTimeout(() => {
+    dataTimeout = setTimeout(async () => {
         logger.warn('No WebSocket data received for 5 seconds. Assuming REA or WebSocket disconnection.');
         ui.updateMachineStatus("Disconnected");
         isDe1Connected = false;
-        devices =  scanForDevices();
-            de1Machine = devices.find(d => d.type === 'machine');
-        if (de1DeviceId) {
-            logger.info('DE1 machine connected no need to reconnect.');
-        } else {
-            reconnectDevice(de1DeviceId);
+        try {
+            const devices = await scanForDevices();
+            const de1Machine = devices.find(d => d.type === 'machine');
+            if (de1DeviceId) {
+                logger.info('DE1 machine connected no need to reconnect.');
+            } else {
+                reconnectDevice(de1DeviceId);
+            }
+        } catch (error) {
+            logger.error('Error during device reconnection attempt:', error);
         }
-
     }, 5000); // 5-second timeout
 }
 

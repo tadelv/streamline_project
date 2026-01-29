@@ -29,10 +29,15 @@ body {
     --mimoja-blue: #385A92;
     --profile-button-outline-color: #c5cdda;
     --profile-button-background-color: #FFFFFF;
-    --box-color: #f6f8fa;
+    --profile-button-text-color: #607aa7;
+    --box-color: #f8f9fb;
     --profileselectorbg: #FFFFFF;
     --low-contrast-white: #959595;
-    --dark-gray: #121212;
+    --text-primary: #121212; /* Renamed from --dark-gray */
+    --text-primary-disabled: #c8cacc;
+    --preset-value-color: #AAAAAA;
+    --preset-value-color-disabled: #e3e4e6;
+    --preset-label-selected-color: #777777;
     --green: #0CA581;
     --button-grey: #EDEDED;
 
@@ -45,11 +50,13 @@ body {
     --bg--togglebtn: #FFFFFF;
     --btn-togglebgcolor: #959595;
     --bgmain-color : #FFFFFF;
+    --data-card-title-text-color:#707485;
 }
 
 [data-theme='dark'] {
     --profile-button-outline-color: #17191e;
     --profile-button-background-color: #292c38;
+    --profile-button-text-color: #FFFFFF;
     --box-color: #17191e;
     --profileselectorbg:#17191e;
     --button-grey: #101115;
@@ -58,7 +65,13 @@ body {
     --plus-minus-flash-on-color2: #1a1d25;
     --plus-minus-flash-off-color: #101115;
     --bgmain-color : #101217;
-
+    --mimoja-blue-v2: #415996;
+    --text-primary: #e8e8e8;
+    --text-primary-disabled: #4a4a4a;
+    --preset-value-color: #4e5559;
+    --preset-value-color-disabled: #262a2c;
+    --preset-label-selected-color: #999999;
+    --data-card-title-text-color:#707485;
 }
 
 .profile-selector-bg {
@@ -96,4 +109,15 @@ body {
   -webkit-user-select: none; /* Safari */
   -ms-user-select: none;     /* IE 10+ and Edge */
   user-select: none;         /* Standard syntax */
+}
+
+@keyframes button-flash {
+    0% { background-color: var(--plus-minus-flash-on-color2); }
+    14% { background-color: var(--plus-minus-flash-on-color); } /* Approximately 40ms into a 280ms animation */
+    71% { background-color: var(--plus-minus-flash-on-color2); } /* Approximately 200ms into a 280ms animation */
+    100% { background-color: transparent; } /* Revert to original, allowing CSS classes to take over */
+}
+
+.flash-animation {
+    animation: button-flash 0.28s linear forwards; /* 'forwards' keeps the end state */
 }

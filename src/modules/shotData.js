@@ -40,7 +40,7 @@ function formatRange(values, precision) {
     const min = Math.min(...values).toFixed(precision);
     const max = Math.max(...values).toFixed(precision);
     if (min === max) return min;
-    return `${min}-${max}`;
+    return `${min}⭢${max}`;
 }
 
 function formatRangeWithPeak(values, precision) {
@@ -55,9 +55,9 @@ function formatRangeWithPeak(values, precision) {
 
     // Check if the peak (max value) is not at the beginning or the end of the phase
     if (maxIndex > 0 && maxIndex < values.length - 1) {
-        return `${min.toFixed(precision)}-${max.toFixed(precision)}-${endValue.toFixed(precision)}`;
+        return `${min.toFixed(precision)}⭢${max.toFixed(precision)}⭢${endValue.toFixed(precision)}`;
     } else {
-        return `${min.toFixed(precision)}-${max.toFixed(precision)}`;
+        return `${min.toFixed(precision)}⭢${max.toFixed(precision)}`;
     }
 }
 
@@ -124,7 +124,7 @@ function calculateAndRender(shotData) {
 
         // --- Rendering ---
         updateText(elements.pi.time, `${piTime.toFixed(1)}`);
-        updateText(elements.pi.weight, piWeight !== null ? `${piWeight.toFixed(1)}g` : 'N/A');
+        updateText(elements.pi.weight, piWeight !== null ? `${piWeight.toFixed(1)}g` : '0.0');
         updateText(elements.pi.volume, `${piVolume.toFixed(0)}`);
         updateText(elements.pi.temp, `${formatRange(piTemps, 0)}`);
         updateText(elements.pi.flow, `${formatRange(piFlows, 1)} `);
@@ -132,7 +132,7 @@ function calculateAndRender(shotData) {
 
         if (exTime > 0) {
             updateText(elements.ex.time, `${exTime.toFixed(1)}`);
-            updateText(elements.ex.weight, exWeight !== null ? `${exWeight.toFixed(1)}g` : 'N/A');
+            updateText(elements.ex.weight, exWeight !== null ? `${exWeight.toFixed(1)}g` : '0.0');
             updateText(elements.ex.volume, `${exVolume.toFixed(0)}`);
             updateText(elements.ex.temp, `${formatRange(exTemps, 0)}`);
             updateText(elements.ex.flow, `${formatRangeWithPeak(exFlows, 1)} `);
@@ -140,7 +140,7 @@ function calculateAndRender(shotData) {
         }
 
         updateText(elements.total.time, `${totalTime.toFixed(1)}`);
-        updateText(elements.total.weight, totalWeight !== null ? `${totalWeight.toFixed(1)}g` : 'N/A');
+        updateText(elements.total.weight, totalWeight !== null ? `${totalWeight.toFixed(1)}g` : '0.0');
         updateText(elements.total.volume, `${totalVolume.toFixed(0)}`);
     } catch (error) {
         logger.error('Error in calculateAndRender:', error);
@@ -200,6 +200,12 @@ export function renderPastShot(shotRecord) {
 
 export function updateShotData(de1Data, scaleWeight) {
     if (!currentShot.timestamps) return; // Don't run if not initialized
+
+    // Only process data during espresso-related states (preinfusion and pouring)
+    const espressoStates = ['preinfusion', 'pouring'];
+    if (!espressoStates.includes(de1Data.state.substate)) {
+        return;
+    }
 
     const now = new Date(de1Data.timestamp).getTime();
     currentShot.timestamps.push(now);
