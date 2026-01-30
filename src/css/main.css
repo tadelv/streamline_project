@@ -29,7 +29,7 @@ body {
     --mimoja-blue: #385A92;
     --profile-button-outline-color: #c5cdda;
     --profile-button-background-color: #FFFFFF;
-    --profile-button-text-color: #607aa7;
+    --profile-button-text-color: #7583b0;
     --box-color: #f8f9fb;
     --profileselectorbg: #FFFFFF;
     --low-contrast-white: #959595;
@@ -38,7 +38,7 @@ body {
     --preset-value-color: #AAAAAA;
     --preset-value-color-disabled: #e3e4e6;
     --preset-label-selected-color: #777777;
-    --green: #0CA581;
+    --green: #65Ac8a;
     --button-grey: #EDEDED;
 
     /* Plus Minus Flash Colors (Light Mode) */

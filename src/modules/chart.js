@@ -155,7 +155,7 @@ function getAnnotations() {
 
     // 1. Collect potential labels
     for (const traceName in chartData) {
-        if (traceName === 'targetPressure' || traceName === 'targetFlow') {
+        if (traceName === 'targetPressure' || traceName === 'targetFlow' || traceName === 'targetTemperature') {
             continue;
         }
         const trace = chartData[traceName];
