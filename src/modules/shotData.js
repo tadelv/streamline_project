@@ -40,7 +40,7 @@ function formatRange(values, precision) {
     const min = Math.min(...values).toFixed(precision);
     const max = Math.max(...values).toFixed(precision);
     if (min === max) return min;
-    return `${min}⭢${max}`;
+    return `${min}➔${max}`;
 }
 
 function formatRangeWithPeak(values, precision) {
@@ -55,9 +55,9 @@ function formatRangeWithPeak(values, precision) {
 
     // Check if the peak (max value) is not at the beginning or the end of the phase
     if (maxIndex > 0 && maxIndex < values.length - 1) {
-        return `${min.toFixed(precision)}⭢${max.toFixed(precision)}⭢${endValue.toFixed(precision)}`;
+        return `${min.toFixed(precision)}➔${max.toFixed(precision)}➔${endValue.toFixed(precision)}`;
     } else {
-        return `${min.toFixed(precision)}⭢${max.toFixed(precision)}`;
+        return `${min.toFixed(precision)}➔${max.toFixed(precision)}`;
     }
 }
 
