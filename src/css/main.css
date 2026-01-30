@@ -51,6 +51,8 @@ body {
     --btn-togglebgcolor: #959595;
     --bgmain-color : #FFFFFF;
     --data-card-title-text-color:#707485;
+    /* left label text colors */
+    --left-label-text : #51639c;
 }
 
 [data-theme='dark'] {
@@ -72,6 +74,8 @@ body {
     --preset-value-color-disabled: #262a2c;
     --preset-label-selected-color: #999999;
     --data-card-title-text-color:#707485;
+     /* left label text colors */
+    --left-label-text :#415996;
 }
 
 .profile-selector-bg {
