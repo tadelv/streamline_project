@@ -134,7 +134,7 @@ function updateTemperatureValue(newValue) {
 function updateGrindValue(newValue) {
     const workflowUpdate = {
         grinderData: {
-            setting: newValue.toString()
+            setting: parseFloat(newValue).toFixed(2)
         }
     };
     updateWorkflow(workflowUpdate).then(() => {
@@ -1080,18 +1080,34 @@ export function updateMachineStatus(status) {
     logger.debug(`Updating machine status to: ${status}`);
     const machineStatusEl = document.getElementById('machine-status');
     if (machineStatusEl) {
-        machineStatusEl.textContent = status;
+        // Check if this is a heating status with seconds remaining
+        if (status.startsWith('Heating: ') && status.includes('s remaining')) {
+            // Split the status into parts: "Heating: " and "XXs remaining"
+            const match = status.match(/^(Heating: )(\d+s remaining)$/);
+            if (match) {
+                const [, heatingPart, secondsPart] = match;
+
+                // Create HTML with different styling for each part
+                machineStatusEl.innerHTML = `${heatingPart}<span class="text-[var(--heatingstatus)]">${secondsPart}</span>`;
+            } else {
+                // Fallback to plain text if the pattern doesn't match
+                machineStatusEl.textContent = status;
+            }
+        } else {
+            // For non-heating statuses, use plain text
+            machineStatusEl.textContent = status;
+        }
 
         // Set color based on status
         if (status === "Disconnected" || status === "Error" || status.startsWith('Heating')) {
-            machineStatusEl.classList.remove('text-[var(--green)]');
+            machineStatusEl.classList.remove('text-[var(--status-ready-green)]');
             machineStatusEl.classList.add('text-red-500');
         } else {
             if (status === "Idle"){
                 machineStatusEl.textContent = "Ready";
             }
             machineStatusEl.classList.remove('text-red-500');
-            machineStatusEl.classList.add('text-[var(--green)]');
+            machineStatusEl.classList.add('text-[var(--status-ready-green)]');
         }
     }
 }

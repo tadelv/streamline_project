@@ -81,14 +81,18 @@ const chartData = {
 const lightLayout = {
     plot_bgcolor: 'white',
     paper_bgcolor: 'white',
-    font: { color: 'black' },
+    font: { color: '#E0E0E0',size: 16, },
     xaxis: {
         gridcolor: '#E0E0E0',
+        linecolor: '#E0E0E0', // Set line color for x-axis
+        tickcolor: '#E0E0E0', // Set tick color for x-axis
         dtick: 1,
         fixedrange: true
     },
     yaxis: {
         gridcolor: '#E0E0E0',
+        linecolor: '#E0E0E0', // Set line color for y-axis
+        tickcolor: '#E0E0E0', // Set tick color for y-axis
         range: [0, 10],
         dtick: 1,
         fixedrange: true
@@ -109,14 +113,18 @@ const lightLayout = {
 const darkLayout = {
     plot_bgcolor: '#0d0e14',
     paper_bgcolor: '#0d0e14',
-    font: { color: '#e8e8e8' },
+    font: { color: '#959595',size: 16, },
     xaxis: {
-        gridcolor: '#212227',
+        gridcolor: '#959595',
+        linecolor: '#959595', // Set line color for x-axis
+        tickcolor: '#959595', // Set tick color for x-axis
         dtick: 1,
         fixedrange: true
     },
     yaxis: {
-        gridcolor: '#212227',
+        gridcolor: '#959595',
+        linecolor: '#959595', // Set line color for y-axis
+        tickcolor: '#959595', // Set tick color for y-axis
         range: [0, 10],
         dtick: 1
         ,fixedrange: true

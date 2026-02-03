@@ -27,6 +27,7 @@ body {
 :root {
     --mimoja-blue-v2: #385A92;
     --mimoja-blue: #385A92;
+    
     --profile-button-outline-color: #c5cdda;
     --profile-button-background-color: #FFFFFF;
     --profile-button-text-color: #7583b0;
@@ -53,6 +54,9 @@ body {
     --data-card-title-text-color:#707485;
     /* left label text colors */
     --left-label-text : #51639c;
+    /*status mesg */
+    --heatingstatus:#1967d4;
+    --status-ready-green:#0CA581;
 }
 
 [data-theme='dark'] {

@@ -26,12 +26,14 @@ let de1DeviceId = null;
 let isDe1Connected = false; // New variable to track DE1 connection status
 let isScaleConnected = false; // New variable to track Scale connection status
 let previousState = {}; // Track previous machine state object {state, substate}
-let scaleReconnectPoller = null;
+
 let latestScaleWeight = 0;
 let heatingStartTime = null;
 let heatingStartTemp = 0;
 let isConnectingScale = false;
 let timeToReadyMessage = null;
+let isHeatingFromTimeToReady = false; // Flag to track if we're currently in a heating phase from time-to-ready
+let timeToReadyStatus = null; // Track the status from time-to-ready data
 
 // To filter the chart to only show data from the 'pouring' state,
 // set this variable to true in your browser's developer console.
@@ -109,18 +111,35 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
 }
 
 function handleTimeToReadyData(data) {
+    logger.debug("handleTimeToReadyData received new data:", data);
     if (data.status === 'heating' && data.remainingTimeMs > 0) {
         const totalSeconds = Math.round(data.remainingTimeMs / 1000);
         const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        // logger.debug("time to read data",data);
-        if (minutes > 0) {
-            timeToReadyMessage = `~${minutes}m ${seconds}s until ready`;
-        } else {
-            timeToReadyMessage = `~${seconds}s until ready`;
+        timeToReadyStatus = data.status; // Store the status globally
+
+        // Check if we're close to reaching the target (within 10 seconds)
+        if (totalSeconds <= 15) {
+            timeToReadyStatus = 'reached';
         }
+
+        // logger.debug("time to read data",data);
+        if (minutes > 5) {
+            timeToReadyMessage = `Heating`;
+        } else {
+            timeToReadyMessage = `Heating: ${totalSeconds}s remaining`;
+        }
+
+        // Update the machine status directly when heating info is received
+        isHeatingFromTimeToReady = true; // Set flag to indicate we're in a heating phase
     } else {
         timeToReadyMessage = null;
+        timeToReadyStatus = data.status; // Update status to reflect current state
+        isHeatingFromTimeToReady = false; // Clear flag when not heating
+
+        // When heating is complete (reached), let handleData take over
+        if (data.status === 'reached') {
+            timeToReadyStatus = 'reached';
+        }
     }
 }
 
@@ -153,14 +172,14 @@ function handleData(data) {
         if (ui.isScreensaverActive()) {
             ui.deactivateScreensaver();
         }
-        if (isHeating) {
-            if (timeToReadyMessage) {
-                statusString = timeToReadyMessage;
-            } else {
-                const targetGroupTemp = data.targetGroupTemperature;
-                const currentGroupTemp = data.groupTemperature;
-                statusString = `Heating... (${currentGroupTemp.toFixed(0)}°c / ${targetGroupTemp.toFixed(0)}°c)`;
-            }
+        if (isHeating && isHeatingFromTimeToReady) {
+            // When heating and we're in a heating phase from time-to-ready,
+            // rely solely on timeToReadyMessage from the time-to-ready WebSocket
+            // Don't show temperature details here anymore
+            statusString = timeToReadyMessage || "Heating";
+        } else if (isHeating) {
+            // When heating but not in a time-to-ready phase, show generic heating
+            statusString = "Heating";
         } else {
             const formattedState = formatStateString(state);
             const formattedSubstate = formatStateString(substate);
