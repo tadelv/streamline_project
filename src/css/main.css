@@ -12,6 +12,14 @@
 @font-face { font-family: 'NotoSansMono'; src: url('../ui/NotoSansMono-SemiBold.ttf') format('truetype'); font-weight: 600; }
 @font-face { font-family: 'NotoSansMono'; src: url('../ui/NotoSansMono-ExtraBold.ttf') format('truetype'); font-weight: 800; }
 
+html, body {
+    overflow: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Inter', sans-serif;
 }
