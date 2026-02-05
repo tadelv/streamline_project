@@ -410,12 +410,31 @@ export async function getWorkflow() {
 }
 
 export async function updateWorkflow(data) {
+    // Deep copy to avoid side effects on the original object.
+    const dataToSend = JSON.parse(JSON.stringify(data));
+
+    // Helper to find and convert grinder setting to an integer.
+    const convertGrinderSettingToInt = (obj) => {
+        if (obj && obj.grinderData && typeof obj.grinderData.setting !== 'undefined') {
+            const intValue = parseInt(obj.grinderData.setting, 10);
+            if (!isNaN(intValue)) {
+                obj.grinderData.setting = intValue;
+            }
+        }
+    };
+
+    // Check for grinderData at the top level and within a profile object.
+    convertGrinderSettingToInt(dataToSend);
+    if (dataToSend.profile) {
+        convertGrinderSettingToInt(dataToSend.profile);
+    }
+
     const response = await fetch(`${API_BASE_URL}/workflow`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(dataToSend),
     });
     if (!response.ok) {
         throw new Error('Failed to update workflow');
@@ -541,14 +560,27 @@ export async function setDe1Settings(settings) {
 }
 
 export async function getDe1AdvancedSettings() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+
+    const url = `${API_BASE_URL}/machine/settings/advanced`;
+    logger.info(`Fetching advanced settings from: ${url}`); // Log the URL
+
     try {
-        const response = await fetch(`${API_BASE_URL}/machine/settings/advanced`);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId); // Clear the timeout if the fetch completes in time
+
         if (!response.ok) {
             throw new Error(`Failed to get DE1 advanced settings: ${response.statusText}`);
         }
         return await response.json();
     } catch (error) {
-        logger.error("Error in getDe1AdvancedSettings:", error);
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+            logger.error(`Error in getDe1AdvancedSettings: Request timed out after 5 seconds.`);
+        } else {
+            logger.error("Error in getDe1AdvancedSettings:", error);
+        }
         return null;
     }
 }

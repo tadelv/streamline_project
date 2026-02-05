@@ -212,6 +212,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         const profileManagerModule = await import('/src/modules/profileManager.js');
                         const shotDataModule = await import('/src/modules/shotData.js');
                         const { initWaterTankSocket } = await import('/src/modules/waterTank.js');
+                        const { showScaleInfo } = uiModule;
 
                         await i18nModule.initI18n(); // Reinitialize translations
                         uiModule.initUI({ onWeightClick: window.handleWeightClick || (() => {}) }); // Reinitialize UI components
@@ -225,6 +226,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         // Wait a bit to ensure DOM is fully updated before initializing profile manager
                         await new Promise(resolve => setTimeout(resolve, 50));
                         await profileManagerModule.init(); // Reinitialize profile manager
+                        showScaleInfo(); // Make sure the scale info container is visible
 
                         // Import and call loadInitialData directly to ensure profile information is updated
                         const appModule = await import('/src/modules/app.js');

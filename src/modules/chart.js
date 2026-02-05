@@ -1,10 +1,17 @@
 import { logger } from './logger.js';
 
+// Define colors for step markers
+const STEP_MARKER_COLORS = {
+    dark: '#E0E0E0',
+    light: '#959595'
+};
+
 // Function to get or update the chart element reference
 function getChartElement() {
     return document.getElementById('plotly-chart');
 }
 let currentSubstate = 'idle';
+let previousSubstateForShape = 'idle'; // To track step changes for vertical lines
 let annotationUpdateCounter = 0;
 const ANNOTATION_UPDATE_THROTTLE = 10; // Update every 10 data points
 let lastWeight = 0;
@@ -12,7 +19,8 @@ let lastTime = 0;
 const SMOOTHING_FACTOR = 0.1;
 let smoothedWeightChange = 0;
 
-const chartData = {
+// Base chart data with light mode defaults
+const baseChartData = {
     pressure: {
         x: [],
         y: [],
@@ -78,42 +86,14 @@ const chartData = {
     }
 };
 
-const lightLayout = {
-    plot_bgcolor: 'white',
-    paper_bgcolor: 'white',
-    font: { color: '#E0E0E0',size: 16, },
-    xaxis: {
-        gridcolor: '#E0E0E0',
-        linecolor: '#E0E0E0', // Set line color for x-axis
-        tickcolor: '#E0E0E0', // Set tick color for x-axis
-        dtick: 1,
-        fixedrange: true
-    },
-    yaxis: {
-        gridcolor: '#E0E0E0',
-        linecolor: '#E0E0E0', // Set line color for y-axis
-        tickcolor: '#E0E0E0', // Set tick color for y-axis
-        range: [0, 10],
-        dtick: 1,
-        fixedrange: true
-    },
-    autosize: true,
-    margin: {
-        autoexpand: true,
-        l: 50,
-        r: 50,
-        t: 20,
-        b: 40,
-        pad: 0
-    },
-    showlegend: false,
+// Create chartData with initial values
+const chartData = JSON.parse(JSON.stringify(baseChartData));
 
-};
-
-const darkLayout = {
+const baseLayout = {
     plot_bgcolor: '#0d0e14',
     paper_bgcolor: '#0d0e14',
-    font: { color: '#959595',size: 16, },
+    font: { color: '#959595', size: 16 },
+    shapes: [], // Initialize shapes array for vertical lines
     xaxis: {
         gridcolor: '#959595',
         linecolor: '#959595', // Set line color for x-axis
@@ -126,8 +106,8 @@ const darkLayout = {
         linecolor: '#959595', // Set line color for y-axis
         tickcolor: '#959595', // Set tick color for y-axis
         range: [0, 10],
-        dtick: 1
-        ,fixedrange: true
+        dtick: 1,
+        fixedrange: true
     },
     autosize: true,
     margin: {
@@ -141,6 +121,27 @@ const darkLayout = {
     showlegend: false,
 };
 
+const lightLayout = {
+    ...baseLayout,
+    plot_bgcolor: 'white',
+    paper_bgcolor: 'white',
+    font: { color: '#E0E0E0', size: 16 },
+    xaxis: {
+        ...baseLayout.xaxis,
+        gridcolor: '#E0E0E0',
+        linecolor: '#E0E0E0',
+        tickcolor: '#E0E0E0'
+    },
+    yaxis: {
+        ...baseLayout.yaxis,
+        gridcolor: '#E0E0E0',
+        linecolor: '#E0E0E0',
+        tickcolor: '#E0E0E0'
+    }
+};
+
+const darkLayout = { ...baseLayout };
+
 const labelColors = {
     light: {
         pressure: '#17c29a',
@@ -151,7 +152,7 @@ const labelColors = {
     dark: {
         pressure: '#17c29a',
         flow: '#0358cf',
-        groupTemperature: '#ff97a1',
+        groupTemperature: '#AE6D73',
         weight: '#695f57'
     }
 };
@@ -214,15 +215,125 @@ function getAnnotations() {
     return annotations;
 }
 
+// Helper function to add vertical lines for substate changes and annotations
+function addStepMarker(layout, time, theme, stepName = '') {
+    if (!layout.shapes) {
+        layout.shapes = [];
+    }
+    layout.shapes.push({
+        type: 'line',
+        x0: time,
+        x1: time,
+        y0: 0,
+        y1: 1,
+        yref: 'paper',
+        line: {
+            color: theme === 'dark' ? STEP_MARKER_COLORS.dark : STEP_MARKER_COLORS.light, // ::state_change_color from skin.tcl
+            width: 2,
+            dash: 'dot' // ::state_change_dashes from skin.tcl is dot equivalent
+        }
+    });
+
+    if (stepName) {
+        if (!layout.annotations) {
+            layout.annotations = [];
+        }
+        layout.annotations.push({
+            x: time,
+            y: 1.0, // Position at the top of the chart
+            xref: 'x',
+            yref: 'paper',
+            text: stepName,
+            showarrow: false,
+            xanchor: 'left',
+            yanchor: 'bottom',
+            textangle: -90, // Rotate text to be vertical
+            font: {
+                color: theme === 'dark' ? STEP_MARKER_COLORS.dark : STEP_MARKER_COLORS.light, // Same color as line
+                size: 10
+            }
+        });
+    }
+}
+
+// Global variable to store the current profile for real-time step change detection
+let currentProfile = null;
+let liveProfileFrame = -1; // Track current profileFrame for live data
+// let currentStepIndex = 0; // No longer needed for this logic
+// let stepExitDetected = false; // No longer needed for this logic
+
+// Store pending updates to batch them for better performance
+let pendingUpdates = {
+    shapes: null,
+    annotations: null
+};
+
+export function setCurrentProfile(profile) {
+    currentProfile = profile;
+    resetProfileTracking(); // Encapsulate the reset logic
+}
+
+function resetProfileTracking() {
+    liveProfileFrame = -1;
+    // Reset any other tracking variables if needed
+}
+
+// Helper function to handle profile frame changes
+function handleProfileFrameChange(currentFrame, previousFrameRef, time, profile, theme) {
+    if (currentFrame !== previousFrameRef.current) {
+        previousFrameRef.current = currentFrame;
+        if (currentFrame >= 0 && currentFrame < profile.steps.length) {
+            const stepName = profile.steps[currentFrame].name;
+            const layout = theme === 'dark' ? darkLayout : lightLayout;
+
+            addStepMarker(layout, time, theme, stepName);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Function to apply pending updates to the chart
+function applyPendingUpdates() {
+    if (pendingUpdates.shapes || pendingUpdates.annotations) {
+        const element = getChartElement();
+        if (element) {
+            Plotly.relayout(element, {
+                shapes: pendingUpdates.shapes,
+                annotations: pendingUpdates.annotations
+            });
+        }
+        // Reset pending updates
+        pendingUpdates = { shapes: null, annotations: null };
+    }
+}
+
 export function updateChart(shotStartTime, data, weight, filterToPouring = true) {
-    if (data && data.state && data.state.substate) { // Add safety check
+    if (data && data.state && data.state.substate) {
         currentSubstate = data.state.substate;
     }
+
     const time = (new Date(data.timestamp) - shotStartTime) / 1000;
 
+    // New logic: Add vertical line and annotation at the start of each step based on profileFrame
+    if (currentProfile && currentProfile.steps && data.profileFrame !== undefined && data.profileFrame !== null) {
+        const profileFrameRef = { current: liveProfileFrame };
+        const theme = localStorage.getItem('theme') || 'light';
+
+        if (handleProfileFrameChange(data.profileFrame, profileFrameRef, time, currentProfile, theme)) {
+            // Update the global variable after processing the change
+            liveProfileFrame = profileFrameRef.current;
+
+            const layout = theme === 'dark' ? darkLayout : lightLayout;
+            const element = getChartElement();
+            if (element) {
+                Plotly.relayout(element, { shapes: layout.shapes, annotations: layout.annotations });
+            }
+        }
+    }
+
+
     if (filterToPouring) {
-        // Only chart during espresso-related states (preinfusion and pouring)
-        // Exclude steam, flush, hot water, and other non-espresso states
         const espressoStates = ['preinfusion', 'pouring'];
         if (!espressoStates.includes(data.state.substate)) {
             return;
@@ -262,16 +373,15 @@ export function updateChart(shotStartTime, data, weight, filterToPouring = true)
         console.error('updateChart: chartElement not found in DOM');
         return;
     }
-    // Calculate appropriate x-axis tick spacing based on the current time
     let dtickValue;
     if (time < 15) {
-        dtickValue = 1;  // 1 second intervals for shots less than 10 seconds
+        dtickValue = 1;
     } else if (time < 60) {
-        dtickValue = 5;  // 5 second intervals for shots less than 60 seconds
+        dtickValue = 5;
     } else if (time < 100) {
-        dtickValue = 20; // 20 second intervals for shots less than 100 seconds
+        dtickValue = 20;
     } else {
-        dtickValue = 30; // 30 second intervals for shots 100 seconds or longer
+        dtickValue = 30;
     }
 
     Plotly.extendTraces(element, {
@@ -279,7 +389,6 @@ export function updateChart(shotStartTime, data, weight, filterToPouring = true)
         y: [[pressureY], [flowY], [targetPressureY], [targetFlowY], [groupTemperatureY], [weightY]]
     }, [0, 1, 2, 3, 4, 5]);
 
-    // Update the x-axis tick spacing
     Plotly.relayout(element, {
         'xaxis.dtick': dtickValue
     });
@@ -293,10 +402,12 @@ export function clearChart() {
     lastWeight = 0;
     lastTime = 0;
     smoothedWeightChange = 0;
+    previousSubstateForShape = 'idle';
     const theme = localStorage.getItem('theme') || 'light';
     const layout = theme === 'dark' ? darkLayout : lightLayout;
     layout.annotations = [];
-    layout.xaxis.range = [0, 10];
+    layout.shapes = []; // Clear shapes when chart is cleared
+    // Don't set xaxis range here to allow dynamic scaling based on data
     const element = getChartElement();
     if (!element) {
         console.error('clearChart: chartElement not found in DOM');
@@ -305,7 +416,7 @@ export function clearChart() {
     Plotly.react(element, Object.values(chartData), layout);
 }
 
-export function plotHistoricalShot(measurements) {
+export function plotHistoricalShot(measurements, workflow = null) {
     if (!measurements || measurements.length === 0) {
         return;
     }
@@ -314,18 +425,14 @@ export function plotHistoricalShot(measurements) {
 
     let shotStartTime = null;
 
-    // First, find the timestamp of the first data point that marks the start of the shot (preinfusion or pouring).
-    // This will establish t=0 for the x-axis.
     for (const dataPoint of measurements) {
         const machineData = dataPoint.machine;
         if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring' )) {
             shotStartTime = new Date(machineData.timestamp);
-            break; // Exit after finding the first relevant data point
+            break;
         }
     }
 
-    // If no data point marks the beginning of a shot, we can't plot it correctly from t=0.
-    // As a fallback, try to find the earliest timestamp available in the data.
     if (!shotStartTime) {
         console.warn("plotHistoricalShot: Could not find a starting data point (preinfusion/pouring) to begin the chart at t=0.");
         const firstPoint = measurements.find(p => (p.machine && p.machine.timestamp) || (p.scale && p.scale.timestamp));
@@ -335,11 +442,10 @@ export function plotHistoricalShot(measurements) {
             shotStartTime = (machineTs && scaleTs) ? (machineTs < scaleTs ? machineTs : scaleTs) : (machineTs || scaleTs);
         } else {
             console.error("plotHistoricalShot: No timestamps found in any measurements.");
-            return; // No data to plot.
+            return;
         }
     }
 
-    // Find the shot end time - only consider actual espresso-related states
     let shotEndTime = null;
     for (let i = measurements.length - 1; i >= 0; i--) {
         const machineData = measurements[i].machine;
@@ -363,50 +469,123 @@ export function plotHistoricalShot(measurements) {
     let lastScaleTime = 0;
     let localSmoothedWeightChange = 0;
 
-    for (const dataPoint of measurements) {
-        const machineData = dataPoint.machine;
-        const scaleData = dataPoint.scale;
-        // logger.info("plotHistoricalShot machineData",machineData);
-        if (machineData && machineData.state && (machineData.state.substate === 'preinfusion' || machineData.state.substate === 'pouring' )) {
-            // || machineData.state.substate === 'pouringDone'
-            const time = (new Date(machineData.timestamp) - shotStartTime) / 1000;
-            if (time >= 0) {
-                tempChartData.pressure.x.push(time);
-                tempChartData.pressure.y.push(machineData.pressure);
-                tempChartData.flow.x.push(time);
-                tempChartData.flow.y.push(machineData.flow);
-                tempChartData.targetPressure.x.push(time);
-                tempChartData.targetPressure.y.push(machineData.targetPressure);
-                tempChartData.targetFlow.x.push(time);
-                tempChartData.targetFlow.y.push(machineData.targetFlow);
-                tempChartData.groupTemperature.x.push(time);
-                tempChartData.groupTemperature.y.push((machineData.groupTemperature / 100) * 10);
+    let historicalCurrentProfileFrame = -1; // Track current profileFrame for historical data
 
-                // Add target temperature data from targetGroupTemperature field
-                tempChartData.targetTemperature.x.push(time);
-                tempChartData.targetTemperature.y.push((machineData.targetGroupTemperature / 100) * 10);
+    // If workflow is provided, use step exit conditions for vertical lines
+    if (workflow && workflow.profile && workflow.profile.steps) {
+        const steps = workflow.profile.steps;
+        const theme = localStorage.getItem('theme') || 'light';
+        const layout = theme === 'dark' ? darkLayout : lightLayout;
+
+        for (const dataPoint of measurements) {
+            const machineData = dataPoint.machine;
+            const scaleData = dataPoint.scale;
+
+            if (machineData && machineData.state && machineData.state.substate) {
+                const currentState = machineData.state.substate;
+                const time = (new Date(machineData.timestamp) - shotStartTime) / 1000;
+
+                // Only add data points during espresso phases
+                if (currentState === 'preinfusion' || currentState === 'pouring') {
+                    if (time >= 0) {
+                        tempChartData.pressure.x.push(time);
+                        tempChartData.pressure.y.push(machineData.pressure);
+                        tempChartData.flow.x.push(time);
+                        tempChartData.flow.y.push(machineData.flow);
+                        tempChartData.targetPressure.x.push(time);
+                        tempChartData.targetPressure.y.push(machineData.targetPressure);
+                        tempChartData.targetFlow.x.push(time);
+                        tempChartData.targetFlow.y.push(machineData.targetFlow);
+                        tempChartData.groupTemperature.x.push(time);
+                        tempChartData.groupTemperature.y.push((machineData.groupTemperature / 100) * 10);
+                        tempChartData.targetTemperature.x.push(time);
+                        tempChartData.targetTemperature.y.push((machineData.targetGroupTemperature / 100) * 10);
+                    }
+
+                    // New logic: Add vertical line and annotation at the start of each step based on profileFrame
+                    if (machineData.profileFrame !== undefined && machineData.profileFrame !== null) {
+                        const profileFrameRef = { current: historicalCurrentProfileFrame };
+
+                        if (handleProfileFrameChange(machineData.profileFrame, profileFrameRef, time, { steps }, theme)) {
+                            // Update the global variable after processing the change
+                            historicalCurrentProfileFrame = profileFrameRef.current;
+                        }
+                    }
+                }
+            }
+
+
+            if (scaleData && scaleData.weight) {
+                const scaleTimestamp = new Date(scaleData.timestamp);
+                if (shotEndTime && scaleTimestamp > shotEndTime) {
+                    continue;
+                }
+                const time = (scaleTimestamp - shotStartTime) / 1000;
+                if (time >= 0) {
+                    let weightChange = 0;
+                    if (lastScaleTime > 0 && time > lastScaleTime) {
+                        const timeDiff = time - lastScaleTime;
+                        const rawWeightChange = (scaleData.weight - lastScaleWeight) / timeDiff;
+                        localSmoothedWeightChange = (SMOOTHING_FACTOR * rawWeightChange) + (1 - SMOOTHING_FACTOR) * localSmoothedWeightChange;
+                        weightChange = localSmoothedWeightChange;
+                    }
+                    tempChartData.weight.x.push(time);
+                    tempChartData.weight.y.push(weightChange);
+                    lastScaleWeight = scaleData.weight;
+                    lastScaleTime = time;
+                }
             }
         }
+    } else {
+        // Fallback to original behavior if no workflow is provided
+        // But only add data points, no vertical lines for substate changes
+        for (const dataPoint of measurements) {
+            const machineData = dataPoint.machine;
+            const scaleData = dataPoint.scale;
 
-        if (scaleData && scaleData.weight) {
-            const scaleTimestamp = new Date(scaleData.timestamp);
-            // Only process scale data within the shot time range
-            if (shotEndTime && scaleTimestamp > shotEndTime) {
-                continue; // Skip this data point if it's after shot end time
-            }
-            const time = (scaleTimestamp - shotStartTime) / 1000;
-            if (time >= 0) {
-                let weightChange = 0;
-                if (lastScaleTime > 0 && time > lastScaleTime) {
-                    const timeDiff = time - lastScaleTime;
-                    const rawWeightChange = (scaleData.weight - lastScaleWeight) / timeDiff;
-                    localSmoothedWeightChange = (SMOOTHING_FACTOR * rawWeightChange) + (1 - SMOOTHING_FACTOR) * localSmoothedWeightChange;
-                    weightChange = localSmoothedWeightChange;
+            // Process machine data
+            if (machineData && machineData.state && machineData.state.substate) {
+                const currentState = machineData.state.substate;
+
+                // Only add data points during espresso phases
+                if (currentState === 'preinfusion' || currentState === 'pouring') {
+                    const time = (new Date(machineData.timestamp) - shotStartTime) / 1000;
+                    if (time >= 0) {
+                        tempChartData.pressure.x.push(time);
+                        tempChartData.pressure.y.push(machineData.pressure);
+                        tempChartData.flow.x.push(time);
+                        tempChartData.flow.y.push(machineData.flow);
+                        tempChartData.targetPressure.x.push(time);
+                        tempChartData.targetPressure.y.push(machineData.targetPressure);
+                        tempChartData.targetFlow.x.push(time);
+                        tempChartData.targetFlow.y.push(machineData.targetFlow);
+                        tempChartData.groupTemperature.x.push(time);
+                        tempChartData.groupTemperature.y.push((machineData.groupTemperature / 100) * 10);
+                        tempChartData.targetTemperature.x.push(time);
+                        tempChartData.targetTemperature.y.push((machineData.targetGroupTemperature / 100) * 10);
+                    }
                 }
-                tempChartData.weight.x.push(time);
-                tempChartData.weight.y.push(weightChange);
-                lastScaleWeight = scaleData.weight;
-                lastScaleTime = time;
+            }
+
+            if (scaleData && scaleData.weight) {
+                const scaleTimestamp = new Date(scaleData.timestamp);
+                if (shotEndTime && scaleTimestamp > shotEndTime) {
+                    continue;
+                }
+                const time = (scaleTimestamp - shotStartTime) / 1000;
+                if (time >= 0) {
+                    let weightChange = 0;
+                    if (lastScaleTime > 0 && time > lastScaleTime) {
+                        const timeDiff = time - lastScaleTime;
+                        const rawWeightChange = (scaleData.weight - lastScaleWeight) / timeDiff;
+                        localSmoothedWeightChange = (SMOOTHING_FACTOR * rawWeightChange) + (1 - SMOOTHING_FACTOR) * localSmoothedWeightChange;
+                        weightChange = localSmoothedWeightChange;
+                    }
+                    tempChartData.weight.x.push(time);
+                    tempChartData.weight.y.push(weightChange);
+                    lastScaleWeight = scaleData.weight;
+                    lastScaleTime = time;
+                }
             }
         }
     }
@@ -417,8 +596,6 @@ export function plotHistoricalShot(measurements) {
             chartData[key].y = tempChartData[key].y;
         }
     });
-
-    // Calculate the maximum time value to determine appropriate x-axis tick spacing
     let maxTime = 0;
     for (const traceName in tempChartData) {
         const trace = tempChartData[traceName];
@@ -429,17 +606,15 @@ export function plotHistoricalShot(measurements) {
             }
         }
     }
-
-    // Determine appropriate x-axis tick spacing based on the maximum time
     let dtickValue;
     if (maxTime < 10) {
-        dtickValue = 1;  // 1 second intervals for shots less than 10 seconds
+        dtickValue = 1;
     } else if (maxTime < 60) {
-        dtickValue = 5;  // 5 second intervals for shots less than 60 seconds
+        dtickValue = 5;
     } else if (maxTime < 100) {
-        dtickValue = 20; // 20 second intervals for shots less than 100 seconds
+        dtickValue = 20;
     } else {
-        dtickValue = 30; // 30 second intervals for shots 100 seconds or longer
+        dtickValue = 30;
     }
 
     const theme = localStorage.getItem('theme') || 'light';
@@ -453,10 +628,42 @@ export function plotHistoricalShot(measurements) {
     }
     Plotly.react(element, Object.values(chartData), layout, {displayModeBar: false});
 
-    // Update the x-axis tick spacing for historical shot
     Plotly.relayout(element, {
         'xaxis.dtick': dtickValue
     });
+}
+
+// Helper function to check if exit condition is met
+function checkExitCondition(machineData, exitCondition) {
+    if (!exitCondition || !machineData) return false;
+
+    const { type, condition, value } = exitCondition;
+
+    switch (type) {
+        case 'pressure':
+            if (condition === 'over') return machineData.pressure > value;
+            if (condition === 'under') return machineData.pressure < value;
+            break;
+        case 'flow':
+            if (condition === 'over') return machineData.flow > value;
+            if (condition === 'under') return machineData.flow < value;
+            break;
+        case 'temperature':
+            if (condition === 'over') return machineData.mixTemperature > value;
+            if (condition === 'under') return machineData.mixTemperature < value;
+            break;
+        case 'weight':
+            // Weight is in scale data, not machine data
+            // This would need to be handled differently
+            break;
+        case 'time':
+            // Time-based exits would be handled differently
+            break;
+        default:
+            return false;
+    }
+
+    return false;
 }
 
 export function plotProfile(profile) {
@@ -465,7 +672,6 @@ export function plotProfile(profile) {
         return;
     }
 
-    // Clear all data but keep trace styles
     for (const trace in chartData) {
         chartData[trace].x = [];
         chartData[trace].y = [];
@@ -480,7 +686,6 @@ export function plotProfile(profile) {
 
     let currentTime = 0;
 
-    // Start at 0,0, and initial temperature
     const initialTemp = (parseFloat(profile.steps[0].temperature || 0) / 100) * 10;
     tpX.push(0);
     tpY.push(0);
@@ -504,8 +709,6 @@ export function plotProfile(profile) {
             flow = parseFloat(step.flow || 0);
         }
 
-        // Add points for the step. Plotly will create a step-chart effect.
-        // A null value creates a break in the line.
         tpX.push(currentTime, nextTime);
         tpY.push(pressure, pressure);
 
@@ -519,13 +722,11 @@ export function plotProfile(profile) {
     }
 
     const theme = localStorage.getItem('theme') || 'light';
-    // Deep copy layout to avoid side effects on other charts
     const layout = JSON.parse(JSON.stringify(theme === 'dark' ? darkLayout : lightLayout));
-    layout.annotations = []; // Annotations are for live data, not static profiles
+    layout.annotations = [];
+    layout.shapes = []; // Clear shapes for profile plot
     layout.xaxis.range = [0, currentTime];
-    layout.xaxis.dtick = 10; // Set x-axis ticks to every 10 seconds
-
-    // Create a deep copy of traces to modify line style for this plot only
+    layout.xaxis.dtick = 10;
     const plotData = JSON.parse(JSON.stringify(Object.values(chartData)));
 
     const targetPressureTrace = plotData.find(trace => trace.name === 'Target Pressure');
@@ -553,10 +754,26 @@ export function plotProfile(profile) {
     Plotly.react(element, plotData, layout, {displayModeBar: false});
 }
 
+// Function to update chart colors based on theme
+function updateChartColors(theme) {
+    const isDark = theme === 'dark';
+
+    // Update target flow line color
+    chartData.targetFlow.line.color = isDark ? '#23416c' : baseChartData.targetFlow.line.color;
+
+    // Update target temperature line color
+    chartData.targetTemperature.line.color = isDark ? '#3e3233' : baseChartData.targetTemperature.line.color;
+
+    // Update temperature line color
+    chartData.groupTemperature.line.color = isDark ? '#AE6D73' : baseChartData.groupTemperature.line.color;
+
+    // Update weight line color
+    chartData.weight.line.color = isDark ? '#695f57' : baseChartData.weight.line.color;
+}
+
 export function initChart() {
     console.log('initChart: Starting chart initialization');
 
-    // Get the chart element - it should exist by now since this is called after DOM is updated
     const element = getChartElement();
     if (!element) {
         console.error('initChart: chartElement is not found in the DOM');
@@ -568,8 +785,9 @@ export function initChart() {
     console.log('initChart: chartElement display:', window.getComputedStyle ? window.getComputedStyle(element).display : 'unknown');
 
     const theme = localStorage.getItem('theme') || 'light';
+    updateChartColors(theme); // Apply theme-specific colors
+
     const layout = theme === 'dark' ? darkLayout : lightLayout;
-    chartData.weight.line.color = theme === 'dark' ? '#695f57' : '#e9d3c3';
     layout.annotations = getAnnotations();
 
     console.log('initChart: About to call Plotly.newPlot');
@@ -580,13 +798,11 @@ export function initChart() {
         console.error('initChart: Error in Plotly.newPlot:', error);
     }
 
-    // Create a debounced resize handler to prevent too frequent calls
     let resizeTimeout;
     console.log('initChart: Adding resize event listener');
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-            // Check if the chart element is visible before resizing
             const resizeElement = getChartElement();
             console.log('initChart: Window resize event, checking chart visibility');
             if (resizeElement && resizeElement.offsetParent !== null) {
@@ -606,8 +822,9 @@ export function initChart() {
 }
 
 export function setTheme(theme) {
+    updateChartColors(theme); // Apply theme-specific colors
+
     const layoutUpdate = theme === 'dark' ? darkLayout : lightLayout;
-    chartData.weight.line.color = theme === 'dark' ? '#695f57' : '#e9d3c3';
     layoutUpdate.annotations = getAnnotations();
     const data = Object.values(chartData);
     const element = getChartElement();

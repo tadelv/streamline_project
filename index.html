@@ -183,16 +183,18 @@
                         Current Profile
                         <!-- <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 md:w-9 md:h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> -->
                     </h1>
-                    <div class="h-9 inline-flex justify-start items-center gap-[15px]">
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Mix">Mix</span> <span id="data-mix-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Group">Group</span> <span id="data-group-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Steam">Steam</span> <span id="data-steam-temp" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">°c</span></p>
-                        <p><span class="text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Tank">Tank</span> <span id="data-tank-vol" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6">ml</span></p>
-                        <p><span id = 'weight-text' class="no-select text-[var(--text-primary)] text-lg font-semibold font-['Inter'] leading-6" data-i18n-key="Weight">Weight</span> <span id="data-weight" class="text-[var(--text-primary)] text-lg  font-['Inter'] leading-6 no-select"> g</span></p>
+                    <div class="h-9 inline-flex justify-start items-center gap-[20px]">
+                        <p><span class="text-[var(--text-primary)] text-[20px] font-semibold font-['Inter'] leading-6" data-i18n-key="Mix">Mix</span> <span id="data-mix-temp" class="text-[var(--text-primary)] text-[20px]  font-['Inter'] leading-6">°c</span></p>
+                        <p><span class="text-[var(--text-primary)] text-[20px] font-semibold font-['Inter'] leading-6" data-i18n-key="Group">Group</span> <span id="data-group-temp" class="text-[var(--text-primary)] text-[20px]  font-['Inter'] leading-6">°c</span></p>
+                        <p><span class="text-[var(--text-primary)] text-[20px] font-semibold font-['Inter'] leading-6" data-i18n-key="Steam">Steam</span> <span id="data-steam-temp" class="text-[var(--text-primary)] text-[20px]  font-['Inter'] leading-6">°c</span></p>
+                        <p><span class="text-[var(--text-primary)] text-[20px] font-semibold font-['Inter'] leading-6" data-i18n-key="Tank">Tank</span> <span id="data-tank-vol" class="text-[var(--text-primary)] text-[20px]  font-['Inter'] leading-6">ml</span></p>
+                        <div id="scale-info-container" style="display: none;">
+                            <p><span id = 'weight-text' class="no-select text-[var(--mimoja-blue-v2)] text-[20px] font-semibold font-['Inter'] leading-6" data-i18n-key="Weight"></span> <span id="data-weight" class="text-[var(--mimoja-blue-v2)] text-[20px]  font-['Inter'] leading-6 no-select"> </span></p>
+                        </div>
 
                     </div>
                 </div>
-                <div id="machine-status" class="w-[556px] text-right justify-center text-nowrap text-[27px] font-semibold font-['Inter'] leading-9 tracking-wide" data-i18n-key="Connecting">
+                <div id="machine-status" class="w-[556px] absolute right-[90px] text-right justify-center text-nowrap text-[27px] font-semibold font-['Inter'] leading-9 tracking-wide" data-i18n-key="Connecting">
                     Connecting
                 </div>
             </div>
@@ -203,28 +205,34 @@
             <!-- Footer: Shot History and Data -->
             <div class="w-[385px] h-60 left-[479px] top-[955px] absolute bg-[var(--bgmain-color)] border border-b-0 border-[var(--border-color)]">
                 <div id= 'shot-history-label'class="w-[156px] left-[115px] top-[46px] absolute text-center justify-start text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6" data-i18n-key="SHOT HISTORY">SHOT HISTORY</div>
-                <div class="w-72 left-[45px] top-[92px] absolute inline-flex justify-between items-center">
+                <div class="w-72 left-[49px] top-[92px] absolute inline-flex justify-between items-center">
                     <button id="history-prev-btn" ><svg class="w-6 h-6 rotate-180" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     <div class="text-center ">
                         <p id="history-date" class=" pb-4 text-[20px] font-bold font-['Inter'] text-[var(--text-primary)]">Tue, 14 Sept, 18:45</p>
-                        <p id="history-profile-name" class="text-[20px] font-semibold font-['Inter'] text-[var(--text-primary)] overflow-hidden text-clip">Londinium</p>
+                        <p id="history-profile-name" class="pb-1 text-[20px] font-['Inter'] text-[var(--text-primary)] overflow-hidden text-clip">Londinium</p>
+                        <div class="flex justify-center items-center gap-2">
+                            <p id="history-dose-in" class="text-[20px] font-['Inter'] text-[var(--text-primary)]" data-i18n-key="Dose In">In 20g</p>
+                            <span class="text-[var(--text-primary)] text-[20px]  font-['Inter']">|</span>
+                            <p id="history-grind-size" class="text-[20px]  font-['Inter'] text-[var(--text-primary)]" data-i18n-key="Grind Size">Grind 1.4</p>
+                        </div>
+
                     </div>
                     <button id="history-next-btn" ><svg class="w-6 h-6 " viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 </div>
             </div>
             <div class="w-[1050px] h-60 left-[863px] top-[955px] border-r-0 border-b-0 absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]">
                 <div class="grid grid-cols-7 w-full left-[198px] top-[35px] absolute" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="Time">Time</div>
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="Grams">Grams</div>
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL">mL</div>
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="°C">°C</div>
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL/s">mL/s</div>
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 text-left flex items-center justify-start" data-i18n-key="Pressure">Pressure</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="Time">Time</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="Grams">Grams</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL">mL</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="°C">°C</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL/s">mL/s</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="Pressure">Pressure</div>
                 </div>
 
                 <div class="left-[20px] top-[88px] absolute flex flex-col justify-start items-start gap-[15px] ">
                     <div class="grid grid-cols-7 w-full" style="grid-template-columns: 150px 30px repeat(5, 1fr);">
-                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 flex items-center justify-end" data-i18n-key="Preinfusion">Preinfusion</div>
+                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 flex items-center justify-end" data-i18n-key="Preinfusion">Preinfusion</div>
                         <div class="h-9"></div> <!-- Empty column for spacing -->
                         <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
                             <div id="shot-data-pi-time" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">15s </div>
@@ -236,7 +244,7 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-7 w-full" style="grid-template-columns: 150px 30px repeat(5, 1fr);">
-                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 flex items-center justify-end" data-i18n-key="Extraction">Extraction</div>
+                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 flex items-center justify-end" data-i18n-key="Extraction">Extraction</div>
                         <div class="h-9"></div> <!-- Empty column for spacing -->
                         <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
                             <div id="shot-data-ex-time" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start">30s </div>
@@ -248,7 +256,7 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-7 w-full" style="grid-template-columns: 150px 30px repeat(5, 1fr);">
-                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['Inter'] leading-6 flex items-center justify-end" data-i18n-key="Total">Total</div>
+                        <div class="h-9 text-end text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 flex items-center justify-end" data-i18n-key="Total">Total</div>
                         <div class="h-9"></div> <!-- Empty column for spacing -->
                         <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
                             <div id="shot-data-total-time" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start">45s </div>
@@ -283,59 +291,7 @@
         </div>
     </dialog>
 
-    <!-- <dialog id="settings_modal" class="modal">
-
-            </div>
-            <div class="divider"></div>
-            <div class="py-3">
-                <h4 class="font-semibold text-sm" data-i18n-key="Rea API Hostname">Rea API Hostname</h4>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text" data-i18n-key="Hostname">Hostname</span>
-                    </label>
-                    <input type="text" id="rea-hostname-input" placeholder="e.g., localhost or 192.168.1.100" class="input input-bordered" />
-                </div>
-                <div class="modal-action">
-                <button id="save-rea-hostname-btn" class="btn btn-primary" data-i18n-key="Save">Save</button>
-                </div>
-            </div>
-            <div class="divider"></div>
-            <div class="py-3">
-                <h4 class="font-semibold text-sm" data-i18n-key="Visualizer">Visualizer</h4>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text" data-i18n-key="Username">Username</span>
-                    </label>
-                    <input type="text" id="visualizer-username" placeholder="Username" class="input input-bordered" />
-                </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text" data-i18n-key="Password">Password</span>
-                    </label>
-                    <input type="password" id="visualizer-password" placeholder="Password" class="input input-bordered" />
-                </div>
-                <div class="form-control">
-                    <label class="label cursor-pointer">
-                        <span class="label-text" data-i18n-key="Auto-upload shots">Auto-upload shots</span>
-                        <input type="checkbox" id="visualizer-auto-upload" class="toggle" />
-                    </label>
-                </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text" data-i18n-key="Minimum shot duration (seconds)">Minimum shot duration (seconds)</span>
-                    </label>
-                    <input type="number" id="visualizer-min-duration" placeholder="6" class="input input-bordered" />
-                </div>
-                <div id="visualizer-status" class="mt-3"></div>
-            </div>
-            <div class="modal-action">
-                <button id="save-settings-btn" class="btn btn-primary" data-i18n-key="Save">Save</button>
-                <form method="dialog">
-                    <button class="btn" data-i18n-key="Close">Close</button>
-                </form>
-            </div>
-        </div>
-    </dialog> -->
+    
 
     <!-- Fullscreen Prompt Toast -->
     <div id="fullscreen-toast-container" class="toast toast-center toast-middle" style="z-index: 10000; display: none;">

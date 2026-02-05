@@ -115,7 +115,7 @@ if {$::streamline_dark_mode == 0} {
 	set ::grid_color "#E0E0E0"
 
 } else {
-
+	#dark mode 
 	set ::progress_bar_red "#DA515E"
 	set ::progress_bar_green "#0CA581"
 	set ::progress_bar_grey "#c2c2c2"

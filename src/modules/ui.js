@@ -538,6 +538,13 @@ export function initScaleClick(callback) {
     }
 }
 
+export function showScaleInfo() {
+    const scaleInfoContainer = document.getElementById('scale-info-container');
+    if (scaleInfoContainer) {
+        scaleInfoContainer.style.display = 'block';
+    }
+}
+
 // Screensaver functionality
 let screensaverActive = false;
 let screensaverElement = null;
@@ -1086,7 +1093,6 @@ export function updateMachineStatus(status) {
             const match = status.match(/^(Heating: )(\d+s remaining)$/);
             if (match) {
                 const [, heatingPart, secondsPart] = match;
-
                 // Create HTML with different styling for each part
                 machineStatusEl.innerHTML = `${heatingPart}<span class="text-[var(--heatingstatus)]">${secondsPart}</span>`;
             } else {

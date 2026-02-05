@@ -46,6 +46,7 @@ function onScaleReconnect() {
 function onScaleDisconnect() {
     logger.warn('Scale has disconnected.');
     isScaleConnected = false;
+    // Keep the scale info container visible but show reconnect status
     ui.updateWeight('[Reconnect]', {
         weightText: { add: ['text-red-600'] },
         dataWeight: { add: ['text-[var(--mimoja-blue)]'], remove: ['text-[var(--text-primary)]'] }
@@ -85,7 +86,7 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
     const checkUploadStatus = async (resolve, reject) => {
         if (Date.now() - startTime > timeout) {
             logger.warn(`Polling timed out for shot ${shotId}.`);
-            ui.showToast(`Upload timed out for shot ${shotId}.`, 5000, 'error');
+            ui.showToast(`Upload Failed for shot : ${shotId}.`, 5000, 'error');
             return reject(new Error('Polling timed out'));
         }
 
@@ -111,7 +112,6 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
 }
 
 function handleTimeToReadyData(data) {
-    logger.debug("handleTimeToReadyData received new data:", data);
     if (data.status === 'heating' && data.remainingTimeMs > 0) {
         const totalSeconds = Math.round(data.remainingTimeMs / 1000);
         const minutes = Math.floor(totalSeconds / 60);
@@ -269,6 +269,7 @@ function throttle(func, limit) {
 const throttledUpdateWeight = throttle(ui.updateWeight, 100); // 100ms throttle interval
 
 function handleScaleData(data) {
+    const scaleInfoContainer = document.getElementById('scale-info-container');
     const currentWeight = data.weight;
     latestScaleWeight = currentWeight;
 
@@ -280,6 +281,10 @@ function handleScaleData(data) {
         if (!isScaleConnected) {
             logger.info('Scale reconnected.');
             isScaleConnected = true;
+            // Show the container when a scale is connected and providing weight data
+            if (scaleInfoContainer) {
+                scaleInfoContainer.style.display = '';
+            }
         }
         // Update the UI with the new weight and reset styles.
         throttledUpdateWeight(currentWeight, {
@@ -289,6 +294,10 @@ function handleScaleData(data) {
     } else {
         // We received a message without a weight.
         if (!isScaleConnected) {
+            // If it was never connected and no weight data, keep it hidden.
+            if (scaleInfoContainer) {
+                scaleInfoContainer.style.display = 'none';
+            }
             ui.updateWeight('[Reconnect]', {
                 weightText: { add: ['text-red-600'] },
                 dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
@@ -329,6 +338,13 @@ async function handleWeightClick() {
                     dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
                 });
                 isConnectingScale = false;
+                // If scale connection failed, hide the container if it was never truly connected
+                if (!isScaleConnected) {
+                    const scaleInfoContainer = document.getElementById('scale-info-container');
+                    if (scaleInfoContainer) {
+                        scaleInfoContainer.style.display = 'none';
+                    }
+                }
                 return;
             }
 
@@ -358,6 +374,13 @@ async function handleWeightClick() {
             dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
         });
         isConnectingScale = false;
+        // If initial connection failed, hide the container if it was never truly connected
+        if (!isScaleConnected) {
+            const scaleInfoContainer = document.getElementById('scale-info-container');
+            if (scaleInfoContainer) {
+                scaleInfoContainer.style.display = 'none';
+            }
+        }
     }
 }
 

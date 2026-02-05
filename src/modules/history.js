@@ -82,10 +82,34 @@ function displayShot(index) {
         }
     }
 
+    const doseInEl = document.getElementById('history-dose-in');
+    const grindSizeEl = document.getElementById('history-grind-size');
+
+    if (doseInEl) {
+        if (shot.workflow && shot.workflow.doseData && typeof shot.workflow.doseData.doseIn !== 'undefined') {
+            doseInEl.textContent = `In ${shot.workflow.doseData.doseIn}g`;
+        } else {
+            doseInEl.textContent = `In: N/A`;
+        }
+    }
+
+    if (grindSizeEl) {
+        if (shot.workflow && shot.workflow.grinderData && typeof shot.workflow.grinderData.setting !== 'undefined') {
+            const settingStr = shot.workflow.grinderData.setting;
+            const settingInt = parseInt(settingStr, 10);
+            if (!isNaN(settingInt)) {
+                grindSizeEl.textContent = `Grind ${settingInt}`;
+            } else {
+                grindSizeEl.textContent = `Grind N/A`;
+            }
+        } else {
+            grindSizeEl.textContent = `Grind N/A`;
+        }
+    }
 
     // Update chart and data table
     if (shot.measurements) {
-        chart.plotHistoricalShot(shot.measurements);
+        chart.plotHistoricalShot(shot.measurements, shot.workflow);
         renderPastShot(shot);
     }
 
