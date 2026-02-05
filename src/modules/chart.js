@@ -2,8 +2,8 @@ import { logger } from './logger.js';
 
 // Define colors for step markers
 const STEP_MARKER_COLORS = {
-    dark: '#E0E0E0',
-    light: '#959595'
+    dark: '#7f8bbb',
+    light: '#7c7c7c'
 };
 
 // Function to get or update the chart element reference
@@ -230,7 +230,7 @@ function addStepMarker(layout, time, theme, stepName = '') {
         line: {
             color: theme === 'dark' ? STEP_MARKER_COLORS.dark : STEP_MARKER_COLORS.light, // ::state_change_color from skin.tcl
             width: 2,
-            dash: 'dot' // ::state_change_dashes from skin.tcl is dot equivalent
+            dash: 'longdash' // ::state_change_dashes from skin.tcl is dot equivalent
         }
     });
 
