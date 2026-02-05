@@ -13,25 +13,27 @@ export function initScaling() {
         const scaleY = screenHeight / designHeight;
         const scale = Math.min(scaleX, scaleY);
 
-        // Calculate horizontal offset to center the scaled content
-        const scaledWidth = designWidth * scale;
-        const offsetX = (screenWidth - scaledWidth) / 2;
+        // Explicitly set content dimensions to original design dimensions
+        content.style.width = `${designWidth}px`;
+        content.style.height = `${designHeight}px`;
 
-        // Apply transform with top-left origin
+        // Calculate offsets to center the scaled content
+        const scaledWidth = designWidth * scale;
+        const scaledHeight = designHeight * scale;
+        const offsetX = (screenWidth - scaledWidth) / 2;
+        const offsetY = (screenHeight - scaledHeight) / 2;
+
+
+        // Apply transform with center origin
+        // We use translate to position after scaling, so origin should be top left for consistent scaling
         content.style.transformOrigin = 'top left';
-        content.style.transform = `scale(${scale})`;
-        
-        // Position the container to center horizontally and align to top
-        content.style.position = 'relative';
-        content.style.left = `${offsetX}px`;
-        content.style.top = `0px`;  // Align to top
-        
-        // Size the viewport to match the screen
+        content.style.transform = `scale(${scale}) translate(${offsetX / scale}px, ${offsetY / scale}px)`;
+
+        // Ensure the viewport itself doesn't cause scrollbars and clips content
         viewport.style.width = `${screenWidth}px`;
         viewport.style.height = `${screenHeight}px`;
-        
-        // Center the viewport within the body
-        viewport.style.margin = '0 auto';
+        viewport.style.overflow = 'hidden';
+        viewport.style.margin = '0'; // Remove any margin that might cause issues
     }
 
     updateScale();
