@@ -118,7 +118,7 @@ const settingsTree = {
     'extensions': {
         name: 'Extensions',
         subcategories: [
-            { id: 'extention1', name: 'Extention 1', settingsCategory: 'extensions' },
+            { id: 'extention1', name: 'Visualizer', settingsCategory: 'extensions' },
             { id: 'extention2', name: 'Extention 2', settingsCategory: 'extensions' }
         ]
     },
@@ -1659,7 +1659,8 @@ export function renderLanguageSettings() {
 
 // Render extensions settings
 export function renderExtensionsSettings() {
-    return `
+    // Return the HTML template
+    const template = `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
             <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[48px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Extensions Settings</p>
@@ -1669,16 +1670,40 @@ export function renderExtensionsSettings() {
                 <div class="content-stretch flex flex-col gap-[40px] items-start relative w-full">
                     <div class="content-stretch flex items-center justify-between relative w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[40px]">
-                            <p class="leading-[1.2]">Extension 1</p>
+                            <p class="leading-[1.2]">Visualizer</p>
                         </div>
-                        <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                            <option>Enabled</option>
-                            <option>Disabled</option>
+                        <select id="visualizer-enabled" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
+                            <option value="true">Enabled</option>
+                            <option value="false">Disabled</option>
                         </select>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
-                        Manage the first extension
-                    </p>
+
+                    <div id="visualizer-form-container">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                            <div class="mb-4">
+                                <label for="visualizer-username" class="block text-[var(--text-primary)] text-[24px] mb-2">Username:</label>
+                                <input type="text" id="visualizer-username" class="w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer username">
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="visualizer-password" class="block text-[var(--text-primary)] text-[24px] mb-2">Password:</label>
+                                <input type="password" id="visualizer-password" class="w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer password">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                            <input type="checkbox" id="visualizer-auto-upload" class="w-6 h-6 mr-3">
+                            <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
+                            <label for="visualizer-min-duration" class="block text-[var(--text-primary)] text-[24px] mb-2">Minimum Shot Duration (seconds):</label>
+                            <input type="number" id="visualizer-min-duration" class="w-32 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
+                        </div>
+
+                        <div id="visualizer-status" class="text-[24px] p-2 rounded-lg"></div>
+
+                        <button id="save-visualizer-credentials" class="bg-[var(--mimoja-blue)] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
+                            Save Credentials
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1727,6 +1752,185 @@ export function renderExtensionsSettings() {
             </div>
         </div>
     `;
+
+    // After returning the template, set up the event listeners
+    setTimeout(setupVisualizerEventListeners, 0);
+
+    return template;
+}
+
+// Function to set up event listeners for the Visualizer settings
+function setupVisualizerEventListeners() {
+    const saveButton = document.getElementById('save-visualizer-credentials');
+    const usernameInput = document.getElementById('visualizer-username');
+    const passwordInput = document.getElementById('visualizer-password');
+    const autoUploadCheckbox = document.getElementById('visualizer-auto-upload');
+    const minDurationInput = document.getElementById('visualizer-min-duration');
+    const statusDiv = document.getElementById('visualizer-status');
+    const enabledSelect = document.getElementById('visualizer-enabled');
+    const formContainer = document.getElementById('visualizer-form-container');
+
+    if (!saveButton) {
+        console.warn('Save button for Visualizer credentials not found');
+        return;
+    }
+
+    // Load existing settings when the form loads
+    loadVisualizerSettings();
+
+    // Initially hide the form if disabled
+    if (enabledSelect && formContainer) {
+        if (enabledSelect.value === 'false') {
+            formContainer.style.display = 'none';
+        }
+    }
+
+    // Add event listener to toggle form visibility based on selection
+    if (enabledSelect) {
+        enabledSelect.addEventListener('change', function() {
+            if (this.value === 'true') {
+                formContainer.style.display = 'block';
+            } else {
+                formContainer.style.display = 'none';
+            }
+        });
+    }
+
+    // Add click handler for the save button
+    saveButton.addEventListener('click', async () => {
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value; // Don't trim password as spaces might be valid
+
+        if (!username || !password) {
+            
+                ui.showToast('Please enter both username and password', 1500, 'error');
+            return;
+        }
+
+        statusDiv.textContent = 'Testing credentials...';
+        statusDiv.className = 'text-gray-500 text-[24px] p-2 rounded-lg';
+
+        try {
+            // Import verifyVisualizerCredentials from api.js
+            const { verifyVisualizerCredentials } = await import('/src/modules/api.js');
+
+            const isValid = await verifyVisualizerCredentials(username, password);
+
+            if (!isValid) {
+                
+                // Clear any previously saved (and now invalid) credentials
+                localStorage.removeItem('visualizerUsername');
+                localStorage.removeItem('visualizerPassword');
+                ui.showToast('Visualizer log-in failed check credentials', 900, 'error');
+                return; // Stop here if credentials are bad
+            }
+
+          
+               ui.showToast('Visualizer log-in success', 900, 'success');
+            // On success, save to localStorage for future auto-login
+            localStorage.setItem('visualizerUsername', username);
+            localStorage.setItem('visualizerPassword', btoa(password)); // Basic obfuscation
+
+            // If credentials are valid, proceed to save to plugin
+            const autoUpload = autoUploadCheckbox.checked;
+            const minDuration = parseInt(minDurationInput.value, 10) || 5;
+            const isEnabled = enabledSelect.value === 'true';
+
+            // 1. Save UI-only settings to localStorage
+            localStorage.setItem('visualizerAutoUpload', autoUpload.toString());
+            localStorage.setItem('visualizerEnabled', isEnabled.toString());
+
+            // 2. Prepare and save plugin settings
+            const { setPluginSettings } = await import('/src/modules/api.js');
+            const pluginId = 'visualizer.reaplugin';
+
+            const settingsPayload = {
+                Username: username,
+                Password: password, // Send the actual password to the plugin
+                AutoUpload: autoUpload,
+                LengthThreshold: minDuration,
+                Enabled: isEnabled
+            };
+
+            try {
+                await setPluginSettings(pluginId, settingsPayload);
+                   ui.showToast('redentials saved successfully!', 900, 'success');
+                // Hide status after a few seconds
+                setTimeout(() => {
+                    statusDiv.textContent = '';
+                }, 3000);
+
+                // Show success toast
+                ui.showToast('Visualizer settings saved successfully', 3000, 'success');
+
+            } catch (error) {
+                console.error('Failed to save visualizer plugin settings:', error);
+                statusDiv.textContent = `Failed to save to REA plugin: ${error.message}.`;
+                statusDiv.className = 'text-red-500 text-[24px] p-2 rounded-lg';
+            }
+        } catch (error) {
+            console.error('Error during credential validation:', error);
+            statusDiv.textContent = `Error validating credentials: ${error.message}`;
+            statusDiv.className = 'text-red-500 text-[24px] p-2 rounded-lg';
+        }
+    });
+}
+
+// Function to load existing Visualizer settings
+async function loadVisualizerSettings() {
+    try {
+        const { getPluginSettings } = await import('/src/modules/api.js');
+        const pluginId = 'visualizer.reaplugin';
+
+        const savedSettings = await getPluginSettings(pluginId);
+
+        const usernameInput = document.getElementById('visualizer-username');
+        const passwordInput = document.getElementById('visualizer-password');
+        const autoUploadCheckbox = document.getElementById('visualizer-auto-upload');
+        const minDurationInput = document.getElementById('visualizer-min-duration');
+        const enabledSelect = document.getElementById('visualizer-enabled');
+        const formContainer = document.getElementById('visualizer-form-container');
+
+        if (savedSettings && savedSettings.Username) {
+            usernameInput.value = savedSettings.Username;
+        } else {
+            usernameInput.value = '';
+        }
+
+        // Always clear the password field for security
+        passwordInput.value = '';
+
+        if (typeof savedSettings.AutoUpload !== 'undefined') {
+            autoUploadCheckbox.checked = !!savedSettings.AutoUpload;
+        }
+
+        if (typeof savedSettings.LengthThreshold !== 'undefined') {
+            minDurationInput.value = parseInt(savedSettings.LengthThreshold, 10) || 5;
+        }
+
+        if (typeof savedSettings.Enabled !== 'undefined') {
+            enabledSelect.value = savedSettings.Enabled.toString();
+        } else {
+            // Default to enabled if not set
+            enabledSelect.value = 'true';
+        }
+
+        // Set form visibility based on the enabled state
+        if (formContainer) {
+            if (enabledSelect && enabledSelect.value === 'false') {
+                formContainer.style.display = 'none';
+            } else {
+                formContainer.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load Visualizer settings:', error);
+        const statusDiv = document.getElementById('visualizer-status');
+        if (statusDiv) {
+            statusDiv.textContent = 'Could not load plugin settings.';
+            statusDiv.className = 'text-red-500 text-[24px] p-2 rounded-lg';
+        }
+    }
 }
 
 // Render updates settings
@@ -1967,6 +2171,11 @@ export async function initializeSettings() {
 
     document.getElementById('save-settings-btn').addEventListener('click', async () => {
         ui.showToast('Saving all settings...', 3000, 'info');
+         const visualizerEnabledSelect = document.getElementById('visualizer-enabled');
+        if (visualizerEnabledSelect) {
+            const isEnabled = visualizerEnabledSelect.value ;
+            localStorage.setItem('visualizerEnabled', isEnabled.toString());
+        }
         // Implementation would save all modified settings
         loadPage('/index.html');
     });

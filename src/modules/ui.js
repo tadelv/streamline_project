@@ -239,17 +239,17 @@ export function updateHotWaterDisplay(data) {
     tempEl.textContent = `${currentHotWaterTemp}°C`;
 
     if (hotWaterMode === 'volume') {
-        volEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        volEl.classList.remove('text-lg');
         volEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]');
         tempEl.classList.remove('text-[22.5px]', 'font-bold');
-        tempEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        tempEl.classList.add('text-lg');
         modeVolEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTempEl.className = 'text-[var(--low-contrast-white)]';
     } else { // temperature mode
-        tempEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        tempEl.classList.remove('text-lg');
         tempEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]','font-bold');
         volEl.classList.remove('text-[22.5px]', 'font-bold');
-        volEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        volEl.classList.add('text-lg');
         modeTempEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeVolEl.className = 'text-[var(--low-contrast-white)]';
     }
@@ -414,17 +414,17 @@ export function updateSteamDisplay(data) {
     flowEl.textContent = `${currentSteamFlow.toFixed(1)}`;
 
     if (steamMode === 'time') {
-        durationEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        durationEl.classList.remove('text-lg');
         durationEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]');
         flowEl.classList.remove('text-[22.5px]', 'font-bold');
-        flowEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        flowEl.classList.add('text-lg');
         modeTimeEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeFlowEl.className = 'text-[var(--low-contrast-white)]';
     } else { // flow mode
-        flowEl.classList.remove('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        flowEl.classList.remove('text-lg');
         flowEl.classList.add('text-[22.5px]', 'font-bold','text-[var(--text-primary)]','font-bold');
         durationEl.classList.remove('text-[22.5px]', 'font-bold');
-        durationEl.classList.add('text-lg', 'text-[var(--preset-value-color-disabled)]');
+        durationEl.classList.add('text-lg');
         modeFlowEl.className = 'text-[var(--mimoja-blue-v2)]';
         modeTimeEl.className = 'text-[var(--low-contrast-white)]';
     }

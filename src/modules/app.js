@@ -79,6 +79,14 @@ function isHeatingState(state, substate) {
 }
 
 async function pollForUploadConfirmation(shotId, timeout = 30000) {
+    // Check if visualizer is enabled before attempting upload
+    const isVisualizerEnabled = localStorage.getItem('visualizerEnabled') === 'true';
+    
+    if (!isVisualizerEnabled) {
+        logger.info('Visualizer is disabled. Skipping upload confirmation for shot ID:', shotId);
+        return Promise.resolve(false); // Return resolved promise with false to indicate no upload happened
+    }
+    
     logger.info(`Polling for upload confirmation for shot ID: ${shotId}`);
     const pollInterval = 3000; // 3 seconds
     const startTime = Date.now();
@@ -86,7 +94,7 @@ async function pollForUploadConfirmation(shotId, timeout = 30000) {
     const checkUploadStatus = async (resolve, reject) => {
         if (Date.now() - startTime > timeout) {
             logger.warn(`Polling timed out for shot ${shotId}.`);
-            ui.showToast(`Upload Failed for shot : ${shotId}.`, 5000, 'error');
+            ui.showToast(`Upload to Visualizer Failed.`, 3000, 'error');
             return reject(new Error('Polling timed out'));
         }
 
@@ -471,6 +479,14 @@ async function initializeDe1Connection() {
 }
 
 async function initVisualizer() {
+    // Check if visualizer is enabled before initializing
+    const isVisualizerEnabled = localStorage.getItem('visualizerEnabled') === 'true';
+    
+    if (!isVisualizerEnabled) {
+        logger.info('Visualizer is disabled. Skipping initialization.');
+        return;
+    }
+    
     logger.info('Initializing Visualizer connection...');
     const username = localStorage.getItem('visualizerUsername');
     const encodedPassword = localStorage.getItem('visualizerPassword');
@@ -481,7 +497,7 @@ async function initVisualizer() {
             const isValid = await verifyVisualizerCredentials(username, password);
             if (isValid) {
                 logger.info('Saved Visualizer credentials are valid.');
-                ui.showToast('Visualizer log-in success', 3000, 'success');
+
             } else {
                 logger.warn('Saved Visualizer credentials failed to validate. Please check your settings.');
                 // Clearing the invalid credentials

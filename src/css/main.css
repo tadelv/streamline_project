@@ -64,7 +64,7 @@ body {
     --left-label-text : #51639c;
     /*status mesg */
     --heatingstatus:#1967d4;
-    --status-ready-green:#0CA581;
+    --status-ready-green:#17c29a;
 }
 
 [data-theme='dark'] {
