@@ -238,7 +238,15 @@ function handleData(data) {
     previousState = data.state; // Update previous state
 
     // Update UI elements
-    ui.updateMachineStatus(statusString);
+    // Pass detailed status information to match the enhanced updateMachineStatus function
+    ui.updateMachineStatus({
+        status: statusString,
+        substate: substate,
+        stepName: formatStateString(substate), // Use formatted substate as step name
+        timeValue: data.elapsedTime, // Use elapsed time from data if available
+        isClickable: (substate === 'preinfusion' || substate === 'pouring'), // Make preinfusion/pouring steps clickable
+        flowAmount: data.flow // Use flow data if available for hot water
+    });
     ui.updateSleepButton(state);
     ui.updateTemperatures({ mix: data.mixTemperature, group: data.groupTemperature, steam: data.steamTemperature });
 
@@ -411,6 +419,7 @@ async function handleShotSettingsData(data) {
     }
 
     if (data.flushTimeout !== undefined) {
+        logger.debug('Received flush timeout data:', data.flushTimeout);
         ui.updateFlushDisplay(data.flushTimeout);
     }
 }
@@ -424,6 +433,7 @@ async function loadInitialData() {
         const profile = workflow?.profile;
         const doseData = workflow?.doseData;
         const grinderData = workflow?.grinderData;
+        const flushtimeout = workflow?.rinseData;
 
         if (profile) {
             ui.updateProfileName(profile.title || "Untitled Profile");
@@ -431,10 +441,11 @@ async function loadInitialData() {
                 ui.updateTemperatureDisplay(profile.steps[0].temperature || 0);
             }
         }
-
-        if (doseData) {
-            ui.updateDoseInDisplay(doseData.doseIn);
-            ui.updateDrinkOut(doseData.doseOut || 0);
+        
+        if (flushtimeout !== undefined) {
+            logger.debug('Received flush timeout data:', flushtimeout);
+            ui.updateFlushDisplay(flushtimeout.duration);
+            
         }
 
         if (grinderData) {

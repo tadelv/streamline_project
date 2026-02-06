@@ -36,6 +36,13 @@ export function formatStateForDisplay(state) {
     return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
+export function formatTimeAbbreviated(seconds) {
+    if (seconds === null || seconds === undefined || isNaN(seconds)) {
+        return '--s';
+    }
+    return `${Math.round(seconds)}s`;
+}
+
 let currentHotWaterVolume = 0;
 let currentHotWaterTemp = 0;
 let hotWaterMode = 'volume'; // 'volume' or 'temperature'
@@ -506,7 +513,10 @@ export function initThemeToggle() {
     const applyTheme = (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        chart.setTheme(theme);
+        // Only set chart theme if the chart element exists in the DOM
+        if (document.getElementById('plotly-chart')) {
+            chart.setTheme(theme);
+        }
 
         if (theme === 'dark') {
             btn.style.setProperty('--bg--togglebtn', '#FFFFFF'); //
@@ -1083,39 +1093,199 @@ export function updateSleepButton(state) {
     }
 }
 
-export function updateMachineStatus(status) {
-    logger.debug(`Updating machine status to: ${status}`);
+export function updateMachineStatus(data) {
+    const { status, substate, stepName, timeValue, isClickable, flowAmount } = data;
+    logger.debug(`Updating machine status to: ${status}, substate: ${substate}, stepName: ${stepName}, time: ${timeValue}, clickable: ${isClickable}, flow: ${flowAmount}`);
     const machineStatusEl = document.getElementById('machine-status');
-    if (machineStatusEl) {
-        // Check if this is a heating status with seconds remaining
-        if (status.startsWith('Heating: ') && status.includes('s remaining')) {
-            // Split the status into parts: "Heating: " and "XXs remaining"
-            const match = status.match(/^(Heating: )(\d+s remaining)$/);
-            if (match) {
-                const [, heatingPart, secondsPart] = match;
-                // Create HTML with different styling for each part
-                machineStatusEl.innerHTML = `${heatingPart}<span class="text-[var(--heatingstatus)]">${secondsPart}</span>`;
-            } else {
-                // Fallback to plain text if the pattern doesn't match
-                machineStatusEl.textContent = status;
-            }
-        } else {
-            // For non-heating statuses, use plain text
-            machineStatusEl.textContent = status;
-        }
+    const hotWaterVolValueEl = document.getElementById('hot-water-vol-value');
+    const flushtimevalue = document.getElementById('flush-value');
+    if (!machineStatusEl) {
+        return;
+    }
 
-        // Set color based on status
-        if (status === "Disconnected" || status === "Error" || status.startsWith('Heating')) {
-            machineStatusEl.classList.remove('text-[var(--status-ready-green)]');
-            machineStatusEl.classList.add('text-red-500');
+    // Clear previous classes
+    machineStatusEl.classList.remove('status-msg-green', 'status-msg-red', 'status-msg-clickable', 'text-red-500', 'text-[var(--status-ready-green)]');
+    machineStatusEl.onclick = null; // Clear previous click handler
+
+    // Determine message and class based on status and substate using a mapping approach
+    const statusConfig = getStatusConfiguration(status, substate, stepName, timeValue, isClickable, flowAmount);
+
+    // Check if this is a hotwater state and apply special formatting
+    const isHotWaterState = status?.toLowerCase().includes('hotwater') ||
+                           status?.toLowerCase().includes('hot water') ||
+                           substate?.toLowerCase().includes('hotwater');
+
+    if (isHotWaterState) {
+        // Special handling for hotwater state to have different colors for "Pouring" and the value
+        const pouringText = getTranslation('Pouring');
+        // Extract numeric value from the text content (removing 'ml' suffix)
+        let mlValue = 0;
+        if (hotWaterVolValueEl && hotWaterVolValueEl.textContent) {
+            const textValue = hotWaterVolValueEl.textContent.trim();
+            // Extract numeric part from text like "150ml"
+            const match = textValue.match(/(\d+(\.\d+)?)/);
+            mlValue = match ? parseFloat(match[0]) : (flowAmount || 0);
         } else {
-            if (status === "Idle"){
-                machineStatusEl.textContent = "Ready";
+            mlValue = flowAmount || 0;
+        }
+        machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${pouringText}:</span> <span class="text-[var(--status-clickable-color)]">${mlValue}ml</span>`;
+    } else {
+        // Check if this is a flush state and apply special formatting
+        const isFlushState = status?.toLowerCase().includes('flush') ||
+                               substate?.toLowerCase().includes('flush');
+        
+        if (isFlushState) {
+            // Special handling for flush state to have different colors for "Flushing" and the value
+            const flushText = getTranslation('Flush');
+            
+            // Initialize count-up effect if not already started
+            if (!machineStatusEl.flushIntervalId) {
+                machineStatusEl.currentFlushValue = 0; // Start from 0
+                
+                // Clear any existing interval
+                if (machineStatusEl.flushIntervalId) {
+                    clearInterval(machineStatusEl.flushIntervalId);
+                }
+                
+                // Start the continuous count-up effect from 0
+                machineStatusEl.flushIntervalId = setInterval(() => {
+                    machineStatusEl.currentFlushValue += 1;
+                    
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${flushText}:</span> <span class="text-[var(--mimoja-blue-v2)]">${machineStatusEl.currentFlushValue}s</span>`;
+                }, 1000); // Update every second
+            } else {
+                // If we already have an interval running, just update the display
+                machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${flushText}:</span> <span class="text-[var(--mimoja-blue-v2)]">${machineStatusEl.currentFlushValue}s</span>`;
             }
-            machineStatusEl.classList.remove('text-red-500');
-            machineStatusEl.classList.add('text-[var(--status-ready-green)]');
+        } else {
+            // If not in flush state, clear the interval if it exists
+            if (machineStatusEl.flushIntervalId) {
+                clearInterval(machineStatusEl.flushIntervalId);
+                machineStatusEl.flushIntervalId = null;
+            }
+            machineStatusEl.textContent = statusConfig.message;
         }
     }
+    if (statusConfig.messageClass) {
+        machineStatusEl.classList.add(statusConfig.messageClass);
+    }
+    if (statusConfig.clickHandler) {
+        machineStatusEl.onclick = statusConfig.clickHandler;
+    }
+}
+
+function getStatusConfiguration(status, substate, stepName, timeValue, isClickable, flowAmount) {
+    logger.info(`getStatusConfiguration called with: status=${status}, substate=${substate}, stepName=${stepName}, timeValue=${timeValue}, isClickable=${isClickable}, flowAmount=${flowAmount}`);
+    const configMap = {
+        'disconnected': {
+            message: getTranslation('Disconnected') || 'Disconnected',
+            messageClass: 'status-msg-red'
+        },
+        'error': {
+            message: getTranslation('Error') || 'Error',
+            messageClass: 'status-msg-red'
+        },
+        'heating': (inputStatus) => ({
+            message: inputStatus,
+            additionalClass: 'text-red-500'
+        }),
+        'idle': {
+            message: getTranslation('Ready'),
+            messageClass: 'status-msg-green'
+        },
+        'preinfusion': {
+            message: `${stepName} | ${formatTimeAbbreviated(timeValue)} >>`,
+            messageClass: isClickable ? 'status-msg-clickable' : 'status-msg-green',
+            clickHandler: isClickable ? createStepAdvanceHandler() : null
+        },
+        'pouring': {
+            
+            message: `${stepName} | ${formatTimeAbbreviated(timeValue)} >>`,
+            messageClass: isClickable ? 'status-msg-clickable' : 'status-msg-green',
+            clickHandler: isClickable ? createStepAdvanceHandler() : null
+        },
+        'flushing': {
+            message: `${getTranslation('Flushing')}: ${formatTimeAbbreviated(timeValue)}`,
+            messageClass: 'status-msg-red'
+        },
+        'steaming': {
+            message: `${getTranslation('Steaming')}: ${formatTimeAbbreviated(timeValue)}`,
+            messageClass: 'status-msg-red'
+        },
+        'hotwater': {
+            message: `${getTranslation('Pouring')}: ${flowAmount || 0}ml`,
+            messageClass: 'status-msg-green'
+        }
+    };
+
+    const lowerStatus = status?.toLowerCase() || '';
+    const lowerSubstate = substate?.toLowerCase() || '';
+
+    // Prioritized list of states to check against `status` and `substate`
+    const statePriority = [
+        'disconnected', 'error', 'heating', 'idle',
+        'flushing', 'steaming', 'hotwater',
+        'preinfusion', 'pouring'
+    ];
+
+    let effectiveState = '';
+
+    // Determine the effective state based on inclusion and priority
+    for (const stateKey of statePriority) {
+        if (lowerStatus.includes(stateKey)) {
+            effectiveState = stateKey;
+            break;
+        }
+        if (lowerSubstate.includes(stateKey)) {
+            effectiveState = stateKey;
+            break;
+        }
+    }
+
+    if (effectiveState && configMap[effectiveState]) {
+        const config = configMap[effectiveState];
+        if (typeof config === 'function') {
+            return config(status); // Pass original status for 'heating' as it expects it
+        } else {
+            // Apply custom formatting for specific states based on requirements
+            if (effectiveState === 'hotwater') {
+                // For hotwater, show "Pouring(green): x ml(blue)" with different colors for different parts
+                return {
+                    message: `${getTranslation('Pouring')}: ${flowAmount || 0}ml`,
+                    messageClass: 'status-msg-green-blue'  // Custom class to handle green "Pouring" and blue value
+                };
+            } else if (effectiveState === 'steaming') {
+                // For steaming, show "Steaming: x s" with seconds counting up
+                return {
+                    message: `${getTranslation('Steaming')}: ${formatTimeAbbreviated(timeValue)}`,
+                    messageClass: config.messageClass
+                };
+            } else if (effectiveState === 'flushing') {
+                // For flush, show "Flushing: x s"
+                return {
+                    message: `${getTranslation('Flushing')}: ${formatTimeAbbreviated(timeValue)}`,
+                    messageClass: config.messageClass
+                };
+            } else {
+                return config;
+            }
+        }
+    }
+
+    // Fallback if no specific match
+    return {
+        message: status || '',
+        messageClass: 'status-msg-green'
+    };
+}
+
+function createStepAdvanceHandler() {
+    return () => {
+        logger.info('Clickable status message clicked to advance step.');
+        // Call the appropriate function to advance the step
+        // This would need to be implemented based on the app's architecture
+        // window.advanceStep ? window.advanceStep() : null;
+    };
 }
 export function updateTemperatures({ mix, group, steam }) {
     const mixTempEl = document.getElementById('data-mix-temp');

@@ -65,6 +65,9 @@ body {
     /*status mesg */
     --heatingstatus:#1967d4;
     --status-ready-green:#17c29a;
+    --status-green-color: #0CA581;
+    --status-red-color: #DA515E;
+    --status-clickable-color: #1967d4;
 }
 
 [data-theme='dark'] {
@@ -88,6 +91,32 @@ body {
     --data-card-title-text-color:#707485;
      /* left label text colors */
     --left-label-text :#415996;
+    --status-green-color: #0CA581; /* Same as light mode */
+    --status-red-color: #DA515E;   /* Same as light mode */
+    --status-clickable-color: #415996;
+}
+
+/* New classes for status messages */
+.status-msg-green {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800; /* Inter-HeavyBold24 */
+    font-size: 24px;
+    color: var(--status-green-color);
+}
+
+.status-msg-red {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800; /* Inter-HeavyBold24 */
+    font-size: 24px;
+    color: var(--status-red-color);
+}
+
+.status-msg-clickable {
+    font-family: 'NotoSansMono', monospace;
+    font-weight: 400; /* mono18, assuming Regular is 400 */
+    font-size: 18px;
+    color: var(--status-clickable-color);
+    cursor: pointer;
 }
 
 .profile-selector-bg {

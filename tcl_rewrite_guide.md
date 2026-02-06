@@ -516,3 +516,61 @@ When recreating this in CSS, you could apply a class like `.controls-disabled` t
 ```
 
 This approach centralizes the state logic in JavaScript (adding/removing the `.controls-disabled` class) while keeping the styling concerns in CSS.
+
+### 10. Status Message Style
+
+The status messages in `skin.tcl` follow specific patterns and formats that should be preserved in the JavaScript rewrite:
+
+#### Status Message Format
+The status messages appear in three main variables:
+- `::streamline_global(status_msg_text_green)` - Green text for positive/ready states
+- `::streamline_global(status_msg_text_red)` - Red text for warnings/errors
+- `::streamline_global(status_msg_text_clickable)` - Clickable text in blue
+
+#### Fonts and Colors Used
+Based on the `add_de1_rich_text` definition for status messages:
+- **Green status text**: `Inter-HeavyBold24` font with `$::progress_bar_green` color (#0CA581)
+- **Red status text**: `Inter-HeavyBold24` font with `$::progress_bar_red` color (#DA515E) 
+- **Clickable status text**: `mono18` font with `$::status_clickable_text` color (#1967d4 in light mode, #415996 in dark mode)
+
+#### Common Status Messages
+1. **Machine State Messages:**
+   - "Wait" - When waiting for connection
+   - "Ready" - When machine is ready
+   - "Heating" - During heating phase
+   - "Heating: [time] remaining" - With ETA during heating
+
+2. **Espresso Process Messages:**
+   - "[Step Name] | [time] ⏩" - During preinfusion/pouring showing current step and elapsed time
+   - Examples: "Infuse | 7s ⏩", "Pour | 15s ⏩"
+
+3. **Process-Specific Messages:**
+   - "Flushing: [time]" - During flush cycle
+   - "Steaming: [time]" - During steam cycle
+   - "Pouring: [amount]ml" - During hot water dispensing
+
+#### Time Formatting
+- The `seconds_text_very_abbreviated` function formats time values
+- Shows abbreviated time like "7s", "15s", etc.
+- Used in multiple contexts: espresso timer, flush timer, steam timer
+
+#### Visual Elements
+- Green messages typically indicate ready/positive states
+- Red messages indicate warnings or issues
+- Blue clickable messages can be tapped to advance to next step
+- Progress bars accompany status messages with filled/unfilled segments
+
+#### Context-Sensitive Messages
+- Different messages appear based on active page (espresso, steam, water, flush, etc.)
+- Messages adapt to current machine state and substate
+- Time-based messages update in real-time during processes
+
+#### Implementation in JavaScript
+For the JavaScript rewrite, create a function that:
+1. Takes the current machine state and substate as input
+2. Determines the appropriate status message based on the state
+3. Updates the UI with the formatted message in the correct color
+4. Makes messages clickable where appropriate (e.g., to advance to next step)
+5. Formats time values consistently using a helper function similar to `seconds_text_very_abbreviated`
+
+The style emphasizes clarity and brevity, with color-coding to quickly communicate the machine's status to the user. Time-sensitive operations prominently display countdown timers or elapsed time.

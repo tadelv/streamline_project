@@ -141,7 +141,7 @@ export function connectWebSocket(onData, onReconnect) {
 
     reconnectingWebSocket.onopen = () => {
         logger.info('WebSocket (re)connected.');
-        ui.updateMachineStatus("Connecting..."); // Show a temporary status
+        ui.updateMachineStatus({ status: "Connecting..." }); // Show a temporary status
         if (onReconnect) {
             onReconnect(); // Trigger the logic in app.js
         }
@@ -172,7 +172,9 @@ export function connectWebSocket(onData, onReconnect) {
 
     reconnectingWebSocket.onerror = (error) => {
         logger.error('WebSocket error:', error);
-        ui.updateMachineStatus("Disconnected"); // Ensure this is present
+        ui.
+        
+        Status({ status: "Disconnected" }); // Ensure this is present
     };
 
     reconnectingWebSocket.onreconnect = null;
