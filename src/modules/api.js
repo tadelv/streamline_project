@@ -416,19 +416,19 @@ export async function updateWorkflow(data) {
     const dataToSend = JSON.parse(JSON.stringify(data));
 
     // Helper to find and convert grinder setting to an integer.
-    const convertGrinderSettingToInt = (obj) => {
+    const convertGrinderSettingToFloat = (obj) => {
         if (obj && obj.grinderData && typeof obj.grinderData.setting !== 'undefined') {
-            const intValue = parseInt(obj.grinderData.setting, 10);
-            if (!isNaN(intValue)) {
-                obj.grinderData.setting = intValue;
+            const floatValue = parseFloat(obj.grinderData.setting);
+            if (!isNaN(floatValue)) {
+                obj.grinderData.setting = String(floatValue);
             }
         }
     };
 
     // Check for grinderData at the top level and within a profile object.
-    convertGrinderSettingToInt(dataToSend);
+    convertGrinderSettingToFloat(dataToSend);
     if (dataToSend.profile) {
-        convertGrinderSettingToInt(dataToSend.profile);
+        convertGrinderSettingToFloat(dataToSend.profile);
     }
 
     const response = await fetch(`${API_BASE_URL}/workflow`, {
@@ -563,7 +563,7 @@ export async function setDe1Settings(settings) {
 
 export async function getDe1AdvancedSettings() {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6-second timeout
 
     const url = `${API_BASE_URL}/machine/settings/advanced`;
     logger.info(`Fetching advanced settings from: ${url}`); // Log the URL
@@ -580,6 +580,7 @@ export async function getDe1AdvancedSettings() {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
             logger.error(`Error in getDe1AdvancedSettings: Request timed out after 5 seconds.`);
+            window.location.reload(); // Reload the page on timeout to attempt recovery
         } else {
             logger.error("Error in getDe1AdvancedSettings:", error);
         }

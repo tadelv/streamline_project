@@ -151,6 +151,32 @@ function updateGrindValue(newValue) {
     });
 }
 
+function updateflushValue(newValue) {
+    // Conform to expected rinseData schema:
+    // {
+    //   rinseData: {
+    //     targetTemperature: number,
+    //     duration: number,
+    //     flow: number
+    //   }
+    // }
+    const duration = parseFloat(newValue);
+
+    const workflowUpdate = {
+        rinseData: {
+            // For now, use sensible defaults for targetTemperature and flow.
+            // These can be wired to UI controls later if needed.
+            duration: isNaN(duration) ? 0 : duration,
+        }
+    };
+
+    updateWorkflow(workflowUpdate).then(() => {
+        logger.debug('Rinse value updated successfully:', workflowUpdate.rinseData);
+    }).catch(error => {
+        logger.error('Failed to update rinse value:', error);
+    });
+}
+
 export function updateDrinkRatio() {
     const doseInEl = document.getElementById('dose-in-value');
     const drinkOutEl = document.getElementById('drink-out-value');
@@ -712,7 +738,8 @@ export function initUI(callbacks) {
                 const newValue = parseFloat(button.textContent);
                 if (isNaN(newValue)) return;
 
-                setDe1Settings({ flushTimeout: newValue }).catch(e => logger.error(e));
+                // Use workflow-based update for flush/rinse settings
+                updateflushValue(newValue);
                 updateFlushDisplay(newValue);
 
                 // Update preset styles
@@ -1006,8 +1033,8 @@ export function initUI(callbacks) {
                 newValue = 3;
             }
             flushValueEl.textContent = `${newValue}s`;
-            setDe1Settings({ flushTimeout: newValue }).catch(e => logger.error(e));
             updateFlushDisplay(newValue);
+            updateflushValue(newValue);
         });
     }
 
@@ -1051,7 +1078,10 @@ export function initUI(callbacks) {
     setupValueAdjuster('temp-minus', 'temp-plus', 'temp-value', 1, 0, (val) => `${val}°c`, updateTemperatureValue);
     setupValueAdjuster('dose-in-minus', 'dose-in-plus', 'dose-in-value', 1, 0, (val) => `${val}g`, (val) => { updateDoseValue('in', val); updateDrinkRatio(); });
     setupValueAdjuster('grind-minus', 'grind-plus', 'grind-value', 0.1, 0, (val) => val.toFixed(1), updateGrindValue);
-    setupValueAdjuster('flush-minus', 'flush-plus', 'flush-value', 1, 0, (val) => `${val}s`, (val) => { setDe1Settings({ flushTimeout: val }).catch(e => logger.error(e)); updateFlushDisplay(val); });
+    setupValueAdjuster('flush-minus', 'flush-plus', 'flush-value', 1, 0, (val) => `${val}s`, (val) => {
+        updateflushValue(val);
+        updateFlushDisplay(val);
+    });
 
     if (hotWaterMinusBtn) {
         hotWaterMinusBtn.addEventListener('click', decrementHotWater);
@@ -1094,8 +1124,8 @@ export function updateSleepButton(state) {
 }
 
 export function updateMachineStatus(data) {
-    const { status, substate, stepName, timeValue, isClickable, flowAmount } = data;
-    logger.debug(`Updating machine status to: ${status}, substate: ${substate}, stepName: ${stepName}, time: ${timeValue}, clickable: ${isClickable}, flow: ${flowAmount}`);
+    const { status, substate, stepName, timeValue, isClickable,  isHeating, isHeatingFromTimeToReady } = data;
+    // logger.debug(`Updating machine status to: ${status}, substate: ${substate}, stepName: ${stepName}, time: ${timeValue}, clickable: ${isClickable}`);
     const machineStatusEl = document.getElementById('machine-status');
     const hotWaterVolValueEl = document.getElementById('hot-water-vol-value');
     const flushtimevalue = document.getElementById('flush-value');
@@ -1103,79 +1133,212 @@ export function updateMachineStatus(data) {
         return;
     }
 
-    // Clear previous classes
+    // Define state checks early
+    const isPreinfusionState = status?.toLowerCase().includes('preinfusion') ||
+                               substate?.toLowerCase().includes('preinfusion') ||
+                              
+                               substate?.toLowerCase().includes('preinfusing') ||
+                               (status?.toLowerCase().includes('idle') && substate?.toLowerCase().includes('preinfusion')) ;
+                            //    (status?.toLowerCase().includes('espresso') && substate?.toLowerCase().includes('preparingforshot')); substate?.toLowerCase().includes('preparingforshot') ||
+    const isPouringState = status?.toLowerCase().includes('pouring') ||
+                           substate?.toLowerCase().includes('pouring') ||
+                           substate?.toLowerCase().includes('pour') ;
+                        //    (status?.toLowerCase().includes('idle') && substate?.toLowerCase().includes('pouring')) ||
+                        //    (status?.toLowerCase().includes('espresso') && substate?.toLowerCase().includes('pouring') && !isPreinfusionState) ||
+                        //    (status?.toLowerCase().includes('espresso') && substate?.toLowerCase().includes('espresso') && !isPreinfusionState && !substate?.toLowerCase().includes('preparingforshot') && !substate?.toLowerCase().includes('preinfusing'));
+    const isFlushState = status?.toLowerCase().includes('flush') ||
+                         substate?.toLowerCase().includes('flush') ||
+                         status?.includes('Flush (Pouring)');
+
+    // Steam uses its own display and should NOT reuse the shot preinfusion/pouring timer.
+    // We care specifically about the "pouring" phase of steam, e.g. "Steam (Pouring)".
+    const isSteamState = (
+        (status?.toLowerCase().includes('steam') || status?.toLowerCase().includes('steaming')) &&
+        (substate?.toLowerCase().includes('pouring') || substate?.toLowerCase().includes('pour'))
+    );
+
+    // Hot water uses its own display and should NOT reuse the preinfusion/pouring timer.
+    const isHotWaterState = status?.toLowerCase().includes('hotwater') ||
+                            status?.toLowerCase().includes('hot water') ||
+                            substate?.toLowerCase().includes('hotwater');
+
+    // Flush should take priority over preinfusion/pouring when both match,
+    // e.g. "Flush (Pouring)" should be treated as a flush state, not a shot pour.
+    const isCurrentlyFlushState = isFlushState;
+    const isCurrentlySteamState = isSteamState;
+    const isCurrentlyHotWaterState = isHotWaterState;
+
+    // When we're in a steam, hot water, or flush state, we must NOT treat it as
+    // preinfusion/pouring, otherwise the shot timer interval will keep
+    // running and overwrite those UIs.
+    const isCurrentlyPreinfusionOrPouring =
+        !isCurrentlyFlushState &&
+        !isCurrentlySteamState &&
+        !isCurrentlyHotWaterState &&
+        (isPreinfusionState || isPouringState);
+
+    // Log the evaluated state checks (retained as per user request)
+    // logger.debug(`isPreinfusionState: ${isPreinfusionState}, status: ${status}, substate: ${substate}`);
+    // logger.debug(`isPouringState: ${isPouringState}, status: ${status}, substate: ${substate}`);
+
+    // Clear previous classes and intervals to prevent conflicts
     machineStatusEl.classList.remove('status-msg-green', 'status-msg-red', 'status-msg-clickable', 'text-red-500', 'text-[var(--status-ready-green)]');
     machineStatusEl.onclick = null; // Clear previous click handler
+    
+    // Manage preinfusion/pouring interval lifecycle
+    if (!isCurrentlyPreinfusionOrPouring && machineStatusEl.preinfusionOrPouringIntervalId) {
+        clearInterval(machineStatusEl.preinfusionOrPouringIntervalId);
+        delete machineStatusEl.preinfusionOrPouringIntervalId;
+    }
+    
+    // Manage steam interval lifecycle
+    if (!isCurrentlySteamState && machineStatusEl.steamIntervalId) {
+        clearInterval(machineStatusEl.steamIntervalId);
+        delete machineStatusEl.steamIntervalId;
+    }
+    
+    // Manage flush interval lifecycle
+    if (!isCurrentlyFlushState && machineStatusEl.flushIntervalId) {
+        clearInterval(machineStatusEl.flushIntervalId);
+        delete machineStatusEl.flushIntervalId;
+    }
 
-    // Determine message and class based on status and substate using a mapping approach
-    const statusConfig = getStatusConfiguration(status, substate, stepName, timeValue, isClickable, flowAmount);
+    // Check if this is a heating state with time remaining and apply special formatting
+    const isHeatingWithTimeRemaining = isHeating && isHeatingFromTimeToReady && status && status.includes('Heating: ') && status.includes('s remaining');
 
-    // Check if this is a hotwater state and apply special formatting
-    const isHotWaterState = status?.toLowerCase().includes('hotwater') ||
-                           status?.toLowerCase().includes('hot water') ||
-                           substate?.toLowerCase().includes('hotwater');
+    if (isHeatingWithTimeRemaining) {
+        // Split the status string to apply different colors to "Heating" and "Xs remaining"
+        const parts = status.split(': ');
+        const heatingPart = parts[0]; // "Heating"
+        const timeRemainingPart = ': ' + parts[1]; // ": Xs remaining"
 
-    if (isHotWaterState) {
-        // Special handling for hotwater state to have different colors for "Pouring" and the value
-        const pouringText = getTranslation('Pouring');
-        // Extract numeric value from the text content (removing 'ml' suffix)
-        let mlValue = 0;
-        if (hotWaterVolValueEl && hotWaterVolValueEl.textContent) {
-            const textValue = hotWaterVolValueEl.textContent.trim();
-            // Extract numeric part from text like "150ml"
-            const match = textValue.match(/(\d+(\.\d+)?)/);
-            mlValue = match ? parseFloat(match[0]) : (flowAmount || 0);
-        } else {
-            mlValue = flowAmount || 0;
-        }
-        machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${pouringText}:</span> <span class="text-[var(--status-clickable-color)]">${mlValue}ml</span>`;
+        // Apply --status-red-color to "Heating" and --heatingstatus to "Xs remaining"
+        machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">${heatingPart}</span><span class="text-[var(--heatingstatus)]">${timeRemainingPart}</span>`;
+        logger.info(`DEBUG: Heating with time remaining - Set machine status to: ${machineStatusEl.innerHTML}`);
     } else {
-        // Check if this is a flush state and apply special formatting
-        const isFlushState = status?.toLowerCase().includes('flush') ||
-                               substate?.toLowerCase().includes('flush');
-        
-        if (isFlushState) {
-            // Special handling for flush state to have different colors for "Flushing" and the value
-            const flushText = getTranslation('Flush');
-            
-            // Initialize count-up effect if not already started
-            if (!machineStatusEl.flushIntervalId) {
-                machineStatusEl.currentFlushValue = 0; // Start from 0
-                
-                // Clear any existing interval
-                if (machineStatusEl.flushIntervalId) {
-                    clearInterval(machineStatusEl.flushIntervalId);
-                }
-                
-                // Start the continuous count-up effect from 0
-                machineStatusEl.flushIntervalId = setInterval(() => {
-                    machineStatusEl.currentFlushValue += 1;
-                    
-                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${flushText}:</span> <span class="text-[var(--mimoja-blue-v2)]">${machineStatusEl.currentFlushValue}s</span>`;
-                }, 1000); // Update every second
-            } else {
-                // If we already have an interval running, just update the display
-                machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${flushText}:</span> <span class="text-[var(--mimoja-blue-v2)]">${machineStatusEl.currentFlushValue}s</span>`;
+        // Check if this is a preinfusion or pouring state and apply special formatting
+        // More comprehensive matching to catch all possible espresso-related states
+        // Check for preinfusion states first (more specific)
+
+
+        if (isCurrentlyPreinfusionOrPouring) { // Use the new combined state check
+            // Special handling for preinfusion/pouring state to show time counting up
+            // NOTE: We want the label to be able to change from "Preinfusion" to "Pouring"
+            // without resetting the timer when the state transitions.
+            const stageText = isPreinfusionState ? getTranslation('Preinfusion') : getTranslation('Pouring');
+
+            // Always store the latest stage text so the running interval can pick it up
+            machineStatusEl.currentPreinfusionOrPouringStageText = stageText;
+
+            // Only start a new interval if one is NOT already running.
+            if (!machineStatusEl.preinfusionOrPouringIntervalId) {
+                // Initialize counter if it doesn't exist
+                machineStatusEl.currentPreinfusionOrPouringValue = 0;
+
+                machineStatusEl.preinfusionOrPouringIntervalId = setInterval(() => {
+                    // Safely default value and stage text
+                    if (typeof machineStatusEl.currentPreinfusionOrPouringValue !== 'number') {
+                        machineStatusEl.currentPreinfusionOrPouringValue = 0;
+                    }
+                    machineStatusEl.currentPreinfusionOrPouringValue += 1;
+
+                    const currentStageText = machineStatusEl.currentPreinfusionOrPouringStageText || stageText;
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${currentStageText}</span> <span class="text-[var(--status-clickable-color)]">| ${machineStatusEl.currentPreinfusionOrPouringValue}s >></span>`;
+                    logger.info(`DEBUG: Preinfusion/Pouring live counter update: ${machineStatusEl.innerHTML}`); // Keep log
+                }, 1000);
             }
+
+            // Whenever updateMachineStatus is called in a preinfusion/pouring state,
+            // make sure the label and value reflect the *current* stage.
+            const displayValue = typeof machineStatusEl.currentPreinfusionOrPouringValue === 'number'
+                ? machineStatusEl.currentPreinfusionOrPouringValue
+                : 0;
+            machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${stageText}</span> <span class="text-[var(--status-clickable-color)]">| ${displayValue}s >></span>`;
         } else {
-            // If not in flush state, clear the interval if it exists
-            if (machineStatusEl.flushIntervalId) {
-                clearInterval(machineStatusEl.flushIntervalId);
-                machineStatusEl.flushIntervalId = null;
+            // Check if this is a flush state and apply special formatting
+
+
+            if (isCurrentlyFlushState) { // Use the new combined state check
+                // Special handling for flush state to have different colors for "Flushing" and the value
+                const flushText = getTranslation('Flush');
+                logger.info(`DEBUG: Detected flush state: ${flushText}`); // Retained as per user request to inspect flush state updates
+                // Only start a new interval if one is NOT already running for this state.
+                if (!machineStatusEl.flushIntervalId) {
+                    machineStatusEl.currentFlushValue = 0; // Start from 0
+
+                    // Start the continuous count-up effect from 0
+                    machineStatusEl.flushIntervalId = setInterval(() => {
+                        machineStatusEl.currentFlushValue += 1;
+
+                        machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${flushText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentFlushValue}s</span>`;
+                        logger.info(`DEBUG: Flush live counter update: ${machineStatusEl.innerHTML}`);
+                    }, 1000);
+                    // Manually set the initial state immediately after starting the interval
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${flushText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentFlushValue}s</span>`;
+                }
+            } else if (isCurrentlySteamState) {
+                // Special handling for steam "pouring" state to show a live time counter.
+                const steamText = getTranslation('Steaming');
+
+                if (!machineStatusEl.steamIntervalId) {
+                    machineStatusEl.currentSteamValue = 0;
+
+                    machineStatusEl.steamIntervalId = setInterval(() => {
+                        machineStatusEl.currentSteamValue += 1;
+
+                        machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentSteamValue}s</span>`;
+                        logger.info(`DEBUG: Steam live counter update: ${machineStatusEl.innerHTML}`);
+                    }, 1000);
+
+                    // Initial render at 0s
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentSteamValue}s</span>`;
+                } else {
+                    // If already running, just ensure we render the latest value with correct label.
+                    const currentValue = typeof machineStatusEl.currentSteamValue === 'number'
+                        ? machineStatusEl.currentSteamValue
+                        : 0;
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${currentValue}s</span>`;
+                }
+            } else {
+                // Check if this is a hotwater state and apply special formatting
+                if (isCurrentlyHotWaterState) {
+                    // Special handling for hotwater state to have different colors for "Pouring" and the value.
+                    // Use the original hotWaterVolValueEl text (e.g. "150ml") instead of flowAmount.
+                    const pouringText = getTranslation('Pouring');
+                    const mlText = (hotWaterVolValueEl && hotWaterVolValueEl.textContent)
+                        ? hotWaterVolValueEl.textContent.trim()
+                        : '';
+
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${pouringText}:</span> <span class="text-[var(--status-clickable-color)]">${mlText}</span>`;
+                    logger.info(`DEBUG: Hot Water state - Set machine status to: ${machineStatusEl.innerHTML}`);
+                } else {
+                    // Determine message and class based on status and substate using a mapping approach
+                    const statusConfig = getStatusConfiguration(status, substate, stepName, timeValue, isClickable);
+
+                    // Handle plain "Heating" message (without time remaining)
+                    if (isHeating && status === "Heating") {
+                        machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">Heating</span>`;
+                        logger.info(`DEBUG: Generic Heating state - Set machine status to: ${machineStatusEl.innerHTML}`);
+                    } else {
+                        machineStatusEl.textContent = statusConfig.message;
+                        // logger.info(`DEBUG: Generic state from getStatusConfiguration - Set machine status to: ${machineStatusEl.textContent}`);
+                        
+                    }
+                    
+                    if (statusConfig.messageClass) {
+                        machineStatusEl.classList.add(statusConfig.messageClass);
+                    }
+                    if (statusConfig.clickHandler) {
+                        machineStatusEl.onclick = statusConfig.clickHandler;
+                    }
+                }
             }
-            machineStatusEl.textContent = statusConfig.message;
         }
-    }
-    if (statusConfig.messageClass) {
-        machineStatusEl.classList.add(statusConfig.messageClass);
-    }
-    if (statusConfig.clickHandler) {
-        machineStatusEl.onclick = statusConfig.clickHandler;
     }
 }
 
-function getStatusConfiguration(status, substate, stepName, timeValue, isClickable, flowAmount) {
-    logger.info(`getStatusConfiguration called with: status=${status}, substate=${substate}, stepName=${stepName}, timeValue=${timeValue}, isClickable=${isClickable}, flowAmount=${flowAmount}`);
+function getStatusConfiguration(status, substate, stepName, timeValue, isClickable) {
+    // logger.info(`getStatusConfiguration called with: status=${status}, substate=${substate}, stepName=${stepName}, timeValue=${timeValue}, isClickable=${isClickable}`);
     const configMap = {
         'disconnected': {
             message: getTranslation('Disconnected') || 'Disconnected',
@@ -1213,7 +1376,7 @@ function getStatusConfiguration(status, substate, stepName, timeValue, isClickab
             messageClass: 'status-msg-red'
         },
         'hotwater': {
-            message: `${getTranslation('Pouring')}: ${flowAmount || 0}ml`,
+            message: `${getTranslation('Pouring')}: ${0}ml`,
             messageClass: 'status-msg-green'
         }
     };
@@ -1251,7 +1414,7 @@ function getStatusConfiguration(status, substate, stepName, timeValue, isClickab
             if (effectiveState === 'hotwater') {
                 // For hotwater, show "Pouring(green): x ml(blue)" with different colors for different parts
                 return {
-                    message: `${getTranslation('Pouring')}: ${flowAmount || 0}ml`,
+                    message: `${getTranslation('Pouring')}: ${hotWaterVolValueEl.textContent || 0}ml`,
                     messageClass: 'status-msg-green-blue'  // Custom class to handle green "Pouring" and blue value
                 };
             } else if (effectiveState === 'steaming') {

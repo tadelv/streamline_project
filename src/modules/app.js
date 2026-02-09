@@ -245,7 +245,8 @@ function handleData(data) {
         stepName: formatStateString(substate), // Use formatted substate as step name
         timeValue: data.elapsedTime, // Use elapsed time from data if available
         isClickable: (substate === 'preinfusion' || substate === 'pouring'), // Make preinfusion/pouring steps clickable
-        flowAmount: data.flow // Use flow data if available for hot water
+        isHeating: isHeating, // Pass heating state to UI
+        isHeatingFromTimeToReady: isHeatingFromTimeToReady // Pass time-to-ready heating state to UI
     });
     ui.updateSleepButton(state);
     ui.updateTemperatures({ mix: data.mixTemperature, group: data.groupTemperature, steam: data.steamTemperature });

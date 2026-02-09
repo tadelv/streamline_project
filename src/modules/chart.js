@@ -81,7 +81,7 @@ const baseChartData = {
         name: 'Weight',
         type: 'lines',
         mode: 'lines',
-        line: { color: '#D8BDA8' }, // light mode
+        line: { color: '#e9d3c3' }, // light mode
         hoverinfo: 'name'
     }
 };
@@ -147,7 +147,7 @@ const labelColors = {
         pressure: '#17c29a',
         flow: '#0358cf',
         groupTemperature: '#ff97a1',
-        weight: '#C7A58D'
+        weight: '#e9d3c3'
     },
     dark: {
         pressure: '#17c29a',
