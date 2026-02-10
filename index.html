@@ -9,10 +9,10 @@
             const storedTheme = localStorage.getItem('theme');
             if (storedTheme) {
                 document.documentElement.setAttribute('data-theme', storedTheme);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                // Check for system preference if no theme is stored
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
+            // } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            //     // Check for system preference if no theme is stored
+            //     document.documentElement.setAttribute('data-theme', 'dark');
+            //     localStorage.setItem('theme', 'dark');
             } else {
                 // Default to light if no preference is stored or detected
                 document.documentElement.setAttribute('data-theme', 'light');
