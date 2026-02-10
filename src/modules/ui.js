@@ -204,7 +204,8 @@ function makeEditable(element, onCommit) {
         const input = document.createElement('input');
         input.type = 'number';
         input.value = currentValue;
-        input.className = 'text-[22.5px] font-bold text-center w-18 bg-transparent absolute';
+        // Increased text size and made the input area bigger
+        input.className = 'text-[28px] font-bold text-center w-18 bg-transparent absolute border-2 border-[var(--mimoja-blue)] rounded-lg';
         input.name = element.id; // Recommended for accessibility and autofill
 
         // Position the input field exactly where the original element is
@@ -212,15 +213,16 @@ function makeEditable(element, onCommit) {
         const parentRect = element.parentNode.getBoundingClientRect();
 
         input.style.position = 'absolute';
-        input.style.left = (element.offsetLeft) + 'px';
-        input.style.top = (element.offsetTop) + 'px';
-        input.style.width = element.offsetWidth + 'px';
-        input.style.height = element.offsetHeight + 'px';
+        input.style.left = (element.offsetLeft - 5) + 'px'; // Add some padding
+        input.style.top = (element.offsetTop - 5) + 'px';   // Add some padding
+        input.style.width = (element.offsetWidth + 20) + 'px';  // Increase width
+        input.style.height = (element.offsetHeight + 20) + 'px'; // Increase height
         input.style.display = 'flex';
         input.style.alignItems = 'center';
         input.style.justifyContent = 'center';
         input.style.textAlign = 'center';
         input.style.zIndex = '10'; // Ensure input appears above other elements
+       // Remove default outline
 
         // Hide the original element but keep its space reserved
         element.style.visibility = 'hidden';
