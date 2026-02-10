@@ -45,6 +45,20 @@ let currentShotSettings = {
     groupTemp: 0.0, // number (float/double)
 };
 
+// Caching for DE1 settings to avoid multiple API calls
+const de1SettingsCache = {
+    data: null,
+    timestamp: null,
+    TTL: 30000 // 30 seconds TTL
+};
+
+// Caching for DE1 advanced settings to improve performance when navigating to settings page
+const de1AdvancedSettingsCache = {
+    data: null,
+    timestamp: null,
+    TTL: 30000 // 30 seconds TTL
+};
+
 export function updateShotSettingsCache(newSettings) {
     if (newSettings) {
         currentShotSettings = { ...currentShotSettings, ...newSettings };
@@ -528,14 +542,33 @@ export async function getReaSettings() {
 
 
 export async function getDe1Settings() {
+    // Check if we have cached data that is still fresh
+    if (de1SettingsCache.data && de1SettingsCache.timestamp) {
+        const now = Date.now();
+        if (now - de1SettingsCache.timestamp < de1SettingsCache.TTL) {
+            // Return cached data if it's still fresh
+            return de1SettingsCache.data;
+        }
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/machine/settings`);
         if (!response.ok) {
             throw new Error(`Failed to get DE1 settings: ${response.statusText}`);
         }
-        return await response.json();
+        const data = await response.json();
+        
+        // Update the cache with new data
+        de1SettingsCache.data = data;
+        de1SettingsCache.timestamp = Date.now();
+        
+        return data;
     } catch (error) {
         logger.error("Error in getDe1Settings:", error);
+        // Return cached data if available, even if expired, to avoid breaking functionality
+        if (de1SettingsCache.data) {
+            return de1SettingsCache.data;
+        }
         return null;
     }
 }
@@ -562,6 +595,15 @@ export async function setDe1Settings(settings) {
 }
 
 export async function getDe1AdvancedSettings() {
+    // Check if we have cached data that is still fresh
+    if (de1AdvancedSettingsCache.data && de1AdvancedSettingsCache.timestamp) {
+        const now = Date.now();
+        if (now - de1AdvancedSettingsCache.timestamp < de1AdvancedSettingsCache.TTL) {
+            // Return cached data if it's still fresh
+            return de1AdvancedSettingsCache.data;
+        }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000); // 6-second timeout
 
@@ -575,7 +617,13 @@ export async function getDe1AdvancedSettings() {
         if (!response.ok) {
             throw new Error(`Failed to get DE1 advanced settings: ${response.statusText}`);
         }
-        return await response.json();
+        const data = await response.json();
+        
+        // Update the cache with new data
+        de1AdvancedSettingsCache.data = data;
+        de1AdvancedSettingsCache.timestamp = Date.now();
+        
+        return data;
     } catch (error) {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
@@ -583,6 +631,10 @@ export async function getDe1AdvancedSettings() {
             window.location.reload(); // Reload the page on timeout to attempt recovery
         } else {
             logger.error("Error in getDe1AdvancedSettings:", error);
+        }
+        // Return cached data if available, even if expired, to avoid breaking functionality
+        if (de1AdvancedSettingsCache.data) {
+            return de1AdvancedSettingsCache.data;
         }
         return null;
     }

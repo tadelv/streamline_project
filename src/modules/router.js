@@ -229,11 +229,15 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         showScaleInfo(); // Make sure the scale info container is visible
 
                         // Import and call loadInitialData directly to ensure profile information is updated
+                        // But make sure to wait for the profile manager to fully update the UI first
                         const appModule = await import('/src/modules/app.js');
+                        console.log('Router: appModule imported');
                         if (appModule.loadInitialData) {
-                            // Add a small delay to ensure DOM is fully ready before calling loadInitialData
-                            await new Promise(resolve => setTimeout(resolve, 100));
+                            // Add a sufficient delay to ensure DOM is fully updated and all UI components are ready
+                            await new Promise(resolve => setTimeout(resolve, 200));
+                            console.log('Router: About to call loadInitialData');
                             await appModule.loadInitialData(); // Reload initial data
+                            console.log('Router: Initial data reloaded successfully.');
                         } else {
                             // Fallback: try window.loadInitialData if direct import didn't work
                             if (window.loadInitialData) {
@@ -273,6 +277,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                             const profile = workflow?.profile;
                             const steamsettings = workflow?.steamSettings;
                             const hotwatersettings = workflow?.hotWaterData;
+                            const rinseData = workflow?.rinseData;
                             if (hotwatersettings) {
                                         uiModule.updateHotWaterDisplay(hotwatersettings);
                                     }
@@ -293,6 +298,9 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                                     }
                             if (grinderData) {
                                         uiModule.updateGrindDisplay(grinderData);
+                                    }
+                            if (rinseData) {
+                                        uiModule.updateFlushDisplay(rinseData.duration);
                                     }
                             // Re-establish the main WebSocket connection
                             if (window.handleData && typeof apiModule.connectWebSocket === 'function') {

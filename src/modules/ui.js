@@ -1149,12 +1149,12 @@ export function updateMachineStatus(data) {
     const isFlushState = status?.toLowerCase().includes('flush') ||
                          substate?.toLowerCase().includes('flush') ||
                          status?.includes('Flush (Pouring)');
-
+    const isreadystate = status?.toLowerCase().includes('preparing') ||
+                         substate?.toLowerCase().includes('preparing for shot') ;
     // Steam uses its own display and should NOT reuse the shot preinfusion/pouring timer.
-    // We care specifically about the "pouring" phase of steam, e.g. "Steam (Pouring)".
+    // We care specifically about steam states regardless of substate (e.g. "Steam (Preparing for Shot)", "Steam (Pouring)").
     const isSteamState = (
-        (status?.toLowerCase().includes('steam') || status?.toLowerCase().includes('steaming')) &&
-        (substate?.toLowerCase().includes('pouring') || substate?.toLowerCase().includes('pour'))
+        (status?.toLowerCase().includes('steam') || status?.toLowerCase().includes('steaming'))
     );
 
     // Hot water uses its own display and should NOT reuse the preinfusion/pouring timer.
@@ -1205,14 +1205,14 @@ export function updateMachineStatus(data) {
 
     // Check if this is a heating state with time remaining and apply special formatting
     const isHeatingWithTimeRemaining = isHeating && isHeatingFromTimeToReady && status && status.includes('Heating: ') && status.includes('s remaining');
-
+  
     if (isHeatingWithTimeRemaining) {
         // Split the status string to apply different colors to "Heating" and "Xs remaining"
         const parts = status.split(': ');
-        const heatingPart = parts[0]; // "Heating"
+        const heatingPart = parts[0] // "Heating"
         const timeRemainingPart = ': ' + parts[1]; // ": Xs remaining"
 
-        // Apply --status-red-color to "Heating" and --heatingstatus to "Xs remaining"
+        // Apply --status-red-color to "Heating" and --heatingstatus to "Xs remaining" <span class="text-[var(--heatingstatus)]">${timeRemainingPart}</span>
         machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">${heatingPart}</span><span class="text-[var(--heatingstatus)]">${timeRemainingPart}</span>`;
         logger.info(`DEBUG: Heating with time remaining - Set machine status to: ${machineStatusEl.innerHTML}`);
     } else {
@@ -1253,7 +1253,19 @@ export function updateMachineStatus(data) {
             const displayValue = typeof machineStatusEl.currentPreinfusionOrPouringValue === 'number'
                 ? machineStatusEl.currentPreinfusionOrPouringValue
                 : 0;
-            machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${stageText}</span> <span class="text-[var(--status-clickable-color)]">| ${displayValue}s >></span>`;
+            machineStatusEl.innerHTML = `<span class="text-[var(--status-green-color)]">${stageText}</span> <span class="text-[var(--status-clickable-color)]">| ${displayValue}s <span id="skip-step-indicator" class="cursor-pointer">>></span></span>`;
+            
+            // Add click handler to the skip indicator
+            const skipIndicator = document.getElementById('skip-step-indicator');
+            if (skipIndicator) {
+                skipIndicator.onclick = (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
+                    logger.info('Skip step indicator clicked');
+                    setMachineState('skipStep').catch(error => {
+                        logger.error('Failed to skip step:', error);
+                    });
+                };
+            }
         } else {
             // Check if this is a flush state and apply special formatting
 
@@ -1279,25 +1291,36 @@ export function updateMachineStatus(data) {
             } else if (isCurrentlySteamState) {
                 // Special handling for steam "pouring" state to show a live time counter.
                 const steamText = getTranslation('Steaming');
-
-                if (!machineStatusEl.steamIntervalId) {
-                    machineStatusEl.currentSteamValue = 0;
-
-                    machineStatusEl.steamIntervalId = setInterval(() => {
-                        machineStatusEl.currentSteamValue += 1;
-
-                        machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentSteamValue}s</span>`;
-                        logger.info(`DEBUG: Steam live counter update: ${machineStatusEl.innerHTML}`);
-                    }, 1000);
-
-                    // Initial render at 0s
-                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentSteamValue}s</span>`;
+                const steamwaitingText = getTranslation('Please Wait');
+                const steamonlytext = getTranslation('Steam');
+                const steamheatingtext = getTranslation('Heating');
+                
+                // Check specifically for preparingForShot substate in steam mode
+                if (substate?.toLowerCase().includes('preparingforshot') || substate?.toLowerCase().includes('preparing for shot')) {
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">${steamonlytext}${steamheatingtext}:</span><span class="text-[var(--status-clickable-color)]">${steamwaitingText}</span>`;
+                } else if (isreadystate) {
+                    machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">${steamonlytext}${steamheatingtext}:</span><span class="text-[var(--status-clickable-color)]">${steamwaitingText}</span>`;
                 } else {
-                    // If already running, just ensure we render the latest value with correct label.
-                    const currentValue = typeof machineStatusEl.currentSteamValue === 'number'
-                        ? machineStatusEl.currentSteamValue
-                        : 0;
-                    machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${currentValue}s</span>`;
+                    // Original steam counter logic for active steaming
+                    if (!machineStatusEl.steamIntervalId) {
+                        machineStatusEl.currentSteamValue = 0;
+
+                        machineStatusEl.steamIntervalId = setInterval(() => {
+                            machineStatusEl.currentSteamValue += 1;
+
+                            machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentSteamValue}s</span>`;
+                            logger.info(`DEBUG: Steam live counter update: ${machineStatusEl.innerHTML}`);
+                        }, 1000);
+
+                        // Initial render at 0s
+                        machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${machineStatusEl.currentSteamValue}s</span>`;
+                    } else {
+                        // If already running, just ensure we render the latest value with correct label.
+                        const currentValue = typeof machineStatusEl.currentSteamValue === 'number'
+                            ? machineStatusEl.currentSteamValue
+                            : 0;
+                        machineStatusEl.innerHTML = `<span class="text-[var(--status-ready-green)]">${steamText}:</span> <span class="text-[var(--status-clickable-color)]">${currentValue}s</span>`;
+                    }
                 }
             } else {
                 // Check if this is a hotwater state and apply special formatting

@@ -9,16 +9,16 @@ export function initScaling() {
 
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
-        const scaleX = screenWidth / designWidth;
-        const scaleY = screenHeight / designHeight;
-        const scale = Math.min(scaleX, scaleY);
-
-        // Explicitly set content dimensions to original design dimensions
-        content.style.width = `${designWidth}px`;
-        content.style.height = `${designHeight}px`;
-
-        // Calculate offsets to center the scaled content
-        const scaledWidth = designWidth * scale;
+                const scaleX = screenWidth / designWidth;
+                const scaleY = screenHeight / designHeight;
+                let scale = Math.min(scaleX, scaleY);
+        
+                // Ensure the content never scales up beyond its original size
+                if (scale > 1) {
+                    scale = 1;
+                }
+        
+                // Calculate offsets to center the scaled content        const scaledWidth = designWidth * scale;
         const scaledHeight = designHeight * scale;
         const offsetX = (screenWidth - scaledWidth) / 2;
         const offsetY = (screenHeight - scaledHeight) / 2;

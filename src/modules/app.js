@@ -405,8 +405,10 @@ async function handleShotSettingsData(data) {
     updateShotSettingsCache(data);
     ui.updateHotWaterDisplay(data);
 
+    // Use cached DE1 settings instead of making an API call every time
+    // The cache will be updated elsewhere when needed
     try {
-        const de1Settings = await getDe1Settings();
+        const de1Settings = await getDe1Settings(); // This will now use the cached version most of the time
         if (de1Settings) {
             const combinedData = { ...data, targetSteamFlow: de1Settings.steamFlow };
             ui.updateSteamDisplay(combinedData);
@@ -428,6 +430,16 @@ async function handleShotSettingsData(data) {
 async function loadInitialData() {
     logger.debug("loadInitialData triggered.");
     try {
+        // Wait for DOM to be fully updated when called from router
+        await new Promise(resolve => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', resolve);
+            } else {
+                // Small delay to ensure DOM updates from router are complete
+                setTimeout(resolve, 100);
+            }
+        });
+
         const workflow = await getWorkflow();
         logger.debug("Workflow data received:", workflow);
 
@@ -436,17 +448,105 @@ async function loadInitialData() {
         const grinderData = workflow?.grinderData;
         const flushtimeout = workflow?.rinseData;
 
+        // Get the profile manager to access the favorite assignments
+        const profileManagerModule = await import('./profileManager.js');
+        const favoriteButtons = [];
+        const FAV_COUNT = 5;
+
+        for (let i = 0; i < FAV_COUNT; i++) {
+            const button = document.getElementById(`fav-profile-btn-${i}`);
+            if (button) {
+                favoriteButtons.push(button);
+                logger.info(`Found favorite button with ID: fav-profile-btn-${i}`); // Log found buttons
+            } else {
+                logger.info(`Favorite button with ID: fav-profile-btn-${i} not found`);
+            }
+        }
+        
         if (profile) {
             ui.updateProfileName(profile.title || "Untitled Profile");
+            logger.info(`Active profile: ${profile.title}`);
+            
+            // Highlight the active profile button based on assignment rather than text matching
+            // This is more reliable since it uses the internal assignment mapping
+            if (profileManagerModule.favoriteAssignments && favoriteButtons.length > 0) {
+                logger.debug('Using assignment mapping to highlight favorite button');
+                
+                // Find which button has the current profile assigned to it
+                for (let i = 0; i < FAV_COUNT; i++) {
+                    const assignedProfileKey = profileManagerModule.favoriteAssignments[i];
+                    const button = favoriteButtons[i];
+                    
+                    logger.debug(`Checking favorite button ${i}: assignedProfileKey=${assignedProfileKey}, button exists=${!!button}`);
+                    
+                    if (button && assignedProfileKey) {
+                        // Get the profile record to compare with the active profile
+                        const assignedProfileRecord = profileManagerModule.availableProfiles[assignedProfileKey];
+                        
+                        logger.debug(`Assigned profile record for button ${i}: `, assignedProfileRecord);
+                        
+                        if (assignedProfileRecord && assignedProfileRecord.profile && 
+                            assignedProfileRecord.profile.title === profile.title) {
+                            // This button has the active profile assigned to it
+                            const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                            const activeTextClass = 'text-white';
+                            const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                            
+                            logger.info(`Marking button at index ${i} as active for profile "${profile.title}".`);
+                            button.classList.add(activeBgClass, activeTextClass);
+                            button.classList.remove(inactiveTextClass);
+                        } else {
+                            // This button doesn't have the active profile, ensure it's not highlighted
+                            const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                            const activeTextClass = 'text-white';
+                            const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                            
+                            button.classList.remove(activeBgClass, activeTextClass);
+                            button.classList.add(inactiveTextClass);
+                        }
+                    } else if (button) {
+                        // Button exists but no profile assigned, ensure it's not highlighted
+                        const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                        const activeTextClass = 'text-white';
+                        const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                        
+                        button.classList.remove(activeBgClass, activeTextClass);
+                        button.classList.add(inactiveTextClass);
+                    }
+                }
+            } else {
+                logger.debug('Assignment mapping not available, using text matching fallback');
+                
+                // Fallback to the original text matching approach if the assignment mapping isn't available
+                favoriteButtons.forEach((btn, index) => {
+                    const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                    const activeTextClass = 'text-white';
+                    const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                    const buttonText = btn.textContent.trim();
+                    const profileTitle = profile.title;
+                    
+                    logger.debug(`Checking button ${index} with text: "${buttonText}" against profile: "${profileTitle}"`);
+                    
+                    if (buttonText === profileTitle) {
+                        logger.info((`Marking button "${buttonText}" as active for profile "${profileTitle}".`));
+                        btn.classList.add(activeBgClass, activeTextClass);
+                        btn.classList.remove(inactiveTextClass);
+                    } else {
+                        btn.classList.remove(activeBgClass, activeTextClass);
+                        btn.classList.add(inactiveTextClass);
+                    }
+                });
+            }
+            
             if (profile.steps && profile.steps.length > 0) {
                 ui.updateTemperatureDisplay(profile.steps[0].temperature || 0);
             }
         }
-        
+
         if (flushtimeout !== undefined) {
             logger.debug('Received flush timeout data:', flushtimeout);
             ui.updateFlushDisplay(flushtimeout.duration);
-            
+
         }
 
         if (grinderData) {
