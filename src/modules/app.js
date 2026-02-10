@@ -682,9 +682,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Check if user is on desktop (Windows or macOS) to determine if we should show fullscreen prompt
         const isDesktop = navigator.userAgent.includes('Win') || navigator.userAgent.includes('Mac');
+        
+        // Function to determine if we're in fullscreen mode
+        // This accounts for both browser fullscreen API and web view fullscreen scenarios
+        function isFullscreenMode() {
+            // Check if using browser's native fullscreen API
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                return true;
+            }
+            
+            // Check if viewport dimensions match screen dimensions (indicating fullscreen)
+            // This is especially relevant for web views that start in fullscreen
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const screenWidth = screen.width;
+            const screenHeight = screen.height;
+            
+            // Account for potential UI elements like mobile browsers' address bars
+            // If viewport is very close to screen size, consider it fullscreen
+            const widthRatio = viewportWidth / screenWidth;
+            const heightRatio = viewportHeight / screenHeight;
+            
+            // If both dimensions are at least 95% of screen size, consider it fullscreen
+            return widthRatio >= 0.95 && heightRatio >= 0.95;
+        }
 
-        // Prompt user to enter fullscreen only if not on desktop
-        if (!isDesktop && !document.fullscreenElement && !sessionStorage.getItem('fullscreenPromptDismissed')) {
+        // Prompt user to enter fullscreen only if not on desktop and not already in fullscreen
+        if (!isDesktop && !isFullscreenMode() && !sessionStorage.getItem('fullscreenPromptDismissed')) {
             const toastContainer = document.getElementById('fullscreen-toast-container');
             if (toastContainer) {
                 toastContainer.style.display = 'grid'; // Use grid as per DaisyUI examples for centering
@@ -706,7 +730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // This handles the case where the user clicks the fullscreen toggle directly
         document.addEventListener('fullscreenchange', () => {
             const toastContainer = document.getElementById('fullscreen-toast-container');
-            if (toastContainer && document.fullscreenElement) {
+            if (toastContainer && isFullscreenMode()) {
                 // If we're now in fullscreen mode, hide the toast
                 toastContainer.style.display = 'none';
             }
@@ -715,7 +739,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Also handle the WebKit-specific event for Safari
         document.addEventListener('webkitfullscreenchange', () => {
             const toastContainer = document.getElementById('fullscreen-toast-container');
-            if (toastContainer && document.webkitFullscreenElement) {
+            if (toastContainer && isFullscreenMode()) {
                 // If we're now in fullscreen mode, hide the toast
                 toastContainer.style.display = 'none';
             }
