@@ -18,10 +18,11 @@ export function initScaling() {
                     scale = 1;
                 }
         
-                // Calculate offsets to center the scaled content        const scaledWidth = designWidth * scale;
-        const scaledHeight = designHeight * scale;
-        const offsetX = (screenWidth - scaledWidth) / 2;
-        const offsetY = (screenHeight - scaledHeight) / 2;
+                // Calculate offsets to center the scaled content
+                const scaledWidth = designWidth * scale;
+                const scaledHeight = designHeight * scale;
+                const offsetX = (screenWidth - scaledWidth) / 2;
+                const offsetY = (screenHeight - scaledHeight) / 2;
 
 
         // Apply transform with center origin
