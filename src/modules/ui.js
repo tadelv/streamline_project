@@ -1534,7 +1534,7 @@ export function updateProfileName(name) {
     logger.debug(`Updating profile name to: ${name}`);
     const profileNameEl = document.getElementById('profile-name');
     if (profileNameEl) {
-        profileNameEl.firstChild.textContent = name;
+        profileNameEl.firstChild.textContent = getTranslation(name);
     }
 }
 

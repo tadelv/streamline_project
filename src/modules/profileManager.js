@@ -3,6 +3,7 @@ import { updateWorkflow,sendProfile, getWorkflow, getValueFromStore, setValueInS
 import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio ,showToast} from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
 import { loadPage } from './router.js'; // Singular and correctly formatted import
+import { getTranslation } from './i18n.js';
 
 const FAV_COUNT = 5;
 const PROFILES_PATH = '/src/profiles/';
@@ -26,6 +27,27 @@ let profileUpdateInProgress = false;
 
 // --- Helper Functions ---
 
+/**
+ * Translates a profile title if a translation exists.
+ * Looks for a translation key in the format "profile:{title}".
+ * If no translation is found, returns the original title.
+ * @param {string} title The profile title to translate
+ * @returns {string} The translated or original title
+ */
+export function translateProfileTitle(title) {
+    if (!title) return title;
+    
+    // Try to find a translation for the profile title
+    // Translation key format: "profile:{title}"
+    
+    // Sanitize the title to create a valid translation key
+    
+    const translatedTitle = getTranslation(title);
+    logger.info(`Translating profile title. Original: '${title}', Translation key: '${title}', Translated: '${translatedTitle}'`);
+    // If the translation is the same as the key, it means no translation was found
+    // Return the original title in that case
+    return translatedTitle === title ? title : translatedTitle;
+}
 
 export async function loadAvailableProfiles() {
     try {
@@ -156,7 +178,8 @@ export function updateButtonUI() {
         const profileRecord = availableProfiles[profileKey];
 
         if (button && profileRecord && profileRecord.profile) {
-            button.textContent = profileRecord.profile.title || 'Untitled';
+            const translatedTitle = translateProfileTitle(profileRecord.profile.title);
+            button.textContent = translatedTitle || 'Untitled';
         }
         else if (button) {
             button.textContent = '';
@@ -237,7 +260,8 @@ async function handleProfileClick(index) {
         // Use the response from updateWorkflow to confirm the profile was set
         if (workflowResponse && workflowResponse.profile && workflowResponse.profile.title === profile.title) {
             logger.info(`Profile successfully set (callId: ${callId})`);
-            updateProfileName(profile.title);
+            const translatedTitle = translateProfileTitle(profile.title);
+            updateProfileName(translatedTitle);
             if (profile.steps && profile.steps.length > 0) {
                 updateTemperatureDisplay(profile.steps[0].temperature);
             }
@@ -289,7 +313,8 @@ function openProfileSelectionModal(buttonIndex) {
         if (profileRecord && profileRecord.profile) {
             const item = document.createElement('button');
             item.className = 'btn btn-ghost justify-start';
-            item.textContent = profileRecord.profile.title;
+            const translatedTitle = translateProfileTitle(profileRecord.profile.title);
+            item.textContent = translatedTitle;
             item.addEventListener('click', () => {
                 assignProfile(buttonIndex, profileKey);
             });

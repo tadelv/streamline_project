@@ -58,6 +58,12 @@ const de1AdvancedSettingsCache = {
     timestamp: null,
     TTL: 40000 // 40 seconds TTL
 };
+const reatsettingscache = { 
+    data: null,
+    timestamp: null,
+    TTL: 40000 // 40 seconds TTL
+};
+
 
 export function updateShotSettingsCache(newSettings) {
     if (newSettings) {
@@ -528,12 +534,23 @@ export async function setTargetSteamFlow(flow) {
 }
 
 export async function getReaSettings() {
+    if (reatsettingscache.data && reatsettingscache.timestamp) {
+        const now = Date.now();
+        if (now - reatsettingscache.timestamp < reatsettingscache.TTL) {
+            // Return cached data if it's still fresh
+            return reatsettingscache.data;
+        }
+    }
     try {
         const response = await fetch(`${API_BASE_URL}/settings`);
         if (!response.ok) {
             throw new Error(`Failed to get Rea settings: ${response.statusText}`);
         }
-        return await response.json();
+        const data = await response.json();
+        // Update the cache with new data
+        reatsettingscache.data = data;
+        reatsettingscache.timestamp = Date.now();
+        return data;
     } catch (error) {
         logger.error("Error in getReaSettings:", error);
         return null; // Return null or a default settings object

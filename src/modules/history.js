@@ -3,6 +3,7 @@ import { logger } from './logger.js';
 import { openDB, getAllShots, addShot, getLatestShotTimestamp } from './idb.js';
 import { API_BASE_URL } from './api.js';
 import { renderPastShot, clearShotData } from './shotData.js';
+import { getTranslation } from './i18n.js';
 
 let shots = [];
 let currentShotIndex = -1;
@@ -74,11 +75,13 @@ function displayShot(index) {
     }
     if (historyLabelEl) {
         if (index === 0) {
-            historyLabelEl.textContent = 'NEWEST';
+            historyLabelEl.textContent = getTranslation('NEWEST');
+            
         } else if (index === shots.length - 1) {
-            historyLabelEl.textContent = 'OLDEST';
+            historyLabelEl.textContent = getTranslation('OLDEST');
         } else {
-            historyLabelEl.textContent = 'HISTORY';
+            historyLabelEl.textContent = getTranslation('SHOT HISTORY');
+            
         }
     }
 
