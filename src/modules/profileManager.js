@@ -21,6 +21,9 @@ export let availableProfiles = {};
 let favoriteAssignments = {};
 let currentButtonIndex = null;
 
+// Global flag to prevent duplicate execution of profile updates
+let profileUpdateInProgress = false;
+
 // --- Helper Functions ---
 
 
@@ -181,50 +184,64 @@ export async function verifyProfileChange(sentProfileTitle, retries = 5, delay =
 }
 
 async function handleProfileClick(index) {
+    // Add a unique identifier to track this specific call
+    const callId = Date.now() + Math.random();
+    logger.info(`handleProfileClick called with index ${index}, callId: ${callId}`);
+    
+    // Check the global flag to prevent duplicate execution
+    if (profileUpdateInProgress) {
+        logger.warn(`Profile update already in progress. Skipping duplicate call with callId: ${callId}`);
+        return;
+    }
+    
+    // Set the global flag to indicate a profile update is in progress
+    profileUpdateInProgress = true;
+    
     const profileKey = favoriteAssignments[index];
     const profileRecord = availableProfiles[profileKey];
 
     if (!profileRecord || !profileRecord.profile) {
         logger.warn(`Button ${index} has no profile assigned or profile data is missing.`);
         showToast('Hold or double click to open profile selection.');
+        // Reset the flag before returning
+        profileUpdateInProgress = false;
         return;
     }
 
     const profile = profileRecord.profile;
 
-    logger.info(`Sending profile '${profile.title}' to REA...`);
+    logger.info(`Sending profile '${profile.title}' to REA (callId: ${callId})...`);
     try {
-        await sendProfile(profile);
-        logger.info(`Successfully sent profile. Verifying...`);
+        // Skip the sendProfile call since updateWorkflow can handle sending the profile
+        logger.info(`Skipping sendProfile call, using updateWorkflow directly (callId: ${callId})`);
 
-        const isVerified = await verifyProfileChange(profile.title);
+        let workflowResponse;
+        if (profile.target_weight) {
+            const workflowUpdate = {
+                profile: profile,
+                doseData: {
+                    doseIn: profile.dose_weight || 18, // Default to 18g if not specified
+                    doseOut: parseFloat(profile.target_weight) // Use the profile's target weight
+                }
+            };
+            logger.info(`Calling updateWorkflow with dose data (callId: ${callId})`);
+            workflowResponse = await updateWorkflow(workflowUpdate);
+            updateDrinkOut(profile.target_weight);
+            updateDrinkRatio();
+        } else {
+            // Just update with the profile if no target weight is specified
+            logger.info(`Calling updateWorkflow with profile only (callId: ${callId})`);
+            workflowResponse = await updateWorkflow({ profile: profile });
+        }
 
-        if (isVerified) {
+        // Use the response from updateWorkflow to confirm the profile was set
+        if (workflowResponse && workflowResponse.profile && workflowResponse.profile.title === profile.title) {
+            logger.info(`Profile successfully set (callId: ${callId})`);
             updateProfileName(profile.title);
             if (profile.steps && profile.steps.length > 0) {
                 updateTemperatureDisplay(profile.steps[0].temperature);
             }
-            // if (profile.target_weight) {
-            //     // updateDrinkOut(profile.target_weight);
-            //     // updateDrinkRatio();
-            //     updateDoseAndDrinkOutValue(profile.target_weight);
-            //     logger.info("profile click : update drink out and ratio", profile.target_weight);
-            // }
-             if (profile.target_weight) {
-                        const workflowUpdate = {
-                            profile: profile,
-                            doseData: {
-                                doseIn: profile.dose_weight || 18, // Default to 18g if not specified
-                                doseOut: parseFloat(profile.target_weight) // Use the profile's target weight
-                            }
-                        };
-                        await updateWorkflow(workflowUpdate);
-                        updateDrinkOut(profile.target_weight);
-                        updateDrinkRatio();
-                    } else {
-                        // Just update with the profile if no target weight is specified
-                        await updateWorkflow({ profile: profile });
-                    }
+            
             favoriteButtons.forEach((btn, i) => {
                 const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
                 const activeTextClass = 'text-white';
@@ -238,10 +255,16 @@ async function handleProfileClick(index) {
                     btn.classList.add(inactiveTextClass);
                 }
             });
+        } else {
+            logger.warn(`Profile may not have been set correctly (callId: ${callId}). Response did not match expected profile.`);
         }
     }
     catch (error) {
-        logger.error('Failed to send or verify profile:', error);
+        logger.error(`Failed to update profile (callId: ${callId}):`, error);
+    } finally {
+        // Always reset the flag in the finally block to ensure it gets reset even if there's an error
+        profileUpdateInProgress = false;
+        logger.info(`handleProfileClick completed (callId: ${callId}), reset profileUpdateInProgress flag`);
     }
 }
 
@@ -509,6 +532,7 @@ export async function init() {
             clonedButton.classList.add('no-select');
             let pressTimer = null;
             let clickTimer = null;
+            let isProcessing = false; // Flag to prevent duplicate execution
             const DOUBLE_CLICK_THRESHOLD = 300; // ms
 
             const startPress = (e) => {
@@ -521,20 +545,25 @@ export async function init() {
                 }, LONG_PRESS_DURATION);
             };
 
-            const endPress = () => {
+            const endPress = async () => {
                 if (pressTimer !== null) { // It's a tap/click, not a long press
                     clearTimeout(pressTimer);
 
                     if (clickTimer) { // This is the second click
                         clearTimeout(clickTimer);
                         clickTimer = null;
-                        handleDoubleClick(index);
+                        await handleDoubleClick(index);
                     } else { // This is the first click, wait for a potential second click
-
-                        clickTimer = setTimeout(() => {
-                            clickTimer = null;
-                            handleProfileClick(index);
-                        }, DOUBLE_CLICK_THRESHOLD);
+                        // Prevent duplicate execution by checking both the timer and processing state
+                        if (!isProcessing) {
+                            isProcessing = true;
+                            clickTimer = setTimeout(async () => {
+                                clickTimer = null;
+                                await handleProfileClick(index);
+                                // Reset the flag after the operation completes
+                                isProcessing = false;
+                            }, DOUBLE_CLICK_THRESHOLD);
+                        }
                     }
                 }
             };

@@ -49,14 +49,14 @@ let currentShotSettings = {
 const de1SettingsCache = {
     data: null,
     timestamp: null,
-    TTL: 30000 // 30 seconds TTL
+    TTL: 40000 // 40 seconds TTL
 };
 
 // Caching for DE1 advanced settings to improve performance when navigating to settings page
 const de1AdvancedSettingsCache = {
     data: null,
     timestamp: null,
-    TTL: 30000 // 30 seconds TTL
+    TTL: 40000 // 40 seconds TTL
 };
 
 export function updateShotSettingsCache(newSettings) {

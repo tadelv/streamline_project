@@ -81,7 +81,7 @@ const baseChartData = {
         name: 'Weight',
         type: 'lines',
         mode: 'lines',
-        line: { color: '#e9d3c3' }, // light mode
+        line: { color: '#D8BDA8' }, // light mode
         hoverinfo: 'name'
     }
 };
@@ -147,7 +147,7 @@ const labelColors = {
         pressure: '#17c29a',
         flow: '#0358cf',
         groupTemperature: '#ff97a1',
-        weight: '#e9d3c3'
+        weight: '#C7A58D'
     },
     dark: {
         pressure: '#17c29a',
@@ -818,6 +818,15 @@ export function initChart() {
             }
         }, 100);
     });
+    
+    // Listen for theme changes to update the chart when the theme changes
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'theme') {
+            const newTheme = event.newValue || 'light';
+            setTheme(newTheme);
+        }
+    });
+    
     console.log('initChart: Chart initialization completed');
 }
 

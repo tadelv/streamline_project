@@ -211,6 +211,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         const historyModule = await import('/src/modules/history.js');
                         const profileManagerModule = await import('/src/modules/profileManager.js');
                         const shotDataModule = await import('/src/modules/shotData.js');
+                        const chartModule = await import('/src/modules/chart.js'); // Import chart module
                         const { initWaterTankSocket } = await import('/src/modules/waterTank.js');
                         const { showScaleInfo } = uiModule;
 
@@ -222,6 +223,10 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         shotDataModule.clearShotData();
 
                         await historyModule.initHistory(); // Reinitialize history
+                        
+                        // Initialize chart and ensure theme is applied
+                        chartModule.initChart();
+                        
                         initWaterTankSocket(); // Reinitialize water tank WebSocket
                         // Wait a bit to ensure DOM is fully updated before initializing profile manager
                         await new Promise(resolve => setTimeout(resolve, 50));

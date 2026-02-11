@@ -1,4 +1,4 @@
-import { getProfile, sendProfile, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings, verifyVisualizerCredentials } from './api.js';
+import { getProfile,  updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings, verifyVisualizerCredentials } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
@@ -541,9 +541,14 @@ export function initThemeToggle() {
     const applyTheme = (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        // Only set chart theme if the chart element exists in the DOM
+        
+        // Dynamically import the chart module and apply theme if chart element exists
         if (document.getElementById('plotly-chart')) {
-            chart.setTheme(theme);
+            import('./chart.js').then((chartModule) => {
+                chartModule.setTheme(theme);
+            }).catch(error => {
+                console.error('Error importing chart module:', error);
+            });
         }
 
         if (theme === 'dark') {

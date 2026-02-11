@@ -405,21 +405,9 @@ async function handleShotSettingsData(data) {
     updateShotSettingsCache(data);
     ui.updateHotWaterDisplay(data);
 
-    // Use cached DE1 settings instead of making an API call every time
-    // The cache will be updated elsewhere when needed
-    try {
-        const de1Settings = await getDe1Settings(); // This will now use the cached version most of the time
-        if (de1Settings) {
-            const combinedData = { ...data, targetSteamFlow: de1Settings.steamFlow };
-            ui.updateSteamDisplay(combinedData);
-        } else {
-            logger.warn('Could not retrieve DE1 settings, using fallback for steam display.');
-            ui.updateSteamDisplay(data);
-        }
-    } catch (error) {
-        logger.error('Failed to get DE1 settings for steam display:', error);
-        ui.updateSteamDisplay(data); // Fallback to original data
-    }
+    // Update steam display with the data received from the WebSocket
+    // Avoiding unnecessary API call to get DE1 settings on every WebSocket message
+    ui.updateSteamDisplay(data);
 
     if (data.flushTimeout !== undefined) {
         logger.debug('Received flush timeout data:', data.flushTimeout);
@@ -552,7 +540,9 @@ async function loadInitialData() {
         if (grinderData) {
             ui.updateGrindDisplay(grinderData);
         }
-
+        logger.debug("Dose data received:", doseData);
+        ui.updateDoseInDisplay(doseData.doseIn);
+        ui.updateDrinkOut(doseData.doseOut);
         ui.updateDrinkRatio();
 
     } catch (error) {
