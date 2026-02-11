@@ -856,7 +856,7 @@ export function renderUserManualSettings() {
                             Visit
                         </a>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
                         Get support and submit tickets for assistance
                     </p>
                 </div>
@@ -877,8 +877,23 @@ export function renderUserManualSettings() {
                             View
                         </a>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
                         Learn how to get started with your espresso machine
+                    </p>
+                </div>
+            </div>
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[40px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[40px]">
+                            <p class="leading-[1.2]">Start writing your own skin.</p>
+                        </div>
+                        <a href="https://github.com/tadelv/reaprime/blob/main/doc/Skins.md#skinsmd" target="_blank" class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold flex items-center justify-center">
+                            View
+                        </a>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Learn how to use streamline-bridge to create custom skins and more.
                     </p>
                 </div>
             </div>
@@ -2253,6 +2268,9 @@ export async function initializeSettings() {
         }
     }
 
+    // Set up search functionality
+    setupSettingsSearch();
+
     // Apply translations to the settings page
     setLanguage(getCurrentLanguage());
 
@@ -2304,4 +2322,272 @@ export async function initializeSettings() {
     };
 
     ui.initResizablePanels('separator');
+}
+
+// Set up search functionality for settings
+function setupSettingsSearch() {
+    const searchInput = document.getElementById('settings-search');
+    if (!searchInput) {
+        console.warn('Settings search input not found');
+        return;
+    }
+
+    // Store original navigation structure
+    const originalMainCategories = {};
+    Object.keys(settingsTree).forEach(key => {
+        originalMainCategories[key] = { ...settingsTree[key] };
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+
+        if (searchTerm === '') {
+            // If search is empty, restore original navigation
+            restoreOriginalNavigation();
+            return;
+        }
+
+        // Filter categories based on search term
+        const filteredCategories = {};
+        
+        Object.entries(settingsTree).forEach(([key, category]) => {
+            // Check if main category name matches
+            const mainCategoryMatches = category.name.toLowerCase().includes(searchTerm);
+            
+            // Filter subcategories that match
+            const matchingSubcategories = category.subcategories.filter(subcat => 
+                subcat.name.toLowerCase().includes(searchTerm) || 
+                subcat.id.toLowerCase().includes(searchTerm)
+            );
+
+            // Include the category if either main name matches or any subcategory matches
+            if (mainCategoryMatches || matchingSubcategories.length > 0) {
+                filteredCategories[key] = {
+                    name: category.name,
+                    subcategories: matchingSubcategories.length > 0 ? matchingSubcategories : category.subcategories
+                };
+            }
+        });
+
+        // Update the navigation with filtered results
+        updateNavigationWithResults(filteredCategories, searchTerm);
+    });
+}
+
+// Restore original navigation when search is cleared
+function restoreOriginalNavigation() {
+    const mainCategoriesPanel = document.getElementById('main-categories-panel');
+    if (!mainCategoriesPanel) return;
+
+    // Clear and rebuild the main categories panel
+    const navUl = mainCategoriesPanel.querySelector('nav ul');
+    if (navUl) {
+        navUl.innerHTML = '';
+        
+        Object.entries(settingsTree).forEach(([key, category]) => {
+            const li = document.createElement('li');
+            const btn = document.createElement('button');
+            btn.id = `${key}-btn`;
+            btn.className = 'settings-nav-btn w-full text-left px-4 py-3 rounded-lg text-[24px] text-[#959595] hover:text-white hover:bg-[#2c4a7a] flex items-center';
+            btn.innerHTML = `<span>${category.name}</span>`;
+            
+            navUl.appendChild(li);
+            li.appendChild(btn);
+        });
+    }
+
+    // Reattach event listeners to the restored buttons
+    document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+        // Remove any existing listeners to avoid duplicates
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', function() {
+            // Handle active state for main categories
+            document.querySelectorAll('.settings-nav-btn').forEach(b => {
+                b.classList.remove('text-white', 'bg-[#2c4a7a]');
+                b.classList.add('text-[#959595]'); // Explicitly re-add default color
+            });
+            this.classList.remove('text-[#959595]'); // Explicitly remove default color
+            this.classList.add('text-white', 'bg-[#2c4a7a]');
+
+            const mainCategoryKey = this.id.replace(/-btn$/, '').replace(/-/g, '');
+
+            // Render subcategories
+            const subCategoriesPanel = document.getElementById('sub-categories-panel');
+            if (subCategoriesPanel) {
+                subCategoriesPanel.innerHTML = renderSubcategories(mainCategoryKey);
+
+                // Add event listeners to the new subcategory buttons
+                subCategoriesPanel.querySelectorAll('.settings-subnav-btn').forEach(subBtn => {
+                    subBtn.addEventListener('click', function(e) {
+                        e.preventDefault(); // Prevent any default behavior that might cause page reload
+                        e.stopPropagation(); // Stop event from bubbling up
+
+                        // Handle active state for subcategories
+                        subCategoriesPanel.querySelectorAll('.settings-subnav-btn').forEach(sb => {
+                             sb.classList.remove('bg-[#d7dee9]', 'text-[var(--mimoja-blue)]');
+                             sb.classList.add('text-[#959595]');
+                        });
+                        this.classList.remove('text-[#959595]');
+                        this.classList.add('bg-[#d7dee9]', 'text-[var(--mimoja-blue)]');
+
+                        const settingsCategory = this.dataset.category;
+                        activeSettingsCategory = settingsCategory; // Set the active category
+                        updateSettingsContentArea(settingsCategory); // Use the new helper function
+                    });
+                });
+            }
+
+            // After rendering subcategories, attempt to click the first one if it exists
+            const firstSubCategoryBtn = subCategoriesPanel?.querySelector('.settings-subnav-btn');
+            if (firstSubCategoryBtn) {
+                firstSubCategoryBtn.click();
+            } else {
+                // If no subcategories, clear the content area and set activeSettingsCategory to null
+                const contentArea = document.getElementById('settings-content-area');
+                if (contentArea) {
+                    contentArea.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8">
+                        <p class="text-[var(--text-primary)] text-[28px]">Select a sub-category from the menu</p>
+                    </div>`;
+                    activeSettingsCategory = null;
+                }
+            }
+        });
+    });
+
+    // Clear the subcategories panel when restoring original navigation
+    const subCategoriesPanel = document.getElementById('sub-categories-panel');
+    if (subCategoriesPanel) {
+        subCategoriesPanel.innerHTML = '';
+    }
+}
+
+// Update navigation with search results
+function updateNavigationWithResults(filteredCategories, searchTerm) {
+    const mainCategoriesPanel = document.getElementById('main-categories-panel');
+    if (!mainCategoriesPanel) return;
+
+    // Clear and rebuild the main categories panel with filtered results
+    const navUl = mainCategoriesPanel.querySelector('nav ul');
+    if (navUl) {
+        navUl.innerHTML = '';
+        
+        Object.entries(filteredCategories).forEach(([key, category]) => {
+            const li = document.createElement('li');
+            const btn = document.createElement('button');
+            btn.id = `${key}-btn`;
+            btn.className = 'settings-nav-btn w-full text-left px-4 py-3 rounded-lg text-[24px] text-[#959595] hover:text-white hover:bg-[#2c4a7a] flex items-center';
+            
+            // Highlight matching text in the category name
+            const highlightedName = highlightMatch(category.name, searchTerm);
+            btn.innerHTML = `<span>${highlightedName}</span>`;
+            
+            navUl.appendChild(li);
+            li.appendChild(btn);
+        });
+    }
+
+    // Attach event listeners to the filtered buttons
+    document.querySelectorAll('.settings-nav-btn').forEach(btn => {
+        // Remove any existing listeners to avoid duplicates
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', function() {
+            // Handle active state for main categories
+            document.querySelectorAll('.settings-nav-btn').forEach(b => {
+                b.classList.remove('text-white', 'bg-[#2c4a7a]');
+                b.classList.add('text-[#959595]'); // Explicitly re-add default color
+            });
+            this.classList.remove('text-[#959595]'); // Explicitly remove default color
+            this.classList.add('text-white', 'bg-[#2c4a7a]');
+
+            const mainCategoryKey = this.id.replace(/-btn$/, '').replace(/-/g, '');
+
+            // Render matching subcategories
+            const subCategoriesPanel = document.getElementById('sub-categories-panel');
+            if (subCategoriesPanel) {
+                subCategoriesPanel.innerHTML = renderFilteredSubcategories(mainCategoryKey, searchTerm);
+
+                // Add event listeners to the new subcategory buttons
+                subCategoriesPanel.querySelectorAll('.settings-subnav-btn').forEach(subBtn => {
+                    subBtn.addEventListener('click', function(e) {
+                        e.preventDefault(); // Prevent any default behavior that might cause page reload
+                        e.stopPropagation(); // Stop event from bubbling up
+
+                        // Handle active state for subcategories
+                        subCategoriesPanel.querySelectorAll('.settings-subnav-btn').forEach(sb => {
+                             sb.classList.remove('bg-[#d7dee9]', 'text-[var(--mimoja-blue)]');
+                             sb.classList.add('text-[#959595]');
+                        });
+                        this.classList.remove('text-[#959595]');
+                        this.classList.add('bg-[#d7dee9]', 'text-[var(--mimoja-blue)]');
+
+                        const settingsCategory = this.dataset.category;
+                        activeSettingsCategory = settingsCategory; // Set the active category
+                        updateSettingsContentArea(settingsCategory); // Use the new helper function
+                    });
+                });
+            }
+
+            // After rendering subcategories, attempt to click the first one if it exists
+            const firstSubCategoryBtn = subCategoriesPanel?.querySelector('.settings-subnav-btn');
+            if (firstSubCategoryBtn) {
+                firstSubCategoryBtn.click();
+            } else {
+                // If no subcategories, clear the content area and set activeSettingsCategory to null
+                const contentArea = document.getElementById('settings-content-area');
+                if (contentArea) {
+                    contentArea.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8">
+                        <p class="text-[var(--text-primary)] text-[28px]">Select a sub-category from the menu</p>
+                    </div>`;
+                    activeSettingsCategory = null;
+                }
+            }
+        });
+    });
+}
+
+// Render filtered subcategories based on search term
+function renderFilteredSubcategories(mainCategoryKey, searchTerm) {
+    const category = settingsTree[mainCategoryKey];
+    if (!category || !category.subcategories || category.subcategories.length === 0) {
+        return `<div class="p-4 text-center text-gray-500">No sub-categories.</div>`;
+    }
+
+    // Filter subcategories that match the search term
+    const matchingSubcategories = category.subcategories.filter(subcat => 
+        subcat.name.toLowerCase().includes(searchTerm) || 
+        subcat.id.toLowerCase().includes(searchTerm)
+    );
+
+    if (matchingSubcategories.length === 0) {
+        return `<div class="p-4 text-center text-gray-500">No matching subcategories.</div>`;
+    }
+
+    let subcategoryItems = '';
+    matchingSubcategories.forEach((subcat) => {
+        // Highlight matching text in the subcategory name
+        const highlightedName = highlightMatch(subcat.name, searchTerm);
+        
+        subcategoryItems += `
+            <li>
+                <button class="settings-subnav-btn w-full text-left px-4 py-3 rounded-lg text-[20px] text-[#959595] hover:text-white hover:bg-[#2c4a7a] flex items-center"
+                        data-category="${subcat.settingsCategory}">
+                    <span>${highlightedName}</span>
+                </button>
+            </li>
+        `;
+    });
+
+    return `<ul class="space-y-1">${subcategoryItems}</ul>`;
+}
+
+// Highlight matching text within a string
+function highlightMatch(text, searchTerm) {
+    if (!searchTerm) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-300 text-black">$1</mark>');
 }

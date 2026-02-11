@@ -40,6 +40,7 @@ function getEyeIconSVG(strokeColor) {
 // }
 
 async function handleConfirm() {
+    let sentworkflow = {};
     if (!selectedProfileKey) {
         alert('Please select a profile first.');
         return;
@@ -83,14 +84,14 @@ async function handleConfirm() {
                     doseOut: parseFloat(profile.target_weight) // Use the profile's target weight
                 }
             };
-            await updateWorkflow(workflowUpdate);
+            
+            sentworkflow = await updateWorkflow(workflowUpdate);
         } else {
             // Just update with the profile if no target weight is specified
-            await updateWorkflow({ profile: profile });
+            sentworkflow = await updateWorkflow({ profile: profile });
         }
 
-        await sendProfile(profile);
-        const verified = await verifyProfileChange(profile.title);
+        const verified = sentworkflow.profile.title === profile.title;
         if (verified) {
             logger.info('Profile sent and verified. Navigating to main page.');
             showToast(`Profile Set`, 3000, 'success');

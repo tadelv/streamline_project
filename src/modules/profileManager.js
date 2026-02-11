@@ -210,16 +210,25 @@ async function handleProfileClick(index) {
     // Add a unique identifier to track this specific call
     const callId = Date.now() + Math.random();
     logger.info(`handleProfileClick called with index ${index}, callId: ${callId}`);
-    
+
     // Check the global flag to prevent duplicate execution
     if (profileUpdateInProgress) {
         logger.warn(`Profile update already in progress. Skipping duplicate call with callId: ${callId}`);
         return;
     }
-    
+
     // Set the global flag to indicate a profile update is in progress
     profileUpdateInProgress = true;
+
+    // Get the button element to apply waiting state
+    const button = favoriteButtons[index];
     
+    // Apply waiting state to the button by replacing the background class
+    if (button) {
+        button.classList.remove('bg-[var(--profile-button-background-color)]');
+        button.classList.add('bg-[var(--fav-button-wait)]');
+    }
+
     const profileKey = favoriteAssignments[index];
     const profileRecord = availableProfiles[profileKey];
 
@@ -228,6 +237,11 @@ async function handleProfileClick(index) {
         showToast('Hold or double click to open profile selection.');
         // Reset the flag before returning
         profileUpdateInProgress = false;
+        // Remove waiting state if there was an error
+        if (button) {
+            button.classList.remove('bg-[var(--fav-button-wait)]');
+            button.classList.add('bg-[var(--profile-button-background-color)]');
+        }
         return;
     }
 
@@ -265,7 +279,7 @@ async function handleProfileClick(index) {
             if (profile.steps && profile.steps.length > 0) {
                 updateTemperatureDisplay(profile.steps[0].temperature);
             }
-            
+
             favoriteButtons.forEach((btn, i) => {
                 const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
                 const activeTextClass = 'text-white';
@@ -288,6 +302,11 @@ async function handleProfileClick(index) {
     } finally {
         // Always reset the flag in the finally block to ensure it gets reset even if there's an error
         profileUpdateInProgress = false;
+        // Remove the waiting state from the button and restore original background
+        if (button) {
+            button.classList.remove('bg-[var(--fav-button-wait)]');
+            button.classList.add('bg-[var(--profile-button-background-color)]');
+        }
         logger.info(`handleProfileClick completed (callId: ${callId}), reset profileUpdateInProgress flag`);
     }
 }
