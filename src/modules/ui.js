@@ -1132,7 +1132,7 @@ export function updateSleepButton(state) {
 
 export function updateMachineStatus(data) {
     const { status, substate, stepName, timeValue, isClickable,  isHeating, isHeatingFromTimeToReady } = data;
-    // logger.debug(`Updating machine status to: ${status}, substate: ${substate}, stepName: ${stepName}, time: ${timeValue}, clickable: ${isClickable}`);
+    logger.debug(`Updating machine status to: ${status}, substate: ${substate}, stepName: ${stepName}, time: ${timeValue}, clickable: ${isClickable}`);
     const machineStatusEl = document.getElementById('machine-status');
     const hotWaterVolValueEl = document.getElementById('hot-water-vol-value');
     const flushtimevalue = document.getElementById('flush-value');
@@ -1141,6 +1141,11 @@ export function updateMachineStatus(data) {
     }
 
     // Define state checks early
+    const isEspressoPreparingForShot = status?.toLowerCase().includes('espresso') &&
+                                      (substate?.toLowerCase().includes('preparingforshot') ||
+                                       substate?.toLowerCase().includes('preparing for shot'));
+   
+    
     const isPreinfusionState = status?.toLowerCase().includes('preinfusion') ||
                                substate?.toLowerCase().includes('preinfusion') ||
                               
@@ -1212,8 +1217,14 @@ export function updateMachineStatus(data) {
 
     // Check if this is a heating state with time remaining and apply special formatting
     const isHeatingWithTimeRemaining = isHeating && isHeatingFromTimeToReady && status && status.includes('Heating: ') && status.includes('s remaining');
-  
-    if (isHeatingWithTimeRemaining) {
+    if (isEspressoPreparingForShot) {
+        logger.debug('Entering isEspressoPreparingForShot condition');
+        const espressoonlytext = getTranslation('Espresso');
+        const espressoheatingtext = getTranslation('Heating'); 
+        const pleasetext = getTranslation('please');
+        const waittext = getTranslation('wait');
+        machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">${espressoonlytext} ${espressoheatingtext}:</span><span class="text-[var(--status-clickable-color)]">${pleasetext} ${waittext}</span>`;
+    } else if (isHeatingWithTimeRemaining) {
         // Split the status string to apply different colors to "Heating" and "Xs remaining"
         const parts = status.split(': ');
         const heatingPart = parts[0] // "Heating"

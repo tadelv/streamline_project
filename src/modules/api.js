@@ -91,6 +91,11 @@ export async function scanForDevices() {
 export async function reconnectDevice(deviceId) {
     try {
         logger.info(`Attempting to reconnect to device: ${deviceId}`);
+        if (!deviceId||deviceId==null) {
+            logger.warn('No device ID provided for reconnection attempt.');
+            return;
+            
+        }
         const response = await fetch(`${API_BASE_URL}/devices/connect?deviceId=${deviceId}`, {
             method: 'PUT',
         });
@@ -182,7 +187,7 @@ export function connectWebSocket(onData, onReconnect) {
 
     reconnectingWebSocket.onclose = () => {
         logger.info('WebSocket disconnected. Attempting to reconnect...');
-        ui.updateMachineStatus("Disconnected");
+        ui.updateMachineStatus({ status: "Disconnected" });
         setTimeout(() => {
             logger.info('reloading now');
             // location.reload();
@@ -192,9 +197,7 @@ export function connectWebSocket(onData, onReconnect) {
 
     reconnectingWebSocket.onerror = (error) => {
         logger.error('WebSocket error:', error);
-        ui.
-        
-        Status({ status: "Disconnected" }); // Ensure this is present
+        ui.updateMachineStatus({ status: "Disconnected" }); // Ensure this is present
     };
 
     reconnectingWebSocket.onreconnect = null;
@@ -571,17 +574,30 @@ export async function getDe1Settings() {
     try {
         const response = await fetch(`${API_BASE_URL}/machine/settings`);
         if (!response.ok) {
-            throw new Error(`Failed to get DE1 settings: ${response.statusText}`);
+            // Throw an error that includes the status code for better error handling
+            const errorText = await response.text(); // Get response body for more details
+            const error = new Error(`Failed to get DE1 settings: ${response.statusText}`);
+            error.status = response.status; // Add status code to error object
+            error.statusText = response.statusText;
+            error.responseBody = errorText;
+            throw error;
         }
         const data = await response.json();
-        
+
         // Update the cache with new data
         de1SettingsCache.data = data;
         de1SettingsCache.timestamp = Date.now();
-        
+
         return data;
     } catch (error) {
         logger.error("Error in getDe1Settings:", error);
+        
+        // Check if this is a 500 error and re-throw with status info
+        if (error.status === 500) {
+            ui.showToast('Unable to load settings, check connection status of De1, returned to home page.', 5000, 'error');
+            throw error; // Re-throw so calling code can handle 500 specifically
+        }
+        
         // Return cached data if available, even if expired, to avoid breaking functionality
         if (de1SettingsCache.data) {
             return de1SettingsCache.data;
@@ -632,14 +648,20 @@ export async function getDe1AdvancedSettings() {
         clearTimeout(timeoutId); // Clear the timeout if the fetch completes in time
 
         if (!response.ok) {
-            throw new Error(`Failed to get DE1 advanced settings: ${response.statusText}`);
+            // Throw an error that includes the status code for better error handling
+            const errorText = await response.text(); // Get response body for more details
+            const error = new Error(`Failed to get DE1 advanced settings: ${response.statusText}`);
+            error.status = response.status; // Add status code to error object
+            error.statusText = response.statusText;
+            error.responseBody = errorText;
+            throw error;
         }
         const data = await response.json();
-        
+
         // Update the cache with new data
         de1AdvancedSettingsCache.data = data;
         de1AdvancedSettingsCache.timestamp = Date.now();
-        
+
         return data;
     } catch (error) {
         clearTimeout(timeoutId);
@@ -648,7 +670,13 @@ export async function getDe1AdvancedSettings() {
             window.location.reload(); // Reload the page on timeout to attempt recovery
         } else {
             logger.error("Error in getDe1AdvancedSettings:", error);
+            
+            // Check if this is a 500 error and re-throw with status info
+            if (error.status === 500) {
+                throw error; // Re-throw so calling code can handle 500 specifically
+            }
         }
+        
         // Return cached data if available, even if expired, to avoid breaking functionality
         if (de1AdvancedSettingsCache.data) {
             return de1AdvancedSettingsCache.data;

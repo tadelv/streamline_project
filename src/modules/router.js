@@ -240,6 +240,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         if (appModule.loadInitialData) {
                             // Add a sufficient delay to ensure DOM is fully updated and all UI components are ready
                             await new Promise(resolve => setTimeout(resolve, 200));
+                            appModule.resetDataTimeout(); // Reset the data timeout to prevent false disconnection status
                             console.log('Router: About to call loadInitialData');
                             await appModule.loadInitialData(); // Reload initial data
                             console.log('Router: Initial data reloaded successfully.');

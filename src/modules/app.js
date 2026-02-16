@@ -58,7 +58,7 @@ function resetDataTimeout() {
     clearTimeout(dataTimeout);
     dataTimeout = setTimeout(async () => {
         logger.warn('No WebSocket data received for 5 seconds. Assuming REA or WebSocket disconnection.');
-        ui.updateMachineStatus("Disconnected");
+        ui.updateMachineStatus({ status: "disconnected" });
         isDe1Connected = false;
         try {
             const devices = await scanForDevices();
@@ -204,12 +204,20 @@ function handleData(data) {
     if (state !== MachineState.ERROR && !isDe1Connected) {
         logger.info('DE1 machine reconnected. Loading initial data.');
         isDe1Connected = true;
+        ui.updateMachineStatus({ status: statusString }); // Update status to reflect actual machine state
         loadInitialData(); // Refresh all configuration data
         // Do not clear chart or reset shotStartTime as per user request
     } else if (state === MachineState.ERROR && isDe1Connected) {
         logger.warn('DE1 machine connected with error status.');
-        // isDe1Connected = false;
-        // ui.updateMachineStatus("Disconnected"); // Removed: Let the main logic handle it
+        isDe1Connected = false;
+        ui.updateMachineStatus({ status: "Disconnected" }); // Show disconnected when in error state
+    }
+
+    // Check if the machine is in an error state that indicates disconnection
+    if (state === MachineState.ERROR) {
+        logger.warn('DE1 machine in error state, likely disconnected.');
+        isDe1Connected = false;
+        ui.updateMachineStatus({ status: "Disconnected" });
     }
 
     // Check for shot completion (transition from 'espresso' to 'ready' or 'idle')
@@ -553,30 +561,42 @@ async function loadInitialData() {
 
 async function initializeDe1Connection() {
     try {
-        logger.info('Attempting to find devices with fast method...');
+        logger.info('Attempting to find DE1 device...');
+        
+        // Try fast method first
         let devices = await getDevices();
         let de1Machine = devices.find(d => d.type === 'machine' && d.state === 'connected');
-
+        
         // If not found, try the slower, more reliable scan
         if (!de1Machine) {
             logger.warn('DE1 not found with fast method. Trying fallback scan...');
             devices = await scanForDevices();
             de1Machine = devices.find(d => d.type === 'machine' && d.state === 'connected');
         }
-
+        
         if (de1Machine) {
             de1DeviceId = de1Machine.id;
             logger.info(`DE1 machine ID found and stored: ${de1DeviceId}`);
-            if (de1Machine.state !== 'connected') {
-                logger.warn('DE1 machine is found but not connected. Awaiting automatic reconnection or data timeout.');
+            
+            // Update connection status based on actual device state
+            if (de1Machine.state === 'connected') {
+                logger.info('DE1 machine is connected.');
+                isDe1Connected = true;
+                // Don't update status here - let handleData manage it based on actual machine state
             } else {
-                logger.info('DE1 machine is already connected.');
+                logger.warn('DE1 machine is found but not connected.');
+                isDe1Connected = false;
+                ui.updateMachineStatus({ status: "disconnected" });
             }
         } else {
             logger.error('DE1 machine not found or not connected even after fallback scan.');
+            isDe1Connected = false;
+            ui.updateMachineStatus({ status: "disconnected" });
         }
     } catch (error) {
         logger.error('Failed to initialize DE1 device ID:', error);
+        isDe1Connected = false;
+        ui.updateMachineStatus({ status: "disconnected" });
     }
 }
 
