@@ -1,4 +1,4 @@
-import { getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings } from '/src/modules/api.js';
+import { getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings,getDevices,reconnectDevice,connectScaleDevice } from '/src/modules/api.js';
 import * as ui from '/src/modules/ui.js';
 import { initScaling } from '/src/modules/scaling.js';
 import { loadPage } from '/src/modules/router.js';
@@ -73,8 +73,8 @@ const settingsTree = {
     'bluetooth': {
         name: 'Bluetooth',
         subcategories: [
-            { id: 'espressomachine', name: 'Espresso Machine', settingsCategory: 'bluetooth' },
-            { id: 'weighingscale', name: 'Weighing Scale', settingsCategory: 'bluetooth' }
+            { id: 'ble_machine', name: '1. Machine', settingsCategory: 'ble_machine' },
+            { id: 'ble_scale', name: '2. Scale', settingsCategory: 'ble_scale' }
         ]
     },
     'calibration': {
@@ -317,10 +317,11 @@ export function renderSettingsContent(category) {
             return renderWaterTankSettings();
         case 'flush':
             return renderFlushSettingsForm(settingsCache.de1);
-        case 'bluetooth':
-        case 'espressomachine':
-        case 'weighingscale':
-            return renderBluetoothSettings();
+     
+        case 'ble_scale':
+            return renderBluetoothScaleSettings();
+        case 'ble_machine':
+            return renderBluetoothMachineSettings();
         case 'calibration':
         case 'defaultloadsettings':
         case 'refillkit':
@@ -1059,55 +1060,6 @@ export function renderMiscellaneousSettings() {
     `;
 }
 
-// Render bluetooth settings
-export function renderBluetoothSettings() {
-    return `
-        <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
-                <p class="leading-[1.2]">Bluetooth Settings</p>
-            </div>
-
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Espresso Machine</p>
-                        </div>
-                        <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                            <option>Not Connected</option>
-                            <option>Connected</option>
-                        </select>
-                    </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Connect to your espresso machine via Bluetooth
-                    </p>
-                </div>
-            </div>
-
-            <!-- Divider -->
-            <div class="h-0 relative w-full">
-                <hr class="border-t border-[#c9c9c9] w-full" />
-            </div>
-
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Weighing Scale</p>
-                        </div>
-                        <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                            <option>Not Connected</option>
-                            <option>Connected</option>
-                        </select>
-                    </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Connect to your weighing scale via Bluetooth
-                    </p>
-                </div>
-            </div>
-        </div>
-    `;
-}
 
 // Render Steam settings
 export function renderSteamSettings() {
@@ -2640,3 +2592,533 @@ function highlightMatch(text, searchTerm) {
     const regex = new RegExp(`(${searchTerm})`, 'gi');
     return text.replace(regex, '<mark class="bg-yellow-300 text-black">$1</mark>');
 }
+
+// Bluetooth Functions
+
+// Function to scan for available devices and populate the dropdowns
+window.scanAndConnectEspresso = async function() {
+    try {
+        // Show scanning status
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Scanning for espresso machines...</p>';
+
+        // Get available devices using the imported function
+        const devices = await getDevices();
+
+        // Filter for espresso machines (assuming they have a specific identifier)
+        const espressoMachines = devices.filter(device =>
+            device.name && (device.name.toLowerCase().includes('decent') ||
+                           device.name.toLowerCase().includes('espresso') ||
+                           device.type === 'espresso')
+        );
+
+        // Populate the espresso machine dropdown
+        const espressoSelect = document.getElementById('espresso-machine-select');
+        espressoSelect.innerHTML = '<option value="">Select Device</option>';
+
+        if (espressoMachines.length > 0) {
+            espressoMachines.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.textContent = `${device.name} (${device.id})`;
+                espressoSelect.appendChild(option);
+            });
+
+            // Add event listener to handle manual selection
+            espressoSelect.onchange = function() {
+                if (this.value) {
+                    connectToDevice(this.value);
+                }
+            };
+
+            // If only one device is found, auto-select it and connect
+            if (espressoMachines.length === 1) {
+                espressoSelect.value = espressoMachines[0].id;
+                await connectToDevice(espressoMachines[0].id);
+            } else {
+                statusDiv.innerHTML = `<p>Found ${espressoMachines.length} espresso machine(s). Please select one.</p>`;
+            }
+        } else {
+            statusDiv.innerHTML = '<p>No espresso machines found. Try moving closer to the device.</p>';
+        }
+    } catch (error) {
+        console.error('Error scanning for espresso machines:', error);
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = `<p class="text-red-500">Error scanning for devices: ${error.message}</p>`;
+    }
+};
+
+// Function to scan for scales and connect
+window.scanAndConnectScale = async function() {
+    try {
+        // Show scanning status
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Scanning for weighing scales...</p>';
+        
+        // Get available devices using the imported function
+        const devices = await getDevices();
+        
+        // Filter for scales (assuming they have a specific identifier)
+        const scales = devices.filter(device => 
+            device.name && (device.name.toLowerCase().includes('scale') || 
+                           device.name.toLowerCase().includes('weight') || 
+                           device.type === 'scale')
+        );
+        
+        // Populate the scale dropdown
+        const scaleSelect = document.getElementById('weighing-scale-select');
+        scaleSelect.innerHTML = '<option value="">Select Device</option>';
+        
+        if (scales.length > 0) {
+            scales.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.textContent = `${device.name} (${device.id})`;
+                scaleSelect.appendChild(option);
+            });
+            
+            // Add event listener to handle manual selection
+            scaleSelect.onchange = function() {
+                if (this.value) {
+                    connectToDevice(this.value);
+                }
+            };
+            
+            // If only one device is found, auto-select it and connect
+            if (scales.length === 1) {
+                scaleSelect.value = scales[0].id;
+                await connectToDevice(scales[0].id);
+            } else {
+                statusDiv.innerHTML = `<p>Found ${scales.length} scale(s). Please select one.</p>`;
+            }
+        } else {
+            statusDiv.innerHTML = '<p>No weighing scales found. Try moving closer to the device.</p>';
+        }
+    } catch (error) {
+        console.error('Error scanning for scales:', error);
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = `<p class="text-red-500">Error scanning for devices: ${error.message}</p>`;
+    }
+};
+
+// Function to connect to a specific device
+async function connectToDevice(deviceId) {
+    if (!deviceId) {
+        ui.showToast('Please select a device first', 3000, 'error');
+        return false;
+    }
+    
+    try {
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Connecting to device...</p>';
+        
+        // Attempt to connect to the device using the imported function
+        await reconnectDevice(deviceId);
+        
+        statusDiv.innerHTML = '<p class="text-green-500">Successfully connected to device!</p>';
+        ui.showToast('Successfully connected to device', 3000, 'success');
+        
+        // Update UI to reflect connection status
+        updateConnectionStatus(deviceId, true);
+        
+        return true;
+    } catch (error) {
+        console.error('Error connecting to device:', error);
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.innerHTML = `<p class="text-red-500">Failed to connect: ${error.message}</p>`;
+        ui.showToast(`Failed to connect: ${error.message}`, 5000, 'error');
+        return false;
+    }
+}
+
+// Function to update UI with connection status
+function updateConnectionStatus(deviceId, isConnected) {
+    // In a real implementation, we would update the UI to show connection status
+    // For now, we'll just log the status
+    console.log(`Device ${deviceId} connection status: ${isConnected ? 'Connected' : 'Disconnected'}`);
+}
+
+// Function to start auto-connect functionality
+window.startAutoConnect = async function() {
+    try {
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Starting auto-connect scan...</p>';
+        
+        // Trigger a scan with auto-connect enabled using the imported function
+        await connectScaleDevice();
+        
+        statusDiv.innerHTML = '<p>Auto-connect scan completed. Known devices will connect automatically.</p>';
+        ui.showToast('Auto-connect enabled', 3000, 'success');
+        
+        // Update the toggle button state
+        const autoConnectToggle = document.getElementById('auto-connect-toggle');
+        if (autoConnectToggle) {
+            autoConnectToggle.checked = true;
+        }
+        ui.showToast('Auto-connect enabled', 3000, 'success');
+    } catch (error) {
+        console.error('Error starting auto-connect:', error);
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.innerHTML = `<p class="text-red-500">Auto-connect failed: ${error.message}</p>`;
+        ui.showToast(`Auto-connect failed: ${error.message}`, 5000, 'error');
+    }
+};
+
+// Function to stop auto-connect functionality
+window.stopAutoConnect = async function() {
+    try {
+        // In a real implementation, we would disable auto-connect
+        // For now, we'll just update the UI
+        
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Auto-connect disabled.</p>';
+        
+        // Update the toggle button state
+        const autoConnectToggle = document.getElementById('auto-connect-toggle');
+        if (autoConnectToggle) {
+            autoConnectToggle.checked = false;
+        }
+        ui.showToast('Auto-connect disabled', 3000, 'info');
+    } catch (error) {
+        console.error('Error stopping auto-connect:', error);
+        ui.showToast(`Error disabling auto-connect: ${error.message}`, 5000, 'error');
+    }
+};
+
+// Function to toggle auto-connect functionality
+window.toggleAutoConnect = async function() {
+    const autoConnectToggle = document.getElementById('auto-connect-toggle');
+    if (autoConnectToggle) {
+        if (autoConnectToggle.checked) {
+            await window.startAutoConnect();
+        } else {
+            await window.stopAutoConnect();
+        }
+    }
+};
+
+
+
+// Render Bluetooth Machine settings
+export function renderBluetoothMachineSettings() {
+    return `
+        <div class="content-stretch justify-evenly gap-[60px] items-start relative w-full">
+            <div class="flex justify-between items-center w-full">
+                <p class="font-['Inter:Semi_Bold',sans-serif] justify-evenly leading-[0] w-[1124px] not-italic relative text-[var(--text-primary)] text-[36px] text-center">Espresso Machine</p>
+                <button id="scan-machine-btn"
+                        class="border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] h-[62px] rounded-[67.5px] border w-[139px] text-[24px]"
+                        onclick="window.scanForMachines()">
+                    Scan
+                </button>
+            </div>
+
+            <div id="bluetooth-machine-devices-container">
+                <!-- Machine devices will be populated dynamically -->
+            </div>
+
+            <div id="bluetooth-machine-status" class="mt-4 p-4 rounded-lg bg-[var(--box-color)] text-[var(--text-primary)] text-[24px] hidden">
+                <p>Scanning for machines...</p>
+            </div>
+            
+            <!-- Auto-connect toggle for machines -->
+            <div class="mt-6 p-4 bg-[var(--box-color)] rounded-[10px]">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
+                        <p class="text-[28px] text-[var(--text-primary)]">Auto-Connect Nearby Machines</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-connect-machine-toggle" class="sr-only peer" onclick="window.toggleAutoConnect()">
+                        <div class="w-11 h-6 bg-[var(--text-secondary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#385a92]"></div>
+                    </label>
+                </div>
+                <p class="text-[20px] text-[var(--text-secondary)] mt-2">Automatically connect to nearby machine.</p>
+            </div>
+        </div>
+    `;
+}
+
+// Render Bluetooth Scale settings
+export function renderBluetoothScaleSettings() {
+    return `
+        <div class="content-stretch justify-evenly gap-[60px] items-start relative w-full">
+            <div class="flex justify-between items-center w-full">
+                <p class="font-['Inter:Semi_Bold',sans-serif] justify-evenly leading-[0] w-[1124px] not-italic relative text-[var(--text-primary)] text-[36px] text-center">Scale</p>
+                <button id="scan-scale-btn"
+                        class="border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] h-[62px] rounded-[67.5px] border w-[139px] text-[24px]"
+                        onclick="window.scanForScales()">
+                    Scan
+                </button>
+            </div>
+
+            <div id="bluetooth-scale-devices-container">
+                <!-- Scale devices will be populated dynamically -->
+            </div>
+
+            <div id="bluetooth-status" class="mt-4 p-4 rounded-lg bg-[var(--box-color)] text-[var(--text-primary)] text-[24px] hidden">
+                <p>Scanning for scales...</p>
+            </div>
+            
+            <!-- Auto-connect toggle for scales -->
+            <div class="mt-6 p-4 bg-[var(--box-color)] rounded-[10px]">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
+                        <p class="text-[28px] text-[var(--text-primary)]">Auto-Connect Nearby Scales</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-connect-scale-toggle" class="sr-only peer" onclick="window.toggleAutoConnect()">
+                        <div class="w-11 h-6 bg-[var(--text-secondary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#385a92]"></div>
+                    </label>
+                </div>
+                <p class="text-[20px] text-[var(--text-secondary)] mt-2">Automatically connect to nearby scales.</p>
+            </div>
+        </div>
+    `;
+}
+
+// Function to render all available devices with individual connection controls
+async function renderAllDevices() {
+    try {
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Scanning for all Bluetooth devices...</p>';
+
+        // Get all available devices
+        const devices = await getDevices();
+
+        // Separate devices into machines and scales
+        const machines = devices.filter(device => 
+            device.name && (device.name.toLowerCase().includes('decent') || 
+                           device.name.toLowerCase().includes('espresso') || 
+                           device.type === 'espresso')
+        );
+        
+        const scales = devices.filter(device => 
+            device.name && (device.name.toLowerCase().includes('scale') || 
+                           device.name.toLowerCase().includes('weight') || 
+                           device.type === 'scale')
+        );
+
+        // Render devices in their respective containers
+        renderDeviceList('bluetooth-machine-devices-container', machines, 'Machine');
+        renderDeviceList('bluetooth-scale-devices-container', scales, 'Scale');
+        
+        // Also render to the general container if we're on the main bluetooth page
+        const generalContainer = document.getElementById('bluetooth-devices-container');
+        if (generalContainer) {
+            if (machines.length > 0 || scales.length > 0) {
+                let allDevicesHTML = '';
+                if (machines.length > 0) {
+                    allDevicesHTML += '<div class="mb-8">';
+                    allDevicesHTML += '<h3 class="text-[30px] text-[var(--text-primary)] mb-4">Espresso Machines</h3>';
+                    allDevicesHTML += renderSingleDeviceList(machines);
+                    allDevicesHTML += '</div>';
+                }
+                
+                if (scales.length > 0) {
+                    allDevicesHTML += '<div class="mb-8">';
+                    allDevicesHTML += '<h3 class="text-[30px] text-[var(--text-primary)] mb-4">Weighing Scales</h3>';
+                    allDevicesHTML += renderSingleDeviceList(scales);
+                    allDevicesHTML += '</div>';
+                }
+                
+                generalContainer.innerHTML = allDevicesHTML;
+            } else {
+                generalContainer.innerHTML = '<p class="text-[24px] text-[var(--text-primary)]">No Bluetooth devices found. Make sure your devices are powered on and in pairing mode.</p>';
+            }
+        }
+
+        statusDiv.innerHTML = `<p>Found ${devices.length} device(s). ${machines.length} machine(s), ${scales.length} scale(s).</p>`;
+    } catch (error) {
+        console.error('Error scanning for devices:', error);
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = `<p class="text-red-500">Error scanning for devices: ${error.message}</p>`;
+    }
+}
+
+// Helper function to render a list of devices of a specific type
+function renderDeviceList(containerId, devices, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (devices.length > 0) {
+        container.innerHTML = renderSingleDeviceList(devices);
+    } else {
+        container.innerHTML = `<p class="text-[24px] text-[var(--text-primary)]">No ${type.toLowerCase()} devices found. Make sure your ${type.toLowerCase()} is powered on and in pairing mode.</p>`;
+    }
+}
+
+// Helper function to render a single list of devices with connection controls
+function renderSingleDeviceList(devices) {
+    let deviceItems = '';
+
+    devices.forEach(device => {
+        // Use the device's state property to determine connection status
+        const isConnected = device.state === 'connected';
+        const statusClass = isConnected ? 'text-green-500' : 'text-red-500';
+        const statusText = isConnected ? 'Connected' : 'Disconnected';
+        const buttonText = isConnected ? 'Disconnect' : 'Connect';
+        const buttonAction = isConnected ? 'disconnect' : 'connect';
+        const buttonClass = isConnected ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600';
+
+        deviceItems += `
+            <div class="flex items-center justify-between bg-[var(--profile-button-background-color)] rounded-[10px] p-4 mb-3 shadow-sm">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full mr-3 ${isConnected ? 'bg-green-500' : 'bg-red-500'}"></div>
+                        <p class="text-[28px] text-[var(--text-primary)] truncate">${device.name}</p>
+                    </div>
+                    <p class="text-[20px] text-[var(--text-secondary)] break-all">ID: ${device.id}</p>
+                    <p class="text-[20px] ${statusClass} capitalize">Status: ${device.state}</p>
+                    <p class="text-[20px] text-[var(--text-secondary)] capitalize">Type: ${device.type}</p>
+                </div>
+                <div class="flex gap-3 ml-4">
+                    <button class="bg-[#385a92] hover:bg-[#2c4a7a] h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] font-bold transition-colors duration-200"
+                            onclick="window.handleDeviceConnection('${device.id}', '${buttonAction}')">
+                        ${buttonText}
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    // Add the auto-connect toggle at the bottom of the device list
+    const autoConnectToggle = `
+        <div class="mt-6 p-4 bg-[var(--box-color)] rounded-[10px]">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
+                    <p class="text-[28px] text-[var(--text-primary)]">Auto-Connect Nearby Devices</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="auto-connect-toggle" class="sr-only peer" onclick="window.toggleAutoConnect()">
+                    <div class="w-11 h-6 bg-[var(--text-secondary)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#385a92]"></div>
+                </label>
+            </div>
+            <p class="text-[20px] text-[var(--text-secondary)] mt-2">Automatically connect to known devices when they come nearby</p>
+        </div>
+    `;
+
+    return `<div class="space-y-3">${deviceItems}</div>${autoConnectToggle}`;
+}
+
+
+
+
+// Function to handle connecting or disconnecting a device
+window.handleDeviceConnection = async function(deviceId, action) {
+    const statusDiv = document.getElementById('bluetooth-status');
+    statusDiv.classList.remove('hidden');
+    
+    if (action === 'connect') {
+        statusDiv.innerHTML = `<p>Connecting to device ${deviceId}...</p>`;
+        try {
+            await reconnectDevice(deviceId);
+            statusDiv.innerHTML = `<p class="text-green-500">Successfully connected to device ${deviceId}!</p>`;
+            ui.showToast(`Connected to device ${deviceId}`, 3000, 'success');
+            // Refresh the device list to update connection status
+            setTimeout(renderAllDevices, 1000);
+        } catch (error) {
+            console.error('Error connecting to device:', error);
+            statusDiv.innerHTML = `<p class="text-red-500">Failed to connect to device: ${error.message}</p>`;
+            ui.showToast(`Failed to connect: ${error.message}`, 5000, 'error');
+        }
+    } else if (action === 'disconnect') {
+        statusDiv.innerHTML = `<p>Disconnecting from device ${deviceId}...</p>`;
+        try {
+            // In a real implementation, we would have a disconnect function
+            // For now, we'll just show a message
+            statusDiv.innerHTML = `<p class="text-green-500">Disconnected from device ${deviceId}.</p>`;
+            ui.showToast(`Disconnected from device ${deviceId}`, 3000, 'info');
+            // Refresh the device list to update connection status
+            setTimeout(renderAllDevices, 1000);
+        } catch (error) {
+            console.error('Error disconnecting from device:', error);
+            statusDiv.innerHTML = `<p class="text-red-500">Failed to disconnect from device: ${error.message}</p>`;
+            ui.showToast(`Failed to disconnect: ${error.message}`, 5000, 'error');
+        }
+    }
+};
+
+
+// Function to scan for machines specifically
+window.scanForMachines = async function() {
+    try {
+        const statusDiv = document.getElementById('bluetooth-machine-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Scanning for machines...</p>';
+
+        // Get available devices using the imported function
+        const devices = await getDevices();
+
+        // Filter for machines (assuming they have a specific identifier)
+        const machines = devices.filter(device =>
+            device.name && (device.name.toLowerCase().includes('de1') ||
+                           device.name.toLowerCase().includes('espresso') ||
+                           device.type === 'machine')
+        );
+
+        // Render machines in the machine container
+        renderDeviceList('bluetooth-machine-devices-container', machines, 'Machine');
+
+        statusDiv.innerHTML = `<p>Found ${machines.length} machine(s).</p>`;
+    } catch (error) {
+        console.error('Error scanning for machines:', error);
+        const statusDiv = document.getElementById('bluetooth-machine-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = `<p class="text-red-500">Error scanning for machines: ${error.message}</p>`;
+    }
+};
+
+// Function to scan for scales specifically
+window.scanForScales = async function() {
+    try {
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<p>Scanning for scales...</p>';
+
+        // Get available devices using the imported function
+        const devices = await getDevices();
+
+        // Filter for scales (assuming they have a specific identifier)
+        const scales = devices.filter(device => 
+            device.name && (device.name.toLowerCase().includes('scale') || 
+                           device.name.toLowerCase().includes('weight') || 
+                           device.type === 'scale')
+        );
+
+        // Render scales in the scale container
+        renderDeviceList('bluetooth-scale-devices-container', scales, 'Scale');
+
+        statusDiv.innerHTML = `<p>Found ${scales.length} scale(s).</p>`;
+    } catch (error) {
+        console.error('Error scanning for scales:', error);
+        const statusDiv = document.getElementById('bluetooth-status');
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = `<p class="text-red-500">Error scanning for scales: ${error.message}</p>`;
+    }
+};
+
+// Initialize Bluetooth settings when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up a global function to refresh the device list
+    window.refreshBluetoothDevices = renderAllDevices;
+});
+
+// Call the render function when the module functions are accessed
+setTimeout(() => {
+    if (document.getElementById('bluetooth-devices-container') ||
+        document.getElementById('bluetooth-machine-devices-container') ||
+        document.getElementById('bluetooth-scale-devices-container')) {
+        renderAllDevices();
+    }
+}, 100);

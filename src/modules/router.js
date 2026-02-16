@@ -244,6 +244,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                             console.log('Router: About to call loadInitialData');
                             await appModule.loadInitialData(); // Reload initial data
                             console.log('Router: Initial data reloaded successfully.');
+                            appModule.handleScaleData(); // Update scale info immediately after loading data
                         } else {
                             // Fallback: try window.loadInitialData if direct import didn't work
                             if (window.loadInitialData) {

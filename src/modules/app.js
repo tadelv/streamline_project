@@ -1,4 +1,4 @@
-import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, setDe1Settings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials, connectScaleDevice, tareScale, connectTimeToReadyWebSocket } from './api.js';
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, getDe1AdvancedSettings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials, connectScaleDevice, tareScale, connectTimeToReadyWebSocket } from './api.js';
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
@@ -320,9 +320,9 @@ function handleScaleData(data) {
         // We received a message without a weight.
         if (!isScaleConnected) {
             // If it was never connected and no weight data, keep it hidden.
-            if (scaleInfoContainer) {
-                scaleInfoContainer.style.display = 'none';
-            }
+            // if (scaleInfoContainer) {
+            //     scaleInfoContainer.style.display = 'none';
+            // }
             ui.updateWeight('[Reconnect]', {
                 weightText: { add: ['text-red-600'] },
                 dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
@@ -400,12 +400,12 @@ async function handleWeightClick() {
         });
         isConnectingScale = false;
         // If initial connection failed, hide the container if it was never truly connected
-        if (!isScaleConnected) {
-            const scaleInfoContainer = document.getElementById('scale-info-container');
-            if (scaleInfoContainer) {
-                scaleInfoContainer.style.display = 'none';
-            }
-        }
+        // if (!isScaleConnected) {
+        //     const scaleInfoContainer = document.getElementById('scale-info-container');
+        //     if (scaleInfoContainer) {
+        //         scaleInfoContainer.style.display = 'none';
+        //     }
+        // }
     }
 }
 
@@ -686,6 +686,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ensureGatewayModeTracking();
         resetDataTimeout(); // Start the timeout timer initially.
         connectShotSettingsWebSocket(handleShotSettingsData);
+        getDe1AdvancedSettings();
         logger.info('App DOMContentLoaded: WebSockets and timers set up.');
 
         logger.info('App initialization finished successfully.');
