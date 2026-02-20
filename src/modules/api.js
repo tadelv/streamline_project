@@ -49,7 +49,7 @@ let currentShotSettings = {
 const de1SettingsCache = {
     data: null,
     timestamp: null,
-    TTL: 40000 // 40 seconds TTL
+    TTL: 60000 // 60 seconds TTL
 };
 
 // Caching for DE1 advanced settings to improve performance when navigating to settings page
@@ -81,7 +81,7 @@ export async function getDevices() {
 }
 
 export async function scanForDevices() {
-    const response = await fetch(`${API_BASE_URL}/devices/scan`, { targetAddressSpace: 'local' });
+    const response = await fetch(`${API_BASE_URL}/devices/scan`);
     if (!response.ok) {
         throw new Error('Failed to scan for devices');
     }
@@ -108,23 +108,9 @@ export async function reconnectDevice(deviceId) {
     }
 }
 
-// let reloadcount = 0;
 
-// export async function reconnectScale() {
-//     try {
-//         logger.info('Attempting to reconnect scale by scanning...');
-//         const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`, { targetAddressSpace: 'local' });
-//         if (!response.ok) {
-//             reloadcount += 1;
-//             if (reloadcount >= 10) { location.reload(); }
-//             logger.info("reload",reloadcount);
-//             throw new Error(`Failed to trigger scale scan/reconnect: ${response.statusText}`);
-//         }
-//         logger.info('Successfully triggered scale scan/reconnect.');
-//     } catch (error) {
-//         logger.error('Error during scale reconnection attempt:', error);
-//     }
-// }
+
+
 
 export async function connectScaleDevice() {
     try {
@@ -141,6 +127,25 @@ export async function connectScaleDevice() {
         throw error;
     }
 }
+
+
+export async function disconnectBLEDevice(deviceid) {
+    try {
+        logger.info('Attempting to disconnect from BLE device...');
+        const response = await fetch(`${API_BASE_URL}/devices/disconnect?deviceId=${deviceid}`, {
+            method: 'PUT',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to send disconnect request for BLE device: ${response.statusText}`);
+        }
+        logger.info('Successfully sent disconnect request for BLE device.');
+    } catch (error) {
+        logger.error('Error during BLE device disconnection attempt:', error);
+        throw error;
+    }
+
+}
+
 
 export async function tareScale() {
     try {

@@ -181,13 +181,16 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                     console.log('Router: Initializing settings page...');
                     try {
                         // Import the settings module and call its initialization function
-                        const { initializeSettings } = await import('/src/settings/settings.js');
+                        const { initializeSettings } = await import('/src/settings/settings.js?t=' + Date.now());
                         if (initializeSettings) {
                             await initializeSettings();
                             console.log('Router: Settings page initialized successfully.');
+                        } else {
+                            console.error('Router: initializeSettings not exported from settings.js');
                         }
                     } catch (e) {
                         console.error('Router: Error initializing settings page:', e);
+                        console.error('Router: Import error details:', e.message);
                     }
 
                     // Initialize scaling for the settings page
@@ -244,6 +247,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                             console.log('Router: About to call loadInitialData');
                             await appModule.loadInitialData(); // Reload initial data
                             console.log('Router: Initial data reloaded successfully.');
+                            appModule.handleWeightClick();
                             appModule.handleScaleData(); // Update scale info immediately after loading data
                         } else {
                             // Fallback: try window.loadInitialData if direct import didn't work

@@ -12,6 +12,14 @@ import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
 
 window.app = { api, ui, chart };
+
+// Export functions for UI and router access
+window.handleWeightClick = handleWeightClick;
+window.handleScaleData = handleScaleData;
+window.loadInitialData = loadInitialData;
+window.resetDataTimeout = resetDataTimeout;
+window.onScaleDisconnect = onScaleDisconnect;
+window.onScaleReconnect = onScaleReconnect;
 // Helper function to format state strings
 function formatStateString(text) {
     if (!text) return '';
@@ -350,7 +358,7 @@ async function handleWeightClick() {
 
     try {
         await connectScaleDevice();
-
+        logger.info('Scale connection initiated, waiting for weight data...');
         let attempts = 0;
         const maxAttempts = 15;
         const poll = setInterval(async () => {
@@ -687,6 +695,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         resetDataTimeout(); // Start the timeout timer initially.
         connectShotSettingsWebSocket(handleShotSettingsData);
         getDe1AdvancedSettings();
+        getDe1Settings();
         logger.info('App DOMContentLoaded: WebSockets and timers set up.');
 
         logger.info('App initialization finished successfully.');
