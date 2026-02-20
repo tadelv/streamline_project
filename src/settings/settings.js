@@ -2650,8 +2650,8 @@ window.scanAndConnectScale = async function() {
         ui.showToast('Scanning for weighing scales...', 2000, 'info');
 
         // Get available devices using the imported function
-        const devices = await getDevices();
-
+        // const devices = await getDevices();
+        const devices = await scanForDevices();
         // Filter for scales (assuming they have a specific identifier)
         const scales = devices.filter(device =>
             device.name && (device.name.toLowerCase().includes('scale') ||
@@ -2893,8 +2893,8 @@ async function renderAllDevices() {
      
 
         // Get all available devices
-        const devices = await getDevices();
-
+        // const devices = await getDevices();
+            const devices = await scanForDevices();
         // Separate devices into machines and scales
         const machines = devices.filter(device => 
             device.name && (device.name.toLowerCase().includes('decent') || 
@@ -3020,11 +3020,16 @@ window.handleDeviceConnection = async function(deviceId, action) {
             // statusDiv.innerHTML = `<p class="text-green-500">Successfully connected to device ${deviceId}!</p>`;
             ui.showToast(`Connected to device ${deviceId}`, 3000, 'success');
             // Refresh the device list to update connection status
-            setTimeout(renderAllDevices, 1000);
+            setTimeout(() => {
+            renderAllDevices();
+        }, 3000);
         } catch (error) {
             console.error('Error connecting to device:', error);
             // statusDiv.innerHTML = `<p class="text-red-500">Failed to connect to device: ${error.message}</p>`;
             ui.showToast(`Failed to connect: ${error.message}`, 5000, 'error');
+            setTimeout(() => {
+            renderAllDevices();
+        }, 3000);
         }
     } else if (action === 'disconnect') {
         // statusDiv.innerHTML = `<p>Disconnecting from device ${deviceId}...</p>`;
@@ -3035,7 +3040,7 @@ window.handleDeviceConnection = async function(deviceId, action) {
             // statusDiv.innerHTML = `<p class="text-green-500">Disconnected from device ${deviceId}.</p>`;
             ui.showToast(`Disconnected from device ${deviceId}`, 3000, 'info');
             // Refresh the device list to update connection status
-            setTimeout(renderAllDevices, 1000);
+            setTimeout(renderAllDevices, 3000);
         } catch (error) {
             console.error('Error disconnecting from device:', error);
             // statusDiv.innerHTML = `<p class="text-red-500">Failed to disconnect from device: ${error.message}</p>`;
@@ -3053,7 +3058,7 @@ window.scanForMachines = async function() {
         // statusDiv.innerHTML = '<p>Scanning for machines...</p>';
 
         // Get available devices using the imported function
-        showToast('Scanning for machines...', 2500, 'info');
+        ui.showToast('Scanning for machines...', 2500, 'info');
         const devices = await getDevices();
 
         // Filter for machines (assuming they have a specific identifier)
@@ -3092,6 +3097,12 @@ window.scanForScales = async function() {
         renderDeviceList('bluetooth-scale-devices-container', scales, 'Scale');
 
         ui.showToast(`Found ${scales.length} scale(s).`, 3000, 'success');
+        
+        // Refresh the device list after a short delay to update connection status
+        // This allows time for any auto-connection to complete
+        setTimeout(() => {
+            renderAllDevices();
+        }, 3000);
     } catch (error) {
         console.error('Error scanning for scales:', error);
         ui.showToast(`Error scanning for scales: ${error.message}`, 5000, 'error');
