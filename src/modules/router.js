@@ -190,7 +190,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         }
                     } catch (e) {
                         console.error('Router: Error initializing settings page:', e);
-                        console.error('Router: Import error details:', e.message);
+                        // console.error('Router: Import error details:', e.message);
                     }
 
                     // Initialize scaling for the settings page

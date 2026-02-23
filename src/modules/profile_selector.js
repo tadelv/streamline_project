@@ -15,7 +15,7 @@ const FAV_COUNT = 5;
 let favoriteButtons = [];
 
 function getEyeIconSVG(strokeColor) {
-    return `<svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    return `<svg aria-hidden="true" class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="${strokeColor}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 
@@ -208,6 +208,9 @@ function renderProfiles() {
             const div = document.createElement('div');
             div.className = 'p-3 text-[30px] cursor-pointer flex justify-between items-center';
             div.dataset.profileKey = key;
+            div.setAttribute('role', 'option');
+            div.setAttribute('aria-selected', (key === selectedProfileKey) ? 'true' : 'false');
+            div.setAttribute('aria-label', profile.title || 'Untitled Profile');
 
             const titleSpan = document.createElement('span');
             titleSpan.textContent = profile.title || 'Untitled Profile';
@@ -218,7 +221,8 @@ function renderProfiles() {
                 const unhideButton = document.createElement('button');
                 unhideButton.className = 'p-1 hover:bg-gray-200 rounded-full';
                 unhideButton.title = 'Show this profile';
-                unhideButton.innerHTML = `<svg class="w-6 h-6" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                unhideButton.setAttribute('aria-label', `Show profile ${profile.title}`);
+                unhideButton.innerHTML = `<svg class="w-6 h-6" aria-hidden="true" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
                 unhideButton.addEventListener('click', async (e) => {
                     e.stopPropagation();
@@ -229,6 +233,9 @@ function renderProfiles() {
                 div.appendChild(unhideButton);
             } else {
                 div.classList.add('text-[var(--text-primary)]');
+                if (key === selectedProfileKey) {
+                    div.classList.add('bg-[#385a92]', 'text-white', 'rounded-[8px]');
+                }
             }
 
             div.addEventListener('click', (e) => {
@@ -238,6 +245,7 @@ function renderProfiles() {
                 const allItems = clickedItem.parentElement.children;
                 for(const item of allItems) {
                     item.classList.remove('bg-[#385a92]', 'text-white', 'rounded-[8px]', 'bg-gray-200', 'text-black');
+                    item.setAttribute('aria-selected', 'false');
                     const itemKey = item.dataset.profileKey;
                     if (itemKey && availableProfiles[itemKey] && availableProfiles[itemKey].visibility === 'hidden') {
                         item.classList.add('text-[var(--low-contrast-white)]');
@@ -255,6 +263,7 @@ function renderProfiles() {
                     clickedItem.classList.remove('text-[#121212]');
                 }
 
+                clickedItem.setAttribute('aria-selected', 'true');
                 updateSelectedProfileView(clickedItem);
             });
 
@@ -500,7 +509,7 @@ function initSearchButton() {
 
         if (isSearching) {
             // Enter search mode
-            button.innerHTML = `<svg class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M57.7498 57.7508L45.9248 45.9258" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // Blue icon
+            button.innerHTML = `<svg aria-hidden="true" class="w-[50px] h-[50px]" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M30.25 52.25C42.4003 52.25 52.25 42.4003 52.25 30.25C52.25 18.0997 42.4003 8.25 30.25 8.25C18.0997 8.25 8.25 18.0997 8.25 30.25C8.25 42.4003 18.0997 52.25 30.25 52.25Z" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M57.7498 57.7508L45.9248 45.9258" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`; // Blue icon
             // Use direct style manipulation instead of Tailwind arbitrary values
             button.style.backgroundColor = 'var(--mimoja-blue)';
             button.classList.remove("bg-[var(--button-grey)]");
@@ -511,6 +520,7 @@ function initSearchButton() {
                 searchInput = document.createElement('input');
                 searchInput.type = 'text';
                 searchInput.placeholder = 'Search profile names...';
+                searchInput.setAttribute('aria-label', 'Search profile names');
                 searchInput.className = 'w-[400px] h-[82px] mx-[30px] px-4 py-2 rounded-[20px] border border-solid border-[var(--border-color)] text-[var(--text-primary)] bg-[var(--profile-button-background-color)] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]';
                 searchInput.style.fontSize = '28px';
                 searchInput.style.fontWeight = 'bold';
@@ -657,6 +667,9 @@ function filterProfiles(searchTerm) {
         const div = document.createElement('div');
         div.className = 'p-3 text-[30px] cursor-pointer flex justify-between items-center';
         div.dataset.profileKey = key;
+        div.setAttribute('role', 'option');
+        div.setAttribute('aria-selected', 'false');
+        div.setAttribute('aria-label', profile.title || 'Untitled Profile');
 
         const titleSpan = document.createElement('span');
         titleSpan.textContent = profile.title || 'Untitled Profile';
@@ -667,7 +680,8 @@ function filterProfiles(searchTerm) {
             const unhideButton = document.createElement('button');
             unhideButton.className = 'p-1 hover:bg-gray-200 rounded-full';
             unhideButton.title = 'Show this profile';
-            unhideButton.innerHTML = `<svg class="w-6 h-6" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            unhideButton.setAttribute('aria-label', `Show profile ${profile.title}`);
+            unhideButton.innerHTML = `<svg class="w-6 h-6" aria-hidden="true" viewBox="0 0 66 66" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 33C5.5 33 13.75 13.75 33 13.75C52.25 13.75 60.5 33 60.5 33C60.5 33 52.25 52.25 33 52.25C13.75 52.25 5.5 33 5.5 33Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41.25C37.5563 41.25 41.25 37.5563 41.25 33C41.25 28.4437 37.5563 24.75 33 24.75C28.4437 24.75 24.75 28.4437 24.75 33C24.75 37.5563 28.4437 41.25 33 41.25Z" stroke="var(--mimoja-blue)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
             unhideButton.addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -687,6 +701,7 @@ function filterProfiles(searchTerm) {
             const allItems = clickedItem.parentElement.children;
             for(const item of allItems) {
                 item.classList.remove('bg-[#385a92]', 'text-white', 'rounded-[8px]', 'bg-gray-200', 'text-black');
+                item.setAttribute('aria-selected', 'false');
                 const itemKey = item.dataset.profileKey;
                 if (itemKey && availableProfiles[itemKey] && availableProfiles[itemKey].visibility === 'hidden') {
                     item.classList.add('text-[var(--low-contrast-white)]');
@@ -704,6 +719,7 @@ function filterProfiles(searchTerm) {
                 clickedItem.classList.remove('text-[#121212]');
             }
 
+            clickedItem.setAttribute('aria-selected', 'true');
             // Update the selected profile view first
             updateSelectedProfileView(clickedItem);
 

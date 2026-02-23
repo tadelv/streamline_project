@@ -2,6 +2,8 @@ import { disconnectBLEDevice,getReaSettings, getDe1Settings, getDe1AdvancedSetti
 import * as ui from '/src/modules/ui.js';
 import { initScaling } from '/src/modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '/src/modules/i18n.js';
+import { loadPage } from '/src/modules/router.js'; // Singular and correctly formatted import
+import { logger } from '/src/modules/logger.js';
 
 // Enhanced cache for settings data with loading states
 let settingsCache = {
@@ -21,7 +23,7 @@ let activeSettingsCategory = null; // New global variable to track the currently
 // Render generic loading state
 function renderLoadingState(title) {
     return `
-        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
+        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden" role="status" aria-busy="true">
             <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[36px] text-center w-full">
                 <p class="leading-[1.2]">${title}</p>
             </div>
@@ -33,7 +35,7 @@ function renderLoadingState(title) {
 // Render generic error state
 function renderErrorState(title, message) {
     return `
-        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
+        <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden" role="alert">
             <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[36px] text-center w-full">
                 <p class="leading-[1.2]">${title}</p>
             </div>
@@ -406,13 +408,14 @@ export function renderFlowMultiplierSettings(settings) {
                 <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
                     <div class="flex items-center justify-between relative w-full max-w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Weight Flow Multiplier</p>
+                            <p id="weight-flow-multiplier-label" class="leading-[1.2]">Weight Flow Multiplier</p>
                         </div>
                         <div class="flex items-center gap-4">
-                            <input type="number" id="weightFlowMultiplierInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center max-w-[150px]"
+                            <input type="number" id="weightFlowMultiplierInput" aria-labelledby="weight-flow-multiplier-label" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center max-w-[150px]"
                                    value="${settings.weightFlowMultiplier !== undefined ? settings.weightFlowMultiplier : 1.0}"
                                    step="0.1" min="0" max="5">
                             <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold max-w-[100px]"
+                                    aria-label="Save weight flow multiplier setting"
                                     onclick="window.updateReaSetting('weightFlowMultiplier', parseFloat(document.getElementById('weightFlowMultiplierInput').value))">
                                 Save
                             </button>
@@ -433,10 +436,10 @@ export function renderFlowMultiplierSettings(settings) {
                 <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
                     <div class="flex items-center justify-between relative w-full max-w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Volume Flow Multiplier (s)</p>
+                            <p id="volume-flow-multiplier-label" class="leading-[1.2]">Volume Flow Multiplier (s)</p>
                         </div>
                         <div class="flex items-center gap-4">
-                            <input type="number" id="volumeFlowMultiplierInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center max-w-[150px]"
+                            <input type="number" id="volumeFlowMultiplierInput" aria-labelledby="volume-flow-multiplier-label" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center max-w-[150px]"
                                    value="${settings.volumeFlowMultiplier !== undefined ? settings.volumeFlowMultiplier : 0.3}"
                                    step="0.05" min="0" max="2">
                             <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold max-w-[100px]"
@@ -482,21 +485,24 @@ export function renderReaSettingsForm(settings) {
                 <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
                     <div class="flex flex-col items-start relative w-full max-w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px] mb-[20px]">
-                            <p class="leading-[1.2]">Gateway Mode</p>
+                            <p id="gateway-mode-label" class="leading-[1.2]">Gateway Mode</p>
                         </div>
-                        <div class="flex items-center justify-between w-full max-w-[885px] ">
+                        <div class="flex items-center justify-between w-full max-w-[885px]" role="group" aria-labelledby="gateway-mode-label">
                             <button class="h-[120px] w-[295px] rounded-[10px] font-['Inter:Bold',sans-serif] font-bold text-[30px] flex items-center justify-center cursor-pointer transition-colors duration-200
                                 ${settings.gatewayMode === 'disabled' ? 'bg-[var(--mimoja-blue)] text-white' : 'bg-[var(--box-color)] border border-[var(--profile-button-outline-color)] text-[#b6c3d7]'}"
+                                aria-pressed="${settings.gatewayMode === 'disabled'}"
                                 onclick="window.updateReaSetting('gatewayMode', 'disabled')">
                                 Disabled
                             </button>
                             <button class="h-[120px] w-[295px] rounded-[10px] font-['Inter:Bold',sans-serif] font-bold text-[30px] flex items-center justify-center cursor-pointer transition-colors duration-200
                                 ${settings.gatewayMode === 'tracking' ? 'bg-[var(--mimoja-blue)] text-white' : 'bg-[var(--box-color)] border border-[var(--profile-button-outline-color)] text-[#b6c3d7]'}"
+                                aria-pressed="${settings.gatewayMode === 'tracking'}"
                                 onclick="window.updateReaSetting('gatewayMode', 'tracking')">
                                 Tracking
                             </button>
                             <button class="h-[120px] w-[295px] rounded-[10px] font-['Inter:Bold',sans-serif] font-bold text-[30px] flex items-center justify-center cursor-pointer transition-colors duration-200
                                 ${settings.gatewayMode === 'full' ? 'bg-[var(--mimoja-blue)] text-white' : 'bg-[var(--box-color)] border border-[var(--profile-button-outline-color)] text-[#b6c3d7]'}"
+                                aria-pressed="${settings.gatewayMode === 'full'}"
                                 onclick="window.updateReaSetting('gatewayMode', 'full')">
                                 Full
                             </button>
@@ -517,9 +523,9 @@ export function renderReaSettingsForm(settings) {
                 <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
                     <div class="flex items-center justify-between relative w-full max-w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Log Level</p>
+                            <p id="log-level-label" class="leading-[1.2]">Log Level</p>
                         </div>
-                        <select id="logLevelSelect" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[250px] text-white text-[24px] p-2 max-w-[250px]"
+                        <select id="logLevelSelect" aria-labelledby="log-level-label" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[250px] text-white text-[24px] p-2 max-w-[250px]"
                                 onchange="window.updateReaSetting('logLevel', this.value)">
                             <option value="ALL" ${settings.logLevel === 'ALL' ? 'selected' : ''}>ALL</option>
                             <option value="FINEST" ${settings.logLevel === 'FINEST' ? 'selected' : ''}>FINEST</option>
@@ -544,18 +550,13 @@ export function renderReaSettingsForm(settings) {
                 <hr class="border-t border-[#c9c9c9] w-full" />
             </div>
 
-            <!-- Divider -->
-            <div class="h-0 relative w-full">
-                <hr class="border-t border-[#c9c9c9] w-full" />
-            </div>
-
             <div class="flex flex-col items-start relative w-full max-w-full">
                 <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
                     <div class="flex items-center justify-between relative w-full max-w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Scale Power Management</p>
+                            <p id="scale-power-management-label" class="leading-[1.2]">Scale Power Management</p>
                         </div>
-                        <select id="scalePowerModeSelect" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[250px] text-white text-[24px] p-2 max-w-[250px]"
+                        <select id="scalePowerModeSelect" aria-labelledby="scale-power-management-label" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[250px] text-white text-[24px] p-2 max-w-[250px]"
                                 onchange="window.updateReaSetting('scalePowerMode', this.value)">
                             <option value="disabled" ${settings.scalePowerMode === 'disabled' ? 'selected' : ''}>Disabled</option>
                             <option value="displayOff" ${settings.scalePowerMode === 'displayOff' ? 'selected' : ''}>Display Off</option>
@@ -599,28 +600,28 @@ export function renderFlushSettingsForm(settings) {
             <div class="content-stretch flex flex-col items-center relative w-full">
                 <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px]">
                     <div class="content-stretch flex items-center relative shrink-0">
-                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[30px]">
+                        <p id="flush-temp-label" class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[30px]">
                             Flush Temperature
                         </p>
                     </div>
                     <div class="content-stretch flex gap-[20px] h-[72px] items-center justify-center relative shrink-0 w-full">
-                        <button id="flush-temp-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-temp-minus" aria-label="Decrease flush temperature" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushTemp(-5);">
-                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg aria-hidden="true" width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                         <div class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none flex items-center justify-center"
                              style="width: 130px;">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="flushTempInput" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="flushTempInput" aria-labelledby="flush-temp-label" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
                                    value="${settings.flushTemp !== undefined ? settings.flushTemp : ''}"
                                    step="5" min="5" max="95"
                                    onchange="window.updateDe1Setting('flushTemp', parseFloat(this.value))">
-                            <span class="ml-2">°C</span>
+                            <span class="ml-2" aria-hidden="true">°C</span>
                         </div>
-                        <button id="flush-temp-plus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-temp-plus" aria-label="Increase flush temperature" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushTemp(5);">
-                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg aria-hidden="true" width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
@@ -632,28 +633,28 @@ export function renderFlushSettingsForm(settings) {
 
                 <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px] mt-[30px]">
                     <div class="content-stretch flex items-center relative shrink-0">
-                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[30px]">
+                        <p id="flush-flow-label" class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[30px]">
                             Flush Flow
                         </p>
                     </div>
                     <div class="content-stretch flex gap-[20px] h-[72px] items-center justify-center relative shrink-0 w-full">
-                        <button id="flush-flow-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-flow-minus" aria-label="Decrease flush flow" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushFlow(-1);">
-                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg aria-hidden="true" width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
                         <div class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none flex items-center justify-center"
                              style="width: 130px;">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="flushFlowInput" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="flushFlowInput" aria-labelledby="flush-flow-label" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
                                    value="${settings.flushFlow !== undefined ? settings.flushFlow : ''}"
                                    step="1" min="1" max="8"
                                    onchange="window.updateDe1Setting('flushFlow', parseFloat(this.value))">
-                            <span class="ml-2 text-nowrap">ml/s</span>
+                            <span class="ml-2 text-nowrap" aria-hidden="true">ml/s</span>
                         </div>
-                        <button id="flush-flow-plus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                        <button id="flush-flow-plus" aria-label="Increase flush flow" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
                                 onclick="window.flashPlusMinusButton(this); window.adjustFlushFlow(1);">
-                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg aria-hidden="true" width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
@@ -695,13 +696,14 @@ export function renderFanThresholdSettings(settings) {
                 <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
                     <div class="content-stretch flex items-center justify-between relative w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Fan Threshold (°C)</p>
+                            <p id="fan-threshold-label" class="leading-[1.2]">Fan Threshold (°C)</p>
                         </div>
                         <div class="flex items-center gap-4">
-                            <input type="number" id="fanThresholdInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                            <input type="number" id="fanThresholdInput" aria-labelledby="fan-threshold-label" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
                                    value="${settings.fan !== undefined ? settings.fan : ''}"
                                    step="1" min="0" max="100">
                             <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    aria-label="Save fan threshold setting"
                                     onclick="window.updateDe1Setting('fan', parseInt(document.getElementById('fanThresholdInput').value))">
                                 Save
                             </button>
@@ -744,9 +746,9 @@ export function renderUsbChargerModeSettings(settings) {
                 <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
                     <div class="content-stretch flex items-center justify-between relative w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">USB Charger Mode</p>
+                            <p id="usb-charger-mode-label" class="leading-[1.2]">USB Charger Mode</p>
                         </div>
-                        <select id="usbChargerModeSelect" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2"
+                        <select id="usbChargerModeSelect" aria-labelledby="usb-charger-mode-label" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2"
                                 onchange="window.updateDe1Setting('usb', this.value)">
                             <option value="enable" ${settings.usb ? 'selected' : ''}>Enabled</option>
                             <option value="disable" ${!settings.usb ? 'selected' : ''}>Disabled</option>
@@ -2085,7 +2087,7 @@ async function _preloadSettingsInternal() {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
 
-                window.loadPage('/index.html');
+                loadPage('/index.html');
                 return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
             }
         }
@@ -2103,7 +2105,7 @@ async function _preloadSettingsInternal() {
                 setTimeout(() => {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
-                window.loadPage('/index.html');
+                loadPage('/index.html');
 
                 return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
             }
@@ -2122,7 +2124,7 @@ async function _preloadSettingsInternal() {
                 setTimeout(() => {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
-                window.loadPage('/index.html');
+                loadPage('/index.html');
                 return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
             }
         }
@@ -2181,7 +2183,7 @@ export async function initializeSettings() {
     // Set up event listeners
     document.getElementById('cancel-settings-btn').addEventListener('click', () => {
         // Navigate back to main page using router
-        window.loadPage('/index.html');
+        loadPage('/index.html');
     });
 
     document.getElementById('save-settings-btn').addEventListener('click', async () => {
@@ -2192,7 +2194,7 @@ export async function initializeSettings() {
             localStorage.setItem('visualizerEnabled', isEnabled.toString());
         }
         // Implementation would save all modified settings
-        window.loadPage('/index.html');
+        loadPage('/index.html');
     });
 
     initResizableSubNav();
@@ -2731,9 +2733,15 @@ function updateConnectionStatus(deviceId, isConnected) {
 window.startAutoConnect = async function() {
     try {
         // Trigger a scan with auto-connect enabled using the imported function
-        await connectScaleDevice();
-        ui.showToast('Auto-connect started, nearby devices will be connected automatically', 4000, 'success');
-
+        const autoconnectresponse = await connectScaleDevice();
+        logger.info('Auto-connect response:', autoconnectresponse);
+        ui.showToast('Auto-connect started, nearby devices will be connected automatically', 4000, 'info');
+        if (autoconnectresponse.state === 'connected') {
+            logger.info(`Auto-connected to device: ${autoconnectresponse.device.name} (${autoconnectresponse.device.id})`);
+            ui.showToast(`Auto-connected to ${autoconnectresponse.device.name}`, 3000, 'success');
+            renderAllDevices(); // Refresh the device lists to show connected devices
+        }
+        
         // Update the toggle button state
         const autoConnectToggle = document.getElementById('auto-connect-toggle');
         if (autoConnectToggle) {
@@ -2797,7 +2805,7 @@ export function renderBluetoothMachineSettings() {
     // Fetch and display connected machines immediately when rendering
     setTimeout(async () => {
         try {
-            const devices = await getDevices();
+            const devices = await scanForDevices();
             const machines = devices.filter(device =>
                 device.name && (device.name.toLowerCase().includes('de1') ||
                                device.name.toLowerCase().includes('espresso') ||

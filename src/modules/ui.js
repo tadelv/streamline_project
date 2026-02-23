@@ -207,6 +207,7 @@ function makeEditable(element, onCommit) {
         // Increased text size and made the input area bigger
         input.className = 'text-[28px] font-bold text-center w-18 bg-transparent absolute border-2 border-[var(--mimoja-blue)] rounded-lg';
         input.name = element.id; // Recommended for accessibility and autofill
+        input.setAttribute('aria-label', element.getAttribute('data-i18n-key') || element.id);
 
         // Position the input field exactly where the original element is
         const elementRect = element.getBoundingClientRect();
@@ -1799,6 +1800,15 @@ export function showToast(message, duration = 2400, type = 'info') {
         if (alertEl) {
             alertEl.classList.remove('alert-info', 'alert-success', 'alert-error');
             alertEl.classList.add(`alert-${type}`);
+        }
+
+        // Set accessibility roles based on type
+        if (type === 'error' || type === 'alert') {
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+        } else {
+            toastEl.setAttribute('role', 'status');
+            toastEl.setAttribute('aria-live', 'polite');
         }
 
         toastEl.style.display = 'grid';

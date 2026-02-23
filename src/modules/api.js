@@ -115,16 +115,19 @@ export async function reconnectDevice(deviceId) {
 export async function connectScaleDevice() {
     try {
         logger.info('Attempting to connect to scale...');
-        const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true&quick=true`, {
+        const response = await fetch(`${API_BASE_URL}/devices/scan?connect=true`, {
             method: 'GET',
         });
         if (!response.ok) {
-            throw new Error(`Failed to send connect request for scale: ${response.statusText}`);
+            logger.error(`Failed to send connect request for scale: ${response.statusText}`);
+            return response.json();
+            
         }
         logger.info('Successfully sent connect request for scale.');
+         return response.json();
     } catch (error) {
         logger.error('Error during scale connection attempt:', error);
-        throw error;
+        return response.json();
     }
 }
 
