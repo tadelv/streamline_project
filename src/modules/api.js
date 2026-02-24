@@ -327,6 +327,92 @@ export function connectTimeToReadyWebSocket(onData) {
     };
 }
 
+let deviceWebSocket = null; // Module-level variable to track device WebSocket connection
+
+export function connectDeviceWebSocket(onData, onReconnect, onDisconnect) {
+    let deviceDataTimeout;
+    const DEVICE_TIMEOUT_DURATION = 5000; // 5 seconds
+
+    const handleDeviceTimeout = () => {
+        logger.warn(`No device data received for ${DEVICE_TIMEOUT_DURATION / 1000} seconds. Assuming disconnection.`);
+        if (onDisconnect) {
+            onDisconnect();
+        }
+    };
+
+    if (deviceWebSocket) {
+        logger.info('Closing existing device WebSocket before creating a new one.');
+        deviceWebSocket.close();
+    }
+
+    deviceWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/devices`, [], {
+        debug: true,
+        reconnectInterval: 3000,
+    });
+
+    deviceWebSocket.onopen = () => {
+        logger.info('Device WebSocket (re)connected.');
+        clearTimeout(deviceDataTimeout);
+        deviceDataTimeout = setTimeout(handleDeviceTimeout, DEVICE_TIMEOUT_DURATION);
+        if (onReconnect) {
+            onReconnect();
+        }
+    };
+
+    deviceWebSocket.onmessage = (event) => {
+        clearTimeout(deviceDataTimeout);
+        deviceDataTimeout = setTimeout(handleDeviceTimeout, DEVICE_TIMEOUT_DURATION);
+
+        try {
+            const data = JSON.parse(event.data);
+            onData(data);
+            logger.debug('Device data:', data);
+        } catch (error) {
+            logger.error('Error parsing Device WebSocket message:', error);
+        }
+    };
+
+    deviceWebSocket.onclose = () => {
+        logger.info('Device WebSocket disconnected.');
+        clearTimeout(deviceDataTimeout);
+        if (onDisconnect) {
+            onDisconnect();
+        }
+    };
+
+    deviceWebSocket.onerror = (error) => {
+        logger.error('Device WebSocket error:', error);
+        clearTimeout(deviceDataTimeout);
+    };
+
+    deviceWebSocket.onreconnect = null;
+}
+
+/**
+ * Send a command to the devices WebSocket channel
+ * @param {Object} command - The command payload
+ * @param {string} command.command - The command type: 'scan', 'connect', or 'disconnect'
+ * @param {string} [command.deviceId] - Device identifier (required for connect/disconnect)
+ * @param {boolean} [command.connect] - Whether to auto-connect discovered devices (scan only)
+ * @param {boolean} [command.quick] - Fire-and-forget scan without waiting for results (scan only)
+ */
+export function sendDeviceCommand(command) {
+    if (!deviceWebSocket || deviceWebSocket.readyState !== WebSocket.OPEN) {
+        logger.error('Device WebSocket is not connected. Cannot send command.');
+        return;
+    }
+
+    try {
+        deviceWebSocket.send(JSON.stringify(command));
+        logger.info('Device command sent:', command);
+    } catch (error) {
+        logger.error('Error sending device command:', error);
+        throw error;
+    }
+}
+
+
+
 export async function getProfiles() {
     const response = await fetch(`${API_BASE_URL}/profiles?includeHidden=true`);
     if (!response.ok) {

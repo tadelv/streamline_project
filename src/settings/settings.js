@@ -1,4 +1,4 @@
-import { disconnectBLEDevice,getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings,getDevices,scanForDevices,reconnectDevice,connectScaleDevice } from '/src/modules/api.js';
+import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand } from '/src/modules/api.js';
 import * as ui from '/src/modules/ui.js';
 import { initScaling } from '/src/modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '/src/modules/i18n.js';
@@ -19,6 +19,13 @@ let settingsCache = {
 };
 
 let activeSettingsCategory = null; // New global variable to track the currently active category
+
+// Live device state cache from WebSocket
+let deviceStateCache = {
+    devices: [],
+    scanning: false,
+    initialized: false
+};
 
 // Render generic loading state
 function renderLoadingState(title) {
@@ -1822,7 +1829,7 @@ function setupVisualizerEventListeners() {
 
             try {
                 await setPluginSettings(pluginId, settingsPayload);
-                   ui.showToast('redentials saved successfully!', 900, 'success');
+                ui.showToast('Credentials saved successfully!', 900, 'success');
                 // Hide status after a few seconds
                 setTimeout(() => {
                     statusDiv.textContent = '';
@@ -2179,6 +2186,9 @@ function getCategoryTitle(category) {
 export async function initializeSettings() {
     // Preload all settings in the background before initializing the UI
     await preloadSettings();
+
+    // Initialize WebSocket for live device state updates
+    initDeviceWebSocket();
 
     // Set up event listeners
     document.getElementById('cancel-settings-btn').addEventListener('click', () => {
@@ -2589,9 +2599,67 @@ function renderFilteredSubcategories(mainCategoryKey, searchTerm) {
 // Highlight matching text within a string
 function highlightMatch(text, searchTerm) {
     if (!searchTerm) return text;
-    
+
     const regex = new RegExp(`(${searchTerm})`, 'gi');
     return text.replace(regex, '<mark class="bg-yellow-300 text-black">$1</mark>');
+}
+
+/**
+ * Initialize WebSocket connection for live device state updates
+ * Should be called once when the settings page loads
+ */
+export function initDeviceWebSocket() {
+    if (deviceStateCache.initialized) {
+        logger.info('Device WebSocket already initialized');
+        return;
+    }
+
+    connectDeviceWebSocket(
+        // onData callback - update cache and re-render device lists in real-time
+        (data) => {
+            logger.debug('Device WebSocket data received:', data);
+            deviceStateCache.devices = data.devices || [];
+            deviceStateCache.scanning = data.scanning || false;
+            deviceStateCache.initialized = true;
+
+            // Always re-render device lists when new data arrives
+            // This ensures live updates whenever device state changes
+            renderDeviceListFromCache();
+        },
+        // onReconnect callback
+        () => {
+            logger.info('Device WebSocket reconnected');
+            // Re-render to show updated connection states
+            renderDeviceListFromCache();
+        },
+        // onDisconnect callback
+        () => {
+            logger.warn('Device WebSocket disconnected');
+        }
+    );
+
+    deviceStateCache.initialized = true;
+    logger.info('Device WebSocket initialized');
+}
+
+/**
+ * Render device lists from WebSocket cache
+ */
+function renderDeviceListFromCache() {
+    const machines = deviceStateCache.devices.filter(device =>
+        device.type === 'machine' ||
+        (device.name && (device.name.toLowerCase().includes('de1') ||
+                        device.name.toLowerCase().includes('espresso')))
+    );
+
+    const scales = deviceStateCache.devices.filter(device =>
+        device.type === 'scale' ||
+        (device.name && (device.name.toLowerCase().includes('scale') ||
+                        device.name.toLowerCase().includes('weight')))
+    );
+
+    renderDeviceList('bluetooth-machine-devices-container', machines, 'Machine');
+    renderDeviceList('bluetooth-scale-devices-container', scales, 'Scale');
 }
 
 // Bluetooth Functions
@@ -2601,45 +2669,10 @@ window.scanAndConnectEspresso = async function() {
     try {
         ui.showToast('Scanning for espresso machines...', 2000, 'info');
 
-        // Get available devices using the imported function
-        const devices = await scanForDevices();
+        // Use WebSocket to trigger scan
+        sendDeviceCommand({ command: 'scan', connect: false });
+        ui.showToast('Scanning started, results will appear shortly', 3000, 'info');
 
-        // Filter for espresso machines (assuming they have a specific identifier)
-        const espressoMachines = devices.filter(device =>
-            device.name && (device.name.toLowerCase().includes('decent') ||
-                           device.name.toLowerCase().includes('espresso') ||
-                           device.type === 'espresso')
-        );
-
-        // Populate the espresso machine dropdown
-        const espressoSelect = document.getElementById('espresso-machine-select');
-        espressoSelect.innerHTML = '<option value="">Select Device</option>';
-
-        if (espressoMachines.length > 0) {
-            espressoMachines.forEach(device => {
-                const option = document.createElement('option');
-                option.value = device.id;
-                option.textContent = `${device.name} (${device.id})`;
-                espressoSelect.appendChild(option);
-            });
-
-            // Add event listener to handle manual selection
-            espressoSelect.onchange = function() {
-                if (this.value) {
-                    connectToDevice(this.value);
-                }
-            };
-
-            // If only one device is found, auto-select it and connect
-            if (espressoMachines.length === 1) {
-                espressoSelect.value = espressoMachines[0].id;
-                await connectToDevice(espressoMachines[0].id);
-            } else {
-                ui.showToast(`Found ${espressoMachines.length} espresso machine(s). Please select one.`, 3000, 'info');
-            }
-        } else {
-            ui.showToast('No espresso machines found. Try moving closer to the device.', 3000, 'info');
-        }
     } catch (error) {
         console.error('Error scanning for espresso machines:', error);
         ui.showToast(`Error scanning for devices: ${error.message}`, 5000, 'error');
@@ -2651,45 +2684,10 @@ window.scanAndConnectScale = async function() {
     try {
         ui.showToast('Scanning for weighing scales...', 2000, 'info');
 
-        // Get available devices using the imported function
-        // const devices = await getDevices();
-        const devices = await scanForDevices();
-        // Filter for scales (assuming they have a specific identifier)
-        const scales = devices.filter(device =>
-            device.name && (device.name.toLowerCase().includes('scale') ||
-                           device.name.toLowerCase().includes('weight') ||
-                           device.type === 'scale')
-        );
+        // Use WebSocket to trigger scan
+        sendDeviceCommand({ command: 'scan', connect: false });
+        ui.showToast('Scanning started, results will appear shortly', 3000, 'info');
 
-        // Populate the scale dropdown
-        const scaleSelect = document.getElementById('weighing-scale-select');
-        scaleSelect.innerHTML = '<option value="">Select Device</option>';
-
-        if (scales.length > 0) {
-            scales.forEach(device => {
-                const option = document.createElement('option');
-                option.value = device.id;
-                option.textContent = `${device.name} (${device.id})`;
-                scaleSelect.appendChild(option);
-            });
-
-            // Add event listener to handle manual selection
-            scaleSelect.onchange = function() {
-                if (this.value) {
-                    connectToDevice(this.value);
-                }
-            };
-
-            // If only one device is found, auto-select it and connect
-            if (scales.length === 1) {
-                scaleSelect.value = scales[0].id;
-                await connectToDevice(scales[0].id);
-            } else {
-                ui.showToast(`Found ${scales.length} scale(s). Please select one.`, 3000, 'info');
-            }
-        } else {
-            ui.showToast('No weighing scales found. Try moving closer to the device.', 3000, 'info');
-        }
     } catch (error) {
         console.error('Error scanning for scales:', error);
         ui.showToast(`Error scanning for devices: ${error.message}`, 5000, 'error');
@@ -2802,19 +2800,9 @@ window.toggleAutoConnect = async function(toggleType) {
 
 // Render Bluetooth Machine settings
 export function renderBluetoothMachineSettings() {
-    // Fetch and display connected machines immediately when rendering
-    setTimeout(async () => {
-        try {
-            const devices = await scanForDevices();
-            const machines = devices.filter(device =>
-                device.name && (device.name.toLowerCase().includes('de1') ||
-                               device.name.toLowerCase().includes('espresso') ||
-                               device.type === 'machine')
-            );
-            renderDeviceList('bluetooth-machine-devices-container', machines, 'Machine');
-        } catch (error) {
-            console.error('Error loading machines on render:', error);
-        }
+    // Render devices from WebSocket cache on initial render
+    setTimeout(() => {
+        renderDeviceListFromCache();
     }, 0);
 
     return `
@@ -2829,7 +2817,7 @@ export function renderBluetoothMachineSettings() {
             </div>
 
             <div id="bluetooth-machine-devices-container">
-                <!-- Machine devices will be populated dynamically -->
+                <!-- Machine devices will be populated dynamically via WebSocket -->
             </div>
 
             <!-- Auto-connect toggle for machines -->
@@ -2848,19 +2836,9 @@ export function renderBluetoothMachineSettings() {
 
 // Render Bluetooth Scale settings
 export function renderBluetoothScaleSettings() {
-    // Fetch and display connected scales immediately when rendering
-    setTimeout(async () => {
-        try {
-            const devices = await getDevices();
-            const scales = devices.filter(device =>
-                device.name && (device.name.toLowerCase().includes('scale') ||
-                               device.name.toLowerCase().includes('weight') ||
-                               device.type === 'scale')
-            );
-            renderDeviceList('bluetooth-scale-devices-container', scales, 'Scale');
-        } catch (error) {
-            console.error('Error loading scales on render:', error);
-        }
+    // Render devices from WebSocket cache on initial render
+    setTimeout(() => {
+        renderDeviceListFromCache();
     }, 0);
 
     return `
@@ -2875,11 +2853,11 @@ export function renderBluetoothScaleSettings() {
             </div>
 
             <div id="bluetooth-scale-devices-container">
-                <!-- Scale devices will be populated dynamically -->
+                <!-- Scale devices will be populated dynamically via WebSocket -->
             </div>
 
             <!-- Auto-connect toggle for scales -->
-            <div class="mt-6 p-4  rounded-[10px]">
+            <div class="mt-6 p-4 rounded-[10px]">
                 <div class="flex items-center justify-between w-full">
                     <div class="flex items-center">
                         <div class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
@@ -3018,40 +2996,22 @@ function renderSingleDeviceList(devices) {
 
 // Function to handle connecting or disconnecting a device
 window.handleDeviceConnection = async function(deviceId, action) {
- 
-    
     if (action === 'connect') {
-        // statusDiv.innerHTML = `<p>Connecting to device ${deviceId}...</p>`;
         try {
-            // await reconnectDevice(deviceId);
-            await connectScaleDevice() ;   
-            // statusDiv.innerHTML = `<p class="text-green-500">Successfully connected to device ${deviceId}!</p>`;
+            await connectScaleDevice();
             ui.showToast(`Connected to device ${deviceId}`, 3000, 'success');
-            // Refresh the device list to update connection status
-            setTimeout(() => {
-            renderAllDevices();
-        }, 3000);
+            // Device list will update automatically via WebSocket onData callback
         } catch (error) {
             console.error('Error connecting to device:', error);
-            // statusDiv.innerHTML = `<p class="text-red-500">Failed to connect to device: ${error.message}</p>`;
             ui.showToast(`Failed to connect: ${error.message}`, 5000, 'error');
-            setTimeout(() => {
-            renderAllDevices();
-        }, 3000);
         }
     } else if (action === 'disconnect') {
-        // statusDiv.innerHTML = `<p>Disconnecting from device ${deviceId}...</p>`;
         try {
-            // In a real implementation, we would have a disconnect function
-            // For now, we'll just show a message
             await disconnectBLEDevice(deviceId);
-            // statusDiv.innerHTML = `<p class="text-green-500">Disconnected from device ${deviceId}.</p>`;
             ui.showToast(`Disconnected from device ${deviceId}`, 3000, 'info');
-            // Refresh the device list to update connection status
-            setTimeout(renderAllDevices, 3000);
+            // Device list will update automatically via WebSocket onData callback
         } catch (error) {
             console.error('Error disconnecting from device:', error);
-            // statusDiv.innerHTML = `<p class="text-red-500">Failed to disconnect from device: ${error.message}</p>`;
             ui.showToast(`Failed to disconnect: ${error.message}`, 5000, 'error');
         }
     }
@@ -3061,25 +3021,11 @@ window.handleDeviceConnection = async function(deviceId, action) {
 // Function to scan for machines specifically
 window.scanForMachines = async function() {
     try {
-        // const statusDiv = document.getElementById('bluetooth-machine-status');
-        // statusDiv.classList.remove('hidden');
-        // statusDiv.innerHTML = '<p>Scanning for machines...</p>';
-
-        // Get available devices using the imported function
         ui.showToast('Scanning for machines...', 2500, 'info');
-        const devices = await getDevices();
 
-        // Filter for machines (assuming they have a specific identifier)
-        const machines = devices.filter(device =>
-            device.name && (device.name.toLowerCase().includes('de1') ||
-                           device.name.toLowerCase().includes('espresso') ||
-                           device.type === 'machine')
-        );
-
-        // Render machines in the machine container
-        renderDeviceList('bluetooth-machine-devices-container', machines, 'Machine');
-
-        // statusDiv.innerHTML = `<p>Found ${machines.length} machine(s).</p>`;
+        // Use WebSocket to trigger scan - results will appear via deviceStateCache
+        sendDeviceCommand({ command: 'scan' });
+        ui.showToast('Scanning started, results will appear shortly', 3000, 'info');
     } catch (error) {
         console.error('Error scanning for machines:', error);
         ui.showToast(`Error scanning for machines: ${error.message}`, 5000, 'error');
@@ -3091,26 +3037,9 @@ window.scanForScales = async function() {
     try {
         ui.showToast('Scanning for scales...', 2000, 'info');
 
-        // Get available devices using the imported function
-        const devices = await scanForDevices();
-
-        // Filter for scales (assuming they have a specific identifier)
-        const scales = devices.filter(device =>
-            device.name && (device.name.toLowerCase().includes('scale') ||
-                           device.name.toLowerCase().includes('weight') ||
-                           device.type === 'scale')
-        );
-
-        // Render scales in the scale container
-        renderDeviceList('bluetooth-scale-devices-container', scales, 'Scale');
-
-        ui.showToast(`Found ${scales.length} scale(s).`, 3000, 'success');
-        
-        // Refresh the device list after a short delay to update connection status
-        // This allows time for any auto-connection to complete
-        setTimeout(() => {
-            renderAllDevices();
-        }, 3000);
+        // Use WebSocket to trigger scan - results will appear via deviceStateCache
+        sendDeviceCommand({ command: 'scan' });
+        ui.showToast('Scanning started, results will appear shortly', 3000, 'info');
     } catch (error) {
         console.error('Error scanning for scales:', error);
         ui.showToast(`Error scanning for scales: ${error.message}`, 5000, 'error');
