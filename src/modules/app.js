@@ -710,25 +710,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 return true;
             }
-            
+
             // Check if viewport dimensions match screen dimensions (indicating fullscreen)
             // This is especially relevant for web views that start in fullscreen
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const screenWidth = screen.width;
             const screenHeight = screen.height;
-            
+
             // Account for potential UI elements like mobile browsers' address bars
             // If viewport is very close to screen size, consider it fullscreen
             const widthRatio = viewportWidth / screenWidth;
             const heightRatio = viewportHeight / screenHeight;
-            
+
             // If both dimensions are at least 95% of screen size, consider it fullscreen
             return widthRatio >= 0.95 && heightRatio >= 0.95;
         }
 
-        // Prompt user to enter fullscreen only if not on desktop and not already in fullscreen
-        if (!isDesktop && !isFullscreenMode() && !sessionStorage.getItem('fullscreenPromptDismissed')) {
+        // Helper function to check if rotation prompt should be shown (mobile + portrait)
+        function shouldShowRotationPrompt() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isPortrait = window.innerHeight > window.innerWidth;
+            return isMobile && isPortrait && !sessionStorage.getItem('rotationPromptDismissed');
+        }
+
+        // Prompt user to enter fullscreen only if not on desktop, not already in fullscreen,
+        // and rotation prompt is not being shown (rotation takes priority on mobile)
+        const isRotationPromptActive = shouldShowRotationPrompt();
+        
+        if (!isDesktop && !isFullscreenMode() && !sessionStorage.getItem('fullscreenPromptDismissed') && !isRotationPromptActive) {
             const toastContainer = document.getElementById('fullscreen-toast-container');
             if (toastContainer) {
                 toastContainer.style.display = 'grid'; // Use grid as per DaisyUI examples for centering

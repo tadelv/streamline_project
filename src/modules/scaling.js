@@ -4,17 +4,100 @@ export function initScaling() {
     const designWidth = 1920;
     const designHeight = 1200;
 
+    // Detect if device is mobile
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    // Check if in portrait orientation
+    function isPortrait() {
+        return window.innerHeight > window.innerWidth;
+    }
+
+    // Show/hide rotation prompt for mobile portrait mode
+    function updateRotationPrompt() {
+        const isMobile = isMobileDevice();
+        const portrait = isPortrait();
+        const toastContainer = document.getElementById('fullscreen-toast-container');
+
+        if (!toastContainer) return;
+
+        // Show prompt only on mobile devices in portrait mode
+        // Don't show if user has dismissed it in this session
+        const shouldShow = isMobile && portrait && !sessionStorage.getItem('rotationPromptDismissed');
+
+        if (shouldShow && toastContainer.style.display !== 'grid') {
+            // Update the toast content for rotation prompt
+            const alertBox = toastContainer.querySelector('.alert');
+            const heading = alertBox?.querySelector('h3');
+            // Use a more reliable selector for the message div
+            const messageDiv = alertBox?.querySelector('div[class*="text-"][style*="font-size"]') ||
+                              alertBox?.querySelectorAll('div')[1]?.querySelector('div') ||
+                              alertBox?.querySelector('.text-\\[9px\\]');
+            const buttonContainer = alertBox?.querySelector('.flex.gap-2');
+
+            if (heading) heading.textContent = 'Rotate Your Device';
+            if (messageDiv) messageDiv.textContent = 'For the best experience, please rotate to landscape mode.';
+
+            // Update buttons - Rotate button + Remind Later button
+            if (buttonContainer) {
+                buttonContainer.innerHTML = `
+                    <button id="toast-rotate-btn" class="btn btn-primary btn-sm text-white" data-i18n-key="Rotate">Rotate</button>
+                    <button id="toast-rotate-remind-btn" class="btn btn-ghost btn-sm" data-i18n-key="Remind Later">Remind Later</button>
+                `;
+
+                // Add click handlers
+                setTimeout(() => {
+                    // Rotate button handler
+                    const rotateBtn = document.getElementById('toast-rotate-btn');
+                    if (rotateBtn) {
+                        rotateBtn.onclick = async () => {
+                            try {
+                                // Try to use Screen Orientation API
+                                if (screen.orientation && screen.orientation.lock) {
+                                    await screen.orientation.lock('landscape');
+                                    toastContainer.style.display = 'none';
+                                } else {
+                                    // Fallback: Show instructions if API not supported
+                                    alert('Auto-rotation not supported on this device. Please physically rotate your device to landscape mode.');
+                                }
+                            } catch (error) {
+                                // If rotation fails, show helpful message
+                                console.warn('Screen rotation failed:', error);
+                                alert('Please physically rotate your device to landscape mode.');
+                            }
+                        };
+                    }
+
+                    // Remind Later button handler
+                    const remindBtn = document.getElementById('toast-rotate-remind-btn');
+                    if (remindBtn) {
+                        remindBtn.onclick = () => {
+                            toastContainer.style.display = 'none';
+                            sessionStorage.setItem('rotationPromptDismissed', 'true');
+                        };
+                    }
+                }, 0);
+            }
+
+            toastContainer.style.display = 'grid';
+        } else if (!shouldShow && toastContainer.style.display === 'grid') {
+            // Hide if conditions no longer met (user rotated or dismissed)
+            toastContainer.style.display = 'none';
+        }
+    }
+
     function updateScale() {
         if (!viewport || !content) return;
 
         // Get actual viewport dimensions
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
-        
+
         // Calculate aspect ratios
         const screenAspectRatio = screenWidth / screenHeight;
         const designAspectRatio = designWidth / designHeight;
-        
+
         let scale;
         if (screenAspectRatio > designAspectRatio) {
             // Screen is wider than design - scale based on height
@@ -77,21 +160,53 @@ export function initScaling() {
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(updateScale, 100); // Debounce for 100ms
+        resizeTimer = setTimeout(() => {
+            console.log('Resize event detected, recalculating scale...');
+            updateScale();
+            updateRotationPrompt(); // Check if rotation prompt should be shown/hidden
+            // Force another update after a short delay to catch any late dimension changes
+            setTimeout(updateScale, 200);
+        }, 150); // Increased debounce to 150ms for better stability
     });
     
     // Also listen for orientation changes which can affect viewport dimensions
     window.addEventListener('orientationchange', () => {
-        setTimeout(updateScale, 100); // Slight delay to ensure orientation change is complete
+        console.log('Orientation change event detected');
+        // Multiple updates with increasing delays to handle Firefox and other browsers
+        // that may take time to report correct viewport dimensions
+        setTimeout(() => {
+            console.log('First scale update after orientation change');
+            updateScale();
+            updateRotationPrompt();
+        }, 200);
+        
+        setTimeout(() => {
+            console.log('Second scale update after orientation change');
+            updateScale();
+        }, 500);
+        
+        setTimeout(() => {
+            console.log('Final scale update after orientation change');
+            updateScale();
+        }, 800);
     });
     
     // Listen for fullscreen change events which might affect scaling
     document.addEventListener('fullscreenchange', () => {
-        setTimeout(updateScale, 100); // Allow time for fullscreen transition to complete
+        setTimeout(() => {
+            updateScale();
+            updateRotationPrompt(); // Check if rotation prompt should be shown/hidden
+        }, 100); // Allow time for fullscreen transition to complete
     });
     
     // Listen for webkit-specific fullscreen change events (Safari)
     document.addEventListener('webkitfullscreenchange', () => {
-        setTimeout(updateScale, 100); // Allow time for fullscreen transition to complete
+        setTimeout(() => {
+            updateScale();
+            updateRotationPrompt(); // Check if rotation prompt should be shown/hidden
+        }, 100); // Allow time for fullscreen transition to complete
     });
+    
+    // Initial rotation prompt check (after a delay to ensure DOM is ready)
+    setTimeout(updateRotationPrompt, 500);
 }
