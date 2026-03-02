@@ -269,17 +269,21 @@ function handleData(data) {
 
     // Update Chart and Shot Data Table
     if (MachineState.ESPRESSO.includes(state)) {
-        if (!shotStartTime) {
-            shotStartTime = new Date(data.timestamp);
-            chart.clearChart();
-            shotData.clearShotData();
-            const historyLabelEl = document.getElementById('shot-history-label');
-            if (historyLabelEl) {
-                historyLabelEl.textContent = 'CURRENT';
+        // Only start the shot clock and chart when preinfusion or pouring starts
+        // This excludes the "preparingForShot" phase from the shot timing
+        if (substate === 'preinfusion' || substate === 'pouring') {
+            if (!shotStartTime) {
+                shotStartTime = new Date(data.timestamp);
+                chart.clearChart();
+                shotData.clearShotData();
+                const historyLabelEl = document.getElementById('shot-history-label');
+                if (historyLabelEl) {
+                    historyLabelEl.textContent = 'CURRENT';
+                }
             }
+            chart.updateChart(shotStartTime, data, latestScaleWeight);
+            shotData.updateShotData(data, latestScaleWeight);
         }
-        chart.updateChart(shotStartTime, data, latestScaleWeight);
-        shotData.updateShotData(data, latestScaleWeight);
     } else {
         shotStartTime = null;
     }
@@ -470,6 +474,10 @@ async function loadInitialData() {
         if (profile) {
             ui.updateProfileName(profile.title || "Untitled Profile");
             logger.info(`Active profile: ${profile.title}`);
+            
+            // Set the current profile in the chart module for step change detection
+            chart.setCurrentProfile(profile);
+            logger.info('Profile set in chart module for step change detection');
             
             // Highlight the active profile button based on assignment rather than text matching
             // This is more reliable since it uses the internal assignment mapping

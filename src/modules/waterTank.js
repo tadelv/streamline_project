@@ -45,7 +45,7 @@ export function initWaterTankSocket() {
             const data = JSON.parse(event.data);
             // logger.debug("water level data",data);
             if (data.currentLevel !== undefined) {
-                const currnetwaterlevel = data.currentLevel
+                const currnetwaterlevel = Math.round(data.currentLevel ) ; 
                 // const percentage = data.currentPercentage;
                 // tankVolElement.style.setProperty('--value', percentage);
                 tankVolElement.textContent = `${currnetwaterlevel}mm`;

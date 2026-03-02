@@ -1145,11 +1145,11 @@ export function updateMachineStatus(data) {
     const isEspressoPreparingForShot = status?.toLowerCase().includes('espresso') &&
                                       (substate?.toLowerCase().includes('preparingforshot') ||
                                        substate?.toLowerCase().includes('preparing for shot'));
-   
-    
+
+
     const isPreinfusionState = status?.toLowerCase().includes('preinfusion') ||
                                substate?.toLowerCase().includes('preinfusion') ||
-                              
+
                                substate?.toLowerCase().includes('preinfusing') ||
                                (status?.toLowerCase().includes('idle') && substate?.toLowerCase().includes('preinfusion')) ;
                             //    (status?.toLowerCase().includes('espresso') && substate?.toLowerCase().includes('preparingforshot')); substate?.toLowerCase().includes('preparingforshot') ||
@@ -1174,7 +1174,10 @@ export function updateMachineStatus(data) {
     const isHotWaterState = status?.toLowerCase().includes('hotwater') ||
                             status?.toLowerCase().includes('hot water') ||
                             substate?.toLowerCase().includes('hotwater');
-
+    //needswater state
+    const isNeedsWaterState = status?.toLowerCase().includes('needs water') ||
+                                status?.toLowerCase().includes('need')||
+                             substate?.toLowerCase().includes('needs water');
     // Flush should take priority over preinfusion/pouring when both match,
     // e.g. "Flush (Pouring)" should be treated as a flush state, not a shot pour.
     const isCurrentlyFlushState = isFlushState;
@@ -1195,21 +1198,21 @@ export function updateMachineStatus(data) {
     // logger.debug(`isPouringState: ${isPouringState}, status: ${status}, substate: ${substate}`);
 
     // Clear previous classes and intervals to prevent conflicts
-    machineStatusEl.classList.remove('status-msg-green', 'status-msg-red', 'status-msg-clickable', 'text-red-500', 'text-[var(--status-ready-green)]');
+    machineStatusEl.classList.remove('status-msg-green', 'status-msg-red', 'status-msg-clickable', 'text-red-500', 'text-[var(--status-ready-green)]', 'text-[var(--status-needs-water-red)]', 'text-[var(--status-water-blue)]');
     machineStatusEl.onclick = null; // Clear previous click handler
-    
+
     // Manage preinfusion/pouring interval lifecycle
     if (!isCurrentlyPreinfusionOrPouring && machineStatusEl.preinfusionOrPouringIntervalId) {
         clearInterval(machineStatusEl.preinfusionOrPouringIntervalId);
         delete machineStatusEl.preinfusionOrPouringIntervalId;
     }
-    
+
     // Manage steam interval lifecycle
     if (!isCurrentlySteamState && machineStatusEl.steamIntervalId) {
         clearInterval(machineStatusEl.steamIntervalId);
         delete machineStatusEl.steamIntervalId;
     }
-    
+
     // Manage flush interval lifecycle
     if (!isCurrentlyFlushState && machineStatusEl.flushIntervalId) {
         clearInterval(machineStatusEl.flushIntervalId);
@@ -1218,7 +1221,14 @@ export function updateMachineStatus(data) {
 
     // Check if this is a heating state with time remaining and apply special formatting
     const isHeatingWithTimeRemaining = isHeating && isHeatingFromTimeToReady && status && status.includes('Heating: ') && status.includes('s remaining');
-    if (isEspressoPreparingForShot) {
+    
+    // Handle Needs Water state - takes priority
+    if (isNeedsWaterState) {
+        const needsText = getTranslation('Needs') || 'Needs';
+        const waterText = getTranslation('Water') || 'Water';
+        machineStatusEl.innerHTML = `<span class="text-[var(--status-red-color)]">${needsText}</span> <span class="text-[var(--status-clickable-color)]">${waterText}</span>`;
+        logger.debug('DEBUG: Needs Water state - Set machine status with red/blue styling');
+    } else if (isEspressoPreparingForShot) {
         logger.debug('Entering isEspressoPreparingForShot condition');
         const espressoonlytext = getTranslation('Espresso');
         const espressoheatingtext = getTranslation('Heating'); 

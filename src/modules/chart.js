@@ -234,26 +234,7 @@ function addStepMarker(layout, time, theme, stepName = '') {
         }
     });
 
-    if (stepName) {
-        if (!layout.annotations) {
-            layout.annotations = [];
-        }
-        layout.annotations.push({
-            x: time,
-            y: 1.0, // Position at the top of the chart
-            xref: 'x',
-            yref: 'paper',
-            text: stepName,
-            showarrow: false,
-            xanchor: 'left',
-            yanchor: 'bottom',
-            textangle: -90, // Rotate text to be vertical
-            font: {
-                color: theme === 'dark' ? STEP_MARKER_COLORS.dark : STEP_MARKER_COLORS.light, // Same color as line
-                size: 10
-            }
-        });
-    }
+   
 }
 
 // Global variable to store the current profile for real-time step change detection
@@ -279,18 +260,42 @@ function resetProfileTracking() {
 }
 
 // Helper function to handle profile frame changes
-function handleProfileFrameChange(currentFrame, previousFrameRef, time, profile, theme) {
-    if (currentFrame !== previousFrameRef.current) {
-        previousFrameRef.current = currentFrame;
-        if (currentFrame >= 0 && currentFrame < profile.steps.length) {
-            const stepName = profile.steps[currentFrame].name;
-            const layout = theme === 'dark' ? darkLayout : lightLayout;
-
-            addStepMarker(layout, time, theme, stepName);
-            return true;
-        }
+function handleProfileFrameChange(currentFrame, time, profile, theme) {
+    if (!profile || !profile.steps || currentFrame === undefined || currentFrame === null) {
+        return false;
     }
-    return false;
+    
+    let stepMarkerAdded = false;
+    
+    // Handle first step detection (when starting a new shot)
+    if (liveProfileFrame === -1) {
+        // If first data has profileFrame > 0, draw markers for all skipped steps at time 0
+        if (currentFrame > 0) {
+            for (let i = 0; i < currentFrame && i < profile.steps.length; i++) {
+                const stepName = profile.steps[i].name;
+                const layout = theme === 'dark' ? darkLayout : lightLayout;
+                addStepMarker(layout, 0, theme, stepName);
+            }
+        }
+        // Draw marker for the current step at time 0 (shot start)
+        // This ensures the first step marker is always at x=0, even if profileFrame
+        // data arrives late (e.g., first data point doesn't have profileFrame set)
+        const stepName = profile.steps[currentFrame].name;
+        const layout = theme === 'dark' ? darkLayout : lightLayout;
+        addStepMarker(layout, 0, theme, stepName);
+
+        liveProfileFrame = currentFrame;
+        stepMarkerAdded = true;
+    } else if (currentFrame !== liveProfileFrame && currentFrame >= 0 && currentFrame < profile.steps.length) {
+        // Normal step change during the shot
+        const stepName = profile.steps[currentFrame].name;
+        const layout = theme === 'dark' ? darkLayout : lightLayout;
+        addStepMarker(layout, time, theme, stepName);
+        liveProfileFrame = currentFrame;
+        stepMarkerAdded = true;
+    }
+    
+    return stepMarkerAdded;
 }
 
 // Function to apply pending updates to the chart
@@ -314,22 +319,21 @@ export function updateChart(shotStartTime, data, weight, filterToPouring = true)
     }
 
     const time = (new Date(data.timestamp) - shotStartTime) / 1000;
+    const theme = localStorage.getItem('theme') || 'light';
+    let stepMarkerAdded = false;
 
     // New logic: Add vertical line and annotation at the start of each step based on profileFrame
     if (currentProfile && currentProfile.steps && data.profileFrame !== undefined && data.profileFrame !== null) {
-        const profileFrameRef = { current: liveProfileFrame };
-        const theme = localStorage.getItem('theme') || 'light';
-
-        if (handleProfileFrameChange(data.profileFrame, profileFrameRef, time, currentProfile, theme)) {
-            // Update the global variable after processing the change
-            liveProfileFrame = profileFrameRef.current;
-
-            const layout = theme === 'dark' ? darkLayout : lightLayout;
-            const element = getChartElement();
-            if (element) {
-                Plotly.relayout(element, { shapes: layout.shapes, annotations: layout.annotations });
-            }
+        // logger.debug(`updateChart: profileFrame=${data.profileFrame}, time=${time.toFixed(2)}s, liveProfileFrame=${liveProfileFrame}, substate=${data.state.substate}`);
+        if (handleProfileFrameChange(data.profileFrame, time, currentProfile, theme)) {
+            stepMarkerAdded = true;
+            // logger.debug(`updateChart: step marker added at time=${time.toFixed(2)}s`);
         }
+    } else if (currentProfile && currentProfile.steps) {
+        // Log when profileFrame is missing (helps debug late-arriving profileFrame data)
+        logger.debug(`updateChart: NO profileFrame (is ${data.profileFrame}), time=${time.toFixed(2)}s, liveProfileFrame=${liveProfileFrame}, substate=${data.state.substate}`);
+    } else if (!currentProfile) {
+        logger.debug(`updateChart: NO currentProfile set, time=${time.toFixed(2)}s, substate=${data.state.substate}`);
     }
 
 
@@ -389,25 +393,43 @@ export function updateChart(shotStartTime, data, weight, filterToPouring = true)
         y: [[pressureY], [flowY], [targetPressureY], [targetFlowY], [groupTemperatureY], [weightY]]
     }, [0, 1, 2, 3, 4, 5]);
 
-    Plotly.relayout(element, {
-        'xaxis.dtick': dtickValue
-    });
+    // If a step marker was added, we need to use Plotly.react to update shapes
+    if (stepMarkerAdded) {
+        const layout = theme === 'dark' ? darkLayout : lightLayout;
+        Plotly.react(element, Object.values(chartData), layout);
+    } else {
+        Plotly.relayout(element, {
+            'xaxis.dtick': dtickValue
+        });
+    }
 }
 
 export function clearChart() {
+    // Clear all chart data arrays
     for (const trace in chartData) {
         chartData[trace].x = [];
         chartData[trace].y = [];
     }
+    
+    // Reset all tracking variables
     lastWeight = 0;
     lastTime = 0;
     smoothedWeightChange = 0;
     previousSubstateForShape = 'idle';
+    liveProfileFrame = -1;  // FIX: Reset profile frame tracking
+    currentSubstate = 'idle';  // FIX: Reset substate
+    annotationUpdateCounter = 0;  // FIX: Reset counter
+    
+    // Clear shapes and annotations from BOTH layouts
+    // This prevents issues when theme is switched between shots
+    darkLayout.shapes = [];
+    lightLayout.shapes = [];
+    darkLayout.annotations = [];
+    lightLayout.annotations = [];
+    
     const theme = localStorage.getItem('theme') || 'light';
     const layout = theme === 'dark' ? darkLayout : lightLayout;
-    layout.annotations = [];
-    layout.shapes = []; // Clear shapes when chart is cleared
-    // Don't set xaxis range here to allow dynamic scaling based on data
+    
     const element = getChartElement();
     if (!element) {
         console.error('clearChart: chartElement not found in DOM');
@@ -503,13 +525,12 @@ export function plotHistoricalShot(measurements, workflow = null) {
                     }
 
                     // New logic: Add vertical line and annotation at the start of each step based on profileFrame
-                    if (machineData.profileFrame !== undefined && machineData.profileFrame !== null) {
-                        const profileFrameRef = { current: historicalCurrentProfileFrame };
-
-                        if (handleProfileFrameChange(machineData.profileFrame, profileFrameRef, time, { steps }, theme)) {
-                            // Update the global variable after processing the change
-                            historicalCurrentProfileFrame = profileFrameRef.current;
-                        }
+                    if (machineData.profileFrame !== undefined && machineData.profileFrame !== null &&
+                        machineData.profileFrame !== historicalCurrentProfileFrame &&
+                        machineData.profileFrame >= 0 && machineData.profileFrame < steps.length) {
+                        historicalCurrentProfileFrame = machineData.profileFrame;
+                        const stepName = steps[machineData.profileFrame].name;
+                        addStepMarker(layout, time, theme, stepName);
                     }
                 }
             }

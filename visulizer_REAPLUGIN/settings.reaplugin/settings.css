@@ -1,0 +1,169 @@
+/* Custom Inter font from local files */
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-Thin.ttf') format('truetype'); font-weight: 100; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-ExtraLight.ttf') format('truetype'); font-weight: 200; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-Light.ttf') format('truetype'); font-weight: 300; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-Regular.ttf') format('truetype'); font-weight: 400; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-Medium.ttf') format('truetype'); font-weight: 500; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-SemiBold.ttf') format('truetype'); font-weight: 600; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-Bold.ttf') format('truetype'); font-weight: 700; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-ExtraBold.ttf') format('truetype'); font-weight: 800; }
+@font-face { font-family: 'Inter'; src: url('../ui/Inter-Black.ttf') format('truetype'); font-weight: 900; }
+
+@font-face { font-family: 'NotoSansMono'; src: url('../ui/NotoSansMono-SemiBold.ttf') format('truetype'); font-weight: 600; }
+@font-face { font-family: 'NotoSansMono'; src: url('../ui/NotoSansMono-ExtraBold.ttf') format('truetype'); font-weight: 800; }
+
+html, body {
+    overflow: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.font-mono-custom {
+    font-family: 'NotoSansMono', monospace;
+}
+
+.font-inter-custom {
+    font-family: 'Inter', sans-serif;
+}
+
+:root {
+    --mimoja-blue-v2: #385A92;
+    --mimoja-blue: #385A92;
+    
+    --profile-button-outline-color: #c5cdda;
+    --profile-button-background-color: #FFFFFF;
+    --profile-button-text-color: #7583b0;
+    --box-color: #f8f9fb;
+    --profileselectorbg: #FFFFFF;
+    --low-contrast-white: #959595;
+    --text-primary: #121212; /* Renamed from --dark-gray */
+    --text-primary-disabled: #c8cacc;
+    --preset-value-color: #AAAAAA;
+    --preset-value-color-disabled: #e3e4e6;
+    --preset-label-selected-color: #777777;
+    --green: #65Ac8a;
+    --button-grey: #EDEDED;
+
+    /* Plus Minus Flash Colors (Light Mode) */
+    --plus-minus-flash-on-color: #b8b8b8;
+    --plus-minus-flash-on-color2: #cfcfcf;
+    --plus-minus-flash-off-color: #ededed;
+
+    /* Theme toggle colors */
+    --bg--togglebtn: #FFFFFF;
+    --btn-togglebgcolor: #959595;
+    --bgmain-color : #FFFFFF;
+    --data-card-title-text-color:#707485;
+    /* left label text colors */
+    --left-label-text : #51639c;
+    /*status mesg */
+    --heatingstatus:#1967d4;
+    --status-ready-green:#17c29a;
+    --status-green-color: #0CA581;
+    --status-red-color: #DA515E;
+    --status-clickable-color: #1967d4;
+    --fav-button-wait:#e3e4e6;
+}
+
+[data-theme='dark'] {
+    --profile-button-outline-color: #17191e;
+    --profile-button-background-color: #292c38;
+    --profile-button-text-color: #FFFFFF;
+    --box-color: #17191e;
+    --profileselectorbg:#17191e;
+    --button-grey: #101115;
+    /* Plus Minus Flash Colors (Dark Mode) */
+    --plus-minus-flash-on-color: #272A34;
+    --plus-minus-flash-on-color2: #1a1d25;
+    --plus-minus-flash-off-color: #101115;
+    --bgmain-color : #101217;
+    --mimoja-blue-v2: #415996;
+    --text-primary: #e8e8e8;
+    --text-primary-disabled: #4a4a4a;
+    --preset-value-color: #4e5559;
+    --preset-value-color-disabled: #262a2c;
+    --preset-label-selected-color: #999999;
+    --data-card-title-text-color:#707485;
+     /* left label text colors */
+    --left-label-text :#415996;
+    --status-green-color: #0CA581; /* Same as light mode */
+    --status-red-color: #DA515E;   /* Same as light mode */
+    --status-clickable-color: #415996;
+}
+
+/* New classes for status messages */
+.status-msg-green {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800; /* Inter-HeavyBold24 */
+    font-size: 24px;
+    color: var(--status-green-color);
+}
+
+.status-msg-red {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800; /* Inter-HeavyBold24 */
+    font-size: 24px;
+    color: var(--status-red-color);
+}
+
+.status-msg-clickable {
+    font-family: 'NotoSansMono', monospace;
+    font-weight: 400; /* mono18, assuming Regular is 400 */
+    font-size: 18px;
+    color: var(--status-clickable-color);
+    cursor: pointer;
+}
+
+.profile-selector-bg {
+    background-color: var(--profileselectorbg);
+}
+
+.flash {
+    background-color: #395ab9 !important;
+    color: white !important;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+#theme-toggle:checked + .togglebtn-change::before {
+    transition: 0.3s;
+    transform: translateX(23px);
+}
+
+.togglebtn-change {
+    background-color: var(--bg--togglebtn);
+}
+
+.togglebtn-change::before {
+    content: '';
+    display: block;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background-color: var(--btn-togglebgcolor);
+    transition: 0.3s;
+    transform: translateX(0);
+}
+
+.no-select {
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none;     /* IE 10+ and Edge */
+  user-select: none;         /* Standard syntax */
+}
+
+@keyframes button-flash {
+    0% { background-color: var(--plus-minus-flash-on-color2); }
+    14% { background-color: var(--plus-minus-flash-on-color); } /* Approximately 40ms into a 280ms animation */
+    71% { background-color: var(--plus-minus-flash-on-color2); } /* Approximately 200ms into a 280ms animation */
+    100% { background-color: transparent; } /* Revert to original, allowing CSS classes to take over */
+}
+
+.flash-animation {
+    animation: button-flash 0.28s linear forwards; /* 'forwards' keeps the end state */
+}
