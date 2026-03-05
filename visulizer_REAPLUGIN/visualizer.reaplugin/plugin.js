@@ -161,13 +161,13 @@ function createPlugin(host) {
       app: {
         data: {
           settings: {
-            bean_weight: String(reaShot.workflow.doseData.doseIn),
+            bean_weight: String(reaShot.workflow.context?.targetDoseWeight ?? reaShot.workflow.doseData?.doseIn ?? 0),
             drink_weight: String(lastMeasurement.scale?.weight ?? 0),
             target_weight: String(reaShot.workflow.profile.target_weight),
-            grinder_model: reaShot.workflow.grinderData?.model,
-            grinder_setting: reaShot.workflow.grinderData?.setting,
-            bean_brand: reaShot.workflow.coffeeData?.roaster,
-            bean_type: reaShot.workflow.coffeeData?.name,
+            grinder_model: reaShot.workflow.context?.grinderModel ?? reaShot.workflow.grinderData?.model,
+            grinder_setting: reaShot.workflow.context?.grinderSetting ?? reaShot.workflow.grinderData?.setting,
+            bean_brand: reaShot.workflow.context?.coffeeRoaster ?? reaShot.workflow.coffeeData?.roaster,
+            bean_type: reaShot.workflow.context?.coffeeName ?? reaShot.workflow.coffeeData?.name,
           }
         }
       },
@@ -337,6 +337,31 @@ function createPlugin(host) {
       return false;
     }
   }
+
+  // Handle settings update event from REA host
+  function handleSettingsUpdate(newSettings) {
+    log(`Received settings update: ${JSON.stringify(newSettings)}`);
+    
+    if (newSettings.Username !== undefined) {
+      state.username = newSettings.Username;
+      log(`Username updated: ${state.username ? 'configured' : 'cleared'}`);
+    }
+    
+    if (newSettings.Password !== undefined) {
+      state.password = newSettings.Password;
+      log(`Password updated`);
+    }
+    
+    if (newSettings.AutoUpload !== undefined) {
+      state.autoUpload = newSettings.AutoUpload;
+      log(`AutoUpload updated: ${state.autoUpload}`);
+    }
+    
+    if (newSettings.LengthThreshold !== undefined) {
+      state.lengthThreshold = newSettings.LengthThreshold;
+      log(`Length threshold updated: ${state.lengthThreshold}`);
+    }
+  }
   // Return the plugin object
   return {
     id: "visualizer.reaplugin",
@@ -452,6 +477,18 @@ function createPlugin(host) {
         });
       }
 
+      if (request.endpoint === 'lastUpload') {
+
+        return {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reaId: state.lastUploadedShot,
+            visId: state.lastVisualizerId,
+          })
+        };
+      }
+
       // Default 404 response
       return {
         status: 404,
@@ -489,6 +526,10 @@ function createPlugin(host) {
 
         case "storageWrite":
           handleStorageWrite(event.payload);
+          break;
+
+        case "settingsUpdated":
+          handleSettingsUpdate(event.payload);
           break;
       }
     },

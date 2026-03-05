@@ -17,7 +17,7 @@ function createPlugin(host) {
   // Settings Tree Structure for Navigation
   const settingsTree = {
     'quickadjustments': {
-        name: 'Quick Adjustments',
+        name: '1. Quick Adjustments',
         subcategories: [
             { id: 'flowmultiplier', name: 'Flow Multiplier', settingsCategory: 'flowmultiplier' },
             { id: 'steam', name: 'Steam', settingsCategory: 'steam' },
@@ -27,14 +27,14 @@ function createPlugin(host) {
         ]
     },
     'bluetooth': {
-        name: 'Bluetooth',
+        name: '2. Bluetooth',
         subcategories: [
-            { id: 'ble_machine', name: 'Machine', settingsCategory: 'ble_machine' },
-            { id: 'ble_scale', name: 'Scale', settingsCategory: 'ble_scale' }
+            { id: 'ble_machine', name: '1. Machine', settingsCategory: 'ble_machine' },
+            { id: 'ble_scale', name: '2. Scale', settingsCategory: 'ble_scale' }
         ]
     },
     'calibration': {
-        name: 'Calibration',
+        name: '3. Calibration',
         subcategories: [
             { id: 'defaultloadsettings', name: 'Default load settings', settingsCategory: 'calibration' },
             { id: 'refillkit', name: 'Refill Kit', settingsCategory: 'refillkit' },
@@ -46,7 +46,7 @@ function createPlugin(host) {
         ]
     },
     'machine': {
-        name: 'Machine',
+        name: '4. Machine',
         subcategories: [
             { id: 'fanthreshold', name: 'Fan Threshold', settingsCategory: 'fanthreshold' },
             { id: 'usbchargermode', name: 'USB Charger Mode', settingsCategory: 'usbchargermode' },
@@ -54,33 +54,33 @@ function createPlugin(host) {
         ]
     },
     'maintenance': {
-        name: 'Maintenance',
+        name: '5. Maintenance',
         subcategories: [
             { id: 'machinedescaling', name: 'Machine Descaling', settingsCategory: 'maintenance' },
             { id: 'transportmode', name: 'Transport mode', settingsCategory: 'transportmode' }
         ]
     },
     'skin': {
-        name: 'Skin',
+        name: '6. Skin',
         subcategories: [
-            { id: 'theme', name: 'Theme', settingsCategory: 'appearance' }
+            { id: 'skin1', name: 'Theme', settingsCategory: 'appearance' }
         ]
     },
     'language': {
-        name: 'Language',
+        name: '7. Language',
         subcategories: [
             { id: 'selectlanguage', name: 'Select Language', settingsCategory: 'language' }
         ]
     },
     'extensions': {
-        name: 'Extensions',
+        name: '8. Extensions',
         subcategories: [
-            { id: 'visualizer', name: 'Visualizer', settingsCategory: 'extensions' },
-            { id: 'extension2', name: 'Extension 2', settingsCategory: 'extensions' }
+            { id: 'extention1', name: 'Visualizer', settingsCategory: 'extensions' },
+            { id: 'extention2', name: 'Extention 2', settingsCategory: 'extensions' }
         ]
     },
     'miscellaneous': {
-        name: 'Miscellaneous',
+        name: '9. Miscellaneous',
         subcategories: [
             { id: 'reasettings', name: 'Rea settings', settingsCategory: 'rea' },
             { id: 'brightness', name: 'Brightness', settingsCategory: 'misc' },
@@ -94,14 +94,14 @@ function createPlugin(host) {
         ]
     },
     'updates': {
-        name: 'Updates',
+        name: '10. Updates',
         subcategories: [
             { id: 'firmwareupdate', name: 'Firmware Update', settingsCategory: 'updates' },
             { id: 'appupdate', name: 'App Update', settingsCategory: 'updates' }
         ]
     },
     'usermanual': {
-        name: 'User Manual',
+        name: '11. User Manual',
         subcategories: [
             { id: 'onlinehelp', name: 'Online Help', settingsCategory: 'help' },
             { id: 'tutorials', name: 'Tutorials', settingsCategory: 'help' }
@@ -232,8 +232,19 @@ function createPlugin(host) {
     <!-- Google Fonts CDN -->
     <link href="https://fonts.cdnfonts.com/css/noto-sans" rel="stylesheet">
     <link href="https://fonts.cdnfonts.com/css/inter" rel="stylesheet">
-    
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <style>
+        /* ============================================
+           Base Styles - Viewport Setup
+           ============================================ */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
         /* ============================================
            Design System Variables
            ============================================ */
@@ -256,6 +267,7 @@ function createPlugin(host) {
             --text-primary: #121212;
             --text-secondary: #51639c;
             --preset-label-selected-color: #777777;
+            --status-green-color: #0CA581;
 
             /* Typography */
             --font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -267,6 +279,10 @@ function createPlugin(host) {
             background: var(--bgmain-color);
             padding: 20px;
             line-height: 1.6;
+            max-width: 1920px;
+            max-height: 1200px;
+            margin: 0 auto;
+            /* overflow removed - was creating containing block for fixed elements */
         }
         .container {
             max-width: 1200px;
@@ -328,12 +344,12 @@ function createPlugin(host) {
             align-items: center;
         }
         input[type="number"], input[type="text"], select {
-            padding: 6px 10px;
+            
             border: 2px solid var(--low-contrast-white);
             border-radius: 4px;
             font-family: 'NotoSansMono', monospace;
             font-size: 14px;
-            width: 120px;
+            
             background: var(--profileselectorbg);
             color: var(--text-primary);
         }
@@ -808,27 +824,39 @@ function createPlugin(host) {
            Toast Notifications
            ============================================ */
         .toast-container {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
+            position: fixed !important;
+            bottom: 100px !important;
+            left: 50% !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 16px;
+            width: 90%;
+            max-width: 1200px;
+            pointer-events: none;
         }
 
         .toast {
-            padding: 16px 24px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            animation: slideIn 0.3s ease-out;
-            min-width: 300px;
-            text-align: center;
-            font-size: 18px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
+            padding: 32px 64px !important;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            animation: slideIn 0.4s ease-out;
+            width: auto !important;
+            min-width: 600px !important;
+            max-width: 100% !important;
+            text-align: center !important;
+            font-size: 28px !important;
+            font-weight: 700 !important;
+            font-family: 'Inter', sans-serif !important;
+            letter-spacing: 0.5px;
+            word-wrap: break-word;
+            white-space: normal !important;
+            display: block !important;
+            pointer-events: auto;
         }
 
         .toast-success {
@@ -839,6 +867,23 @@ function createPlugin(host) {
         .toast-error {
             background: var(--status-red-color);
             color: var(--white);
+        }
+
+        .toast-info {
+            background: var(--mimoja-blue);
+            color: var(--white);
+        }
+            animation: slideIn 0.4s ease-out;
+            width: auto;
+            min-width: 400px;
+            max-width: 800px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.5px;
+            word-wrap: break-word;
+            white-space: normal;
         }
 
         .toast-info {
@@ -1161,6 +1206,16 @@ function createPlugin(host) {
             font-size: 24px;
         }
 
+        /* Override generic input styles for Visualizer form */
+        .visualizer-input {
+            border: 1px solid var(--border-color) !important;
+            border-radius: 8px !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 24px !important;
+            background: var(--profile-button-background-color) !important;
+            color: var(--text-primary) !important;
+        }
+
         /* ============================================
            Two-Panel Navigation Layout
            ============================================ */
@@ -1329,66 +1384,61 @@ function createPlugin(host) {
         }
     </style>
 </head>
-<body>
+<body class="max-w-[1920px] max-h-[1200px] mx-auto">
     <a href="#main-content" class="skip-link">Skip to main content</a>
     
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
-    
+
     <!-- Header -->
-    <header class="settings-header">
-        <h1 id="page-title">Settings</h1>
-        <div class="header-actions">
-            <button class="btn-cancel" onclick="window.closeSettings()">CANCEL</button>
-            <button class="btn-save" onclick="saveAllSettings()">SAVE</button>
+    <header class="relative flex justify-between items-center p-6 border-b border-base-300 bg-[var(--box-color)] h-[112px]">
+        <h1 id="page-title" class="text-[28px] font-bold text-[var(--text-primary)] no-select" data-i18n-key="Settings">Settings</h1>
+        <div class="flex items-center gap-[22px]">
+            <button id="cancel-settings-btn" class="flex justify-center items-center min-h-0 w-[240px] h-[82.5px] px-[67.5px] py-[27px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[67.5px] font-bold text-[24px]" data-i18n-key="Cancel" onclick="window.closeSettings()">CANCEL</button>
+            <button id="save-settings-btn" class="bg-[var(--mimoja-blue)] text-white min-h-0 w-[240px] h-[82.5px] px-[67.5px] py-[27px] font-bold text-[24px] rounded-[67.5px]" data-i18n-key="Save" onclick="saveAllSettings()">SAVE</button>
         </div>
+        <button id="fullscreen-toggle-btn" title="Toggle fullscreen" class="absolute -top-1 -right-1 w-12 h-12 flex items-center justify-center text-[var(--mimoja-blue)]" aria-label="Toggle Fullscreen" onclick="window.toggleFullscreen()">
+            <svg class="enter-fullscreen-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+            <svg class="exit-fullscreen-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+        </button>
     </header>
-    
-    <div class="timestamp" role="status" aria-live="polite" aria-atomic="true" style="padding: 20px;">
-        <span class="status-indicator ${reaSettings && de1Settings ? 'status-ok' : 'status-error'}"
-              role="img"
-              aria-label="${reaSettings && de1Settings ? 'Settings loaded successfully' : 'Error loading settings'}"></span>
+
+    <!-- Timestamp -->
+    <div class="timestamp flex items-center gap-2 px-6 py-4" role="status" aria-live="polite" aria-atomic="true">
+        <span class="status-indicator status-ok" role="img" aria-label="Settings loaded successfully"></span>
         Last updated: <span id="timestamp">${new Date().toLocaleString()}</span>
     </div>
 
-    <!-- Two-Panel Navigation Layout -->
-    <div class="settings-layout">
-        <!-- Left Panel -->
-        <div class="left-panel">
-            <!-- Search Bar -->
-            <div class="search-container">
-                <input type="text" 
-                       id="settings-search" 
-                       placeholder="Search settings..." 
-                       class="settings-search-input"
-                       aria-label="Search settings">
+    <div class="flex h-[1088px]">
+        <div id="left-panel" class="w-[796px] h-full flex flex-col border-r border-base-300 bg-[var(--box-color)]">
+            <div class="p-6 border-b border-base-300">
+                <div class="relative">
+                    <input type="text" id="settings-search" placeholder="Search settings..." class="w-full p-3 pl-12 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" aria-label="Search settings">
+                    <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--text-primary)]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
             </div>
 
-            <!-- Navigation Container -->
-            <div class="navigation-container">
-                <!-- Main Categories -->
-                <div class="main-categories-panel" id="main-categories-panel" aria-label="Settings Categories">
-                    <!-- Dynamically populated -->
+            <div class="flex flex-grow overflow-hidden" id="settings-navigation-container">
+                <div id="main-categories-panel" class="h-full overflow-y-auto p-2" style="width: 405px;" aria-label="Settings Categories">
+                    <!-- Main categories will be dynamically loaded here -->
                 </div>
-
-                <!-- Resizer -->
-                <div class="panel-resizer" id="main-resizer" aria-hidden="true"></div>
-
-                <!-- Subcategories -->
-                <div class="subcategories-panel" id="subcategories-panel" aria-label="Subcategories">
-                    <!-- Dynamically populated -->
+                <div id="sub-categories-separator" class="cursor-col-resize w-2 bg-gray-400 hover:bg-blue-500 h-full" aria-hidden="true"></div>
+                <div id="sub-categories-panel" class="h-full overflow-y-auto p-2" style="width: 270px; background-color: var(--box-color-alt);" aria-label="Subcategories">
+                    <!-- Subcategories will be dynamically loaded here -->
                 </div>
             </div>
         </div>
 
-        <!-- Resizer -->
-        <div class="panel-resizer" id="left-panel-resizer" aria-hidden="true"></div>
+        <div id="separator" class="cursor-col-resize w-2 bg-gray-300 hover:bg-blue-500 transition-colors z-10 h-full" aria-hidden="true"></div>
 
-        <!-- Right Panel - Content Area -->
-        <div class="right-panel" id="settings-content-area" role="main" aria-label="Settings Content">
-            <!-- Settings content will be dynamically loaded here -->
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 30px;">
-                <p style="color: var(--text-primary); font-size: 28px;">Select a category from the menu</p>
+        <div id="right-panel" class="w-[1124px] flex-grow h-full flex flex-col bg-[var(--profile-button-background-color)] p-6 overflow-y-auto" role="main" aria-label="Settings Content">
+            <div id="settings-content-area" class="flex-grow">
+                <!-- Settings content will be dynamically loaded here -->
+                <div class="flex flex-col items-center justify-center h-full text-center p-8">
+                    <p class="text-[var(--text-primary)] text-[28px]" aria-live="polite">Loading Settings...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -1432,7 +1482,7 @@ function createPlugin(host) {
         }
 
         // Update REA setting function
-        async function updateReaSetting(key, value) {
+        async function updateReaSetting(key, value, event) {
             try {
                 const payload = {};
                 payload[key] = value;
@@ -1448,11 +1498,31 @@ function createPlugin(host) {
                 if (response.ok) {
                     showToast('REA setting updated successfully', false);
                     document.getElementById('timestamp').textContent = new Date().toLocaleString();
+                    
+                    // Update button states for gateway mode
+                    if (key === 'gatewayMode' && event) {
+                        // Update all gateway mode buttons
+                        const gatewayButtons = document.querySelectorAll('[onclick*="gatewayMode"]');
+                        gatewayButtons.forEach(btn => {
+                            const btnValue = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+                            if (btnValue === value) {
+                                btn.classList.remove('inactive');
+                                btn.classList.add('active');
+                                btn.setAttribute('aria-pressed', 'true');
+                            } else {
+                                btn.classList.remove('active');
+                                btn.classList.add('inactive');
+                                btn.setAttribute('aria-pressed', 'false');
+                            }
+                        });
+                    }
                 } else {
                     const error = await response.text();
+                    console.error('Failed to update REA setting:', error);
                     showToast('Failed to update REA setting: ' + error, true);
                 }
             } catch (e) {
+                console.error('Error updating REA setting:', e);
                 showToast('Error updating REA setting: ' + e.message, true);
             }
         }
@@ -1540,17 +1610,17 @@ function createPlugin(host) {
 
         // Render subcategories
         function renderSubcategories(categoryKey) {
-            const panel = document.getElementById('subcategories-panel');
+            const panel = document.getElementById('sub-categories-panel');
             const category = settingsTree[categoryKey];
-            
+
             if (!panel || !category) return;
 
             let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
-            
+
             category.subcategories.forEach((subcat, index) => {
                 html += \`
                     <li>
-                        <button class="subcategory-btn \${index === 0 ? 'active' : ''}" 
+                        <button class="subcategory-btn \${index === 0 ? 'active' : ''}"
                                 data-category="\${subcat.settingsCategory}"
                                 onclick="handleSubcategoryClick('\${subcat.settingsCategory}', this, '\${subcat.name}')">
                             \${subcat.name}
@@ -1558,7 +1628,7 @@ function createPlugin(host) {
                     </li>
                 \`;
             });
-            
+
             html += '</ul>';
             panel.innerHTML = html;
 
@@ -2334,25 +2404,98 @@ function createPlugin(host) {
 
         // Render Extensions settings
         function renderExtensionsSettings() {
+            // After returning the template, set up the event listeners
+            setTimeout(setupVisualizerEventListeners, 0);
+            
             return \`
-                <div class="settings-flex-container">
-                    <div class="settings-page-title">
-                        <p>Extensions Settings</p>
+                <div class="flex flex-col gap-[60px] items-start relative w-full max-w-full overflow-x-hidden">
+                    <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[36px] text-center w-full">
+                        <p class="leading-[1.2]">Extensions Settings</p>
                     </div>
-                    <div class="settings-divider"><hr /></div>
-                    <div class="settings-section-flex">
-                        <div class="setting-row-flex">
-                            <div class="setting-label-bold">
-                                <p>Visualizer</p>
+
+                    <div class="flex flex-col items-start relative w-full max-w-full">
+                        <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
+                            <div class="flex items-center justify-between relative w-full max-w-full">
+                                <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                                    <p class="leading-[1.2]">Visualizer</p>
+                                </div>
+                                <select id="visualizer-enabled" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
+                                    <option value="true">Enabled</option>
+                                    <option value="false">Disabled</option>
+                                </select>
                             </div>
-                            <select id="visualizer-enabled" class="settings-input-wide">
-                                <option value="true">Enabled</option>
-                                <option value="false">Disabled</option>
-                            </select>
+
+                            <div id="visualizer-form-container">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                    <div class="mb-4">
+                                        <label for="visualizer-username" class="block text-[var(--text-primary)] text-[24px] mb-2">Username:</label>
+                                        <input type="text" id="visualizer-username" class="visualizer-input w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer username">
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label for="visualizer-password" class="block text-[var(--text-primary)] text-[24px] mb-2">Password:</label>
+                                        <input type="password" id="visualizer-password" class="visualizer-input w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer password">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                    <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
+                                    <input type="checkbox" id="visualizer-auto-upload" class="w-6 h-6 mr-3">                                    
+                                    <label for="visualizer-min-duration" class="block text-[var(--text-primary)] text-[24px] mb-2">Minimum Shot Duration (seconds):</label>
+                                    <input type="number" id="visualizer-min-duration" class="w-32 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
+                                </div>
+
+                                <div id="visualizer-status" class="text-[24px] p-2 rounded-lg"></div>
+
+                                <button id="save-visualizer-credentials" class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
+                                    Save Credentials
+                                </button>
+                            </div>
                         </div>
-                        <p class="setting-description">
-                            Enable/disable Visualizer integration
-                        </p>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="h-0 relative w-full">
+                        <hr class="border-t border-[#c9c9c9] w-full" />
+                    </div>
+
+                    <div class="flex flex-col items-start relative w-full max-w-full">
+                        <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
+                            <div class="flex items-center justify-between relative w-full max-w-full">
+                                <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                                    <p class="leading-[1.2]">Extension 2</p>
+                                </div>
+                                <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
+                                    <option>Enabled</option>
+                                    <option>Disabled</option>
+                                </select>
+                            </div>
+                            <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full max-w-full break-words">
+                                Manage the second extension
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="h-0 relative w-full">
+                        <hr class="border-t border-[#c9c9c9] w-full" />
+                    </div>
+
+                    <div class="flex flex-col items-start relative w-full max-w-full">
+                        <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
+                            <div class="flex items-center justify-between relative w-full max-w-full">
+                                <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                                    <p class="leading-[1.2]">Extension 3</p>
+                                </div>
+                                <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
+                                    <option>Enabled</option>
+                                    <option>Disabled</option>
+                                </select>
+                            </div>
+                            <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full max-w-full break-words">
+                                Manage the third extension
+                            </p>
+                        </div>
                     </div>
                 </div>
             \`;
@@ -2723,18 +2866,18 @@ function createPlugin(host) {
 
         // Initialize resizable panels
         function initResizablePanels() {
-            const mainResizer = document.getElementById('main-resizer');
-            const leftPanelResizer = document.getElementById('left-panel-resizer');
+            const subCategoriesSeparator = document.getElementById('sub-categories-separator');
+            const separator = document.getElementById('separator');
             const mainCategoriesPanel = document.getElementById('main-categories-panel');
-            const subcategoriesPanel = document.getElementById('subcategories-panel');
-            const leftPanel = document.querySelector('.left-panel');
-            const rightPanel = document.getElementById('settings-content-area');
+            const subcategoriesPanel = document.getElementById('sub-categories-panel');
+            const leftPanel = document.getElementById('left-panel');
+            const rightPanel = document.getElementById('right-panel');
 
-            // Main categories / Subcategories resizer
-            if (mainResizer && mainCategoriesPanel && subcategoriesPanel) {
+            // Main categories / Subcategories resizer (sub-categories-separator)
+            if (subCategoriesSeparator && mainCategoriesPanel && subcategoriesPanel) {
                 let isDragging = false;
 
-                mainResizer.addEventListener('mousedown', (e) => {
+                subCategoriesSeparator.addEventListener('mousedown', (e) => {
                     isDragging = true;
                     document.body.style.cursor = 'col-resize';
                     document.body.style.userSelect = 'none';
@@ -2768,11 +2911,11 @@ function createPlugin(host) {
                 });
             }
 
-            // Left panel / Right panel resizer
-            if (leftPanelResizer && leftPanel && rightPanel) {
+            // Left panel / Right panel resizer (separator)
+            if (separator && leftPanel && rightPanel) {
                 let isDragging = false;
 
-                leftPanelResizer.addEventListener('mousedown', (e) => {
+                separator.addEventListener('mousedown', (e) => {
                     isDragging = true;
                     document.body.style.cursor = 'col-resize';
                     document.body.style.userSelect = 'none';
@@ -2811,31 +2954,38 @@ function createPlugin(host) {
 
             searchInput.addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase().trim();
-                
+
                 if (searchTerm === '') {
                     // Restore original navigation
                     renderMainCategories();
+                    // Auto-click first category to populate subcategories
+                    setTimeout(() => {
+                        const firstCategoryBtn = document.querySelector('.main-category-btn');
+                        if (firstCategoryBtn) {
+                            firstCategoryBtn.click();
+                        }
+                    }, 50);
                     return;
                 }
 
                 // Filter and search
                 const results = [];
-                
+
                 for (const [key, category] of Object.entries(settingsTree)) {
                     // Check if main category matches
                     if (category.name.toLowerCase().includes(searchTerm)) {
                         results.push({ type: 'category', key, name: category.name });
                     }
-                    
+
                     // Check subcategories
                     category.subcategories.forEach(subcat => {
                         if (subcat.name.toLowerCase().includes(searchTerm)) {
-                            results.push({ 
-                                type: 'subcategory', 
-                                categoryKey: key, 
+                            results.push({
+                                type: 'subcategory',
+                                categoryKey: key,
                                 subcatKey: subcat.id,
                                 settingsCategory: subcat.settingsCategory,
-                                name: subcat.name 
+                                name: subcat.name
                             });
                         }
                     });
@@ -2849,8 +2999,8 @@ function createPlugin(host) {
         // Display search results
         function displaySearchResults(results, searchTerm) {
             const mainPanel = document.getElementById('main-categories-panel');
-            const subPanel = document.getElementById('subcategories-panel');
-            
+            const subPanel = document.getElementById('sub-categories-panel');
+
             if (!mainPanel || !subPanel) return;
 
             if (results.length === 0) {
@@ -2863,12 +3013,19 @@ function createPlugin(host) {
             const categoryResults = {};
             results.forEach(result => {
                 if (result.type === 'category') {
-                    categoryResults[result.key] = { name: result.name, subcategories: [] };
+                    if (!categoryResults[result.key]) {
+                        categoryResults[result.key] = { 
+                            name: result.name, 
+                            subcategories: [],
+                            isSearchMatch: true
+                        };
+                    }
                 } else if (result.type === 'subcategory') {
                     if (!categoryResults[result.categoryKey]) {
                         categoryResults[result.categoryKey] = { 
                             name: settingsTree[result.categoryKey].name, 
-                            subcategories: [] 
+                            subcategories: [],
+                            isSearchMatch: false
                         };
                     }
                     categoryResults[result.categoryKey].subcategories.push(result);
@@ -2883,7 +3040,7 @@ function createPlugin(host) {
                     <li>
                         <button class="main-category-btn active" 
                                 data-category="\${key}"
-                                onclick="handleMainCategoryClick('\${key}', this)">
+                                onclick="handleSearchCategoryClick('\${key}', this)">
                             \${highlightedName}
                         </button>
                     </li>
@@ -2915,6 +3072,57 @@ function createPlugin(host) {
             }
         }
 
+        // Handle category click in search results
+        function handleSearchCategoryClick(categoryKey, button) {
+            // Update active state
+            document.querySelectorAll('.main-category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+
+            // Get the search term from the input
+            const searchInput = document.getElementById('settings-search');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            // Filter subcategories by search term
+            const category = settingsTree[categoryKey];
+            if (!category) return;
+
+            const subPanel = document.getElementById('sub-categories-panel');
+            if (!subPanel) return;
+
+            // Filter subcategories that match the search term
+            const matchingSubcats = category.subcategories.filter(subcat => 
+                subcat.name.toLowerCase().includes(searchTerm)
+            );
+
+            if (matchingSubcats.length > 0) {
+                let subHtml = '<ul style="list-style: none; padding: 0; margin: 0;">';
+                matchingSubcats.forEach((subcat, index) => {
+                    const highlightedName = highlightMatch(subcat.name, searchTerm);
+                    subHtml += \`
+                        <li>
+                            <button class="subcategory-btn \${index === 0 ? 'active' : ''}" 
+                                    data-category="\${subcat.settingsCategory}"
+                                    onclick="handleSubcategoryClick('\${subcat.settingsCategory}', this, '\${subcat.name}')">
+                                \${highlightedName}
+                            </button>
+                        </li>
+                    \`;
+                });
+                subHtml += '</ul>';
+                subPanel.innerHTML = subHtml;
+
+                // Auto-click first subcategory
+                const firstBtn = subPanel.querySelector('.subcategory-btn');
+                if (firstBtn) {
+                    firstBtn.click();
+                }
+            } else {
+                subPanel.innerHTML = '';
+            }
+        }
+
         // Highlight matching text
         function highlightMatch(text, searchTerm) {
             if (!searchTerm) return text;
@@ -2922,12 +3130,236 @@ function createPlugin(host) {
             return text.replace(regex, '<mark style="background: #fef08a; color: #000; padding: 0 4px; border-radius: 2px;">\$1</mark>');
         }
 
+        // Function to set up event listeners for the Visualizer settings
+        async function setupVisualizerEventListeners() {
+            const saveButton = document.getElementById('save-visualizer-credentials');
+            const usernameInput = document.getElementById('visualizer-username');
+            const passwordInput = document.getElementById('visualizer-password');
+            const autoUploadCheckbox = document.getElementById('visualizer-auto-upload');
+            const minDurationInput = document.getElementById('visualizer-min-duration');
+            const enabledSelect = document.getElementById('visualizer-enabled');
+            const formContainer = document.getElementById('visualizer-form-container');
+
+            if (!saveButton) {
+                console.warn('Save button for Visualizer credentials not found');
+                return;
+            }
+
+            // Load existing settings when the form loads
+            await loadVisualizerSettings();
+
+            // Initially hide the form if disabled
+            if (enabledSelect && formContainer) {
+                if (enabledSelect.value === 'false') {
+                    formContainer.style.display = 'none';
+                } else {
+                    formContainer.style.display = 'block';
+                }
+            }
+
+            // Add event listener to toggle form visibility based on selection
+            if (enabledSelect) {
+                enabledSelect.addEventListener('change', function() {
+                    if (this.value === 'true') {
+                        formContainer.style.display = 'block';
+                    } else {
+                        formContainer.style.display = 'none';
+                    }
+                });
+            }
+
+            // Add click handler for the save button
+            saveButton.addEventListener('click', async () => {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+
+                if (!username || !password) {
+                    showToast('Please enter both username and password', true);
+                    return;
+                }
+
+                try {
+                    // Test credentials via Visualizer plugin API - CORRECT ENDPOINT
+                    const testResponse = await fetch('http://localhost:8080/api/v1/plugins/visualizer.reaplugin/verifyCredentials', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    });
+
+                    // Handle response - try to parse as JSON regardless of Content-Type header
+                    let testResult;
+                    const contentType = testResponse.headers.get('content-type');
+                    
+                    try {
+                        testResult = await testResponse.json();
+                    } catch (jsonError) {
+                        // If JSON parsing fails, get raw text
+                        const errorText = await testResponse.text();
+                        console.error('Failed to parse response as JSON:', errorText);
+                        showToast('Visualizer log-in failed: ' + errorText, true);
+                        return;
+                    }
+
+                    if (!testResult.valid) {
+                        showToast('Visualizer log-in failed, check credentials', true);
+                        return;
+                    }
+
+                    showToast('Visualizer log-in success', false);
+
+                    // Get form values
+                    const autoUpload = autoUploadCheckbox.checked;
+                    const minDuration = parseInt(minDurationInput.value, 10) || 5;
+                    const isEnabled = enabledSelect.value === 'true';
+
+                    // Save to plugin settings - use correct field names expected by visualizer plugin
+                    const pluginId = 'visualizer.reaplugin';
+                    const settingsPayload = {
+                        Username: username,
+                        Password: password,
+                        AutoUpload: autoUpload,
+                        LengthThreshold: minDuration  // Visualizer plugin uses 'Length' not 'LengthThreshold'
+                    };
+
+                    const saveResponse = await fetch('http://localhost:8080/api/v1/plugins/' + pluginId + '/settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(settingsPayload)
+                    });
+
+                    // Handle save response
+                    const saveContentType = saveResponse.headers.get('content-type');
+                    if (saveResponse.ok) {
+                        showToast('Visualizer settings saved successfully', false);
+                    } else {
+                        let errorMessage = 'Failed to save visualizer settings';
+                        if (saveContentType && saveContentType.includes('application/json')) {
+                            try {
+                                const errorData = await saveResponse.json();
+                                errorMessage = errorData.message || errorData.error || errorMessage;
+                            } catch (jsonError) {
+                                console.error('Error parsing JSON response:', jsonError);
+                                const errorText = await saveResponse.text();
+                                if (errorText) {
+                                    errorMessage = errorText;
+                                }
+                            }
+                        } else {
+                            const errorText = await saveResponse.text();
+                            if (errorText) {
+                                errorMessage = errorText;
+                            }
+                        }
+                        showToast(errorMessage, true);
+                    }
+                } catch (error) {
+                    console.error('Error during credential validation:', error);
+                    if (error instanceof SyntaxError) {
+                        showToast('Invalid response from server, check API endpoint', true);
+                    } else {
+                        showToast('Error: ' + error.message, true);
+                    }
+                }
+            });
+        }
+
+        // Function to load existing Visualizer settings
+        async function loadVisualizerSettings() {
+            try {
+                const pluginId = 'visualizer.reaplugin';
+
+                const response = await fetch('http://localhost:8080/api/v1/plugins/' + pluginId + '/settings');
+
+                let savedSettings = null;
+                if (response.ok) {
+                    // Try to parse response as JSON directly - don't check Content-Type header
+                    // as the response may be valid JSON without the proper header
+                    try {
+                        savedSettings = await response.json();
+                    } catch (parseError) {
+                        const errorText = await response.text();
+                        console.error('Non-JSON response when loading settings:', errorText);
+                        showToast('Failed to load Visualizer settings: Invalid response format', true);
+                        return;
+                    }
+                }
+
+                const usernameInput = document.getElementById('visualizer-username');
+                const passwordInput = document.getElementById('visualizer-password');
+                const autoUploadCheckbox = document.getElementById('visualizer-auto-upload');
+                const minDurationInput = document.getElementById('visualizer-min-duration');
+                const enabledSelect = document.getElementById('visualizer-enabled');
+                const formContainer = document.getElementById('visualizer-form-container');
+
+                if (savedSettings && savedSettings.Username) {
+                    usernameInput.value = savedSettings.Username;
+                } else {
+                    usernameInput.value = '';
+                }
+
+                // Always clear the password field for security
+                passwordInput.value = '';
+
+                if (typeof savedSettings.AutoUpload !== 'undefined') {
+                    autoUploadCheckbox.checked = !!savedSettings.AutoUpload;
+                }
+
+                // Visualizer plugin uses 'Length' not 'LengthThreshold'
+                if (typeof savedSettings.Length !== 'undefined') {
+                    minDurationInput.value = parseInt(savedSettings.Length, 10) || 5;
+                }
+
+                // Enabled state is not stored in plugin, use localStorage as fallback
+                const storedEnabled = localStorage.getItem('visualizerEnabled');
+                if (storedEnabled !== null) {
+                    enabledSelect.value = storedEnabled;
+                } else {
+                    // Default to enabled if not set
+                    enabledSelect.value = 'true';
+                }
+
+                // Set form visibility based on the enabled state
+                if (formContainer) {
+                    if (enabledSelect && enabledSelect.value === 'false') {
+                        formContainer.style.display = 'none';
+                    } else {
+                        formContainer.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load Visualizer settings:', error);
+                if (error instanceof SyntaxError) {
+                    showToast('Invalid response from server when loading settings', true);
+                } else {
+                    showToast('Could not load Visualizer plugin settings', true);
+                }
+            }
+        }
+
+        // Toggle fullscreen functionality
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((e) => {
+                    console.log(\`Error attempting to enable fullscreen: \${e.message}\`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
         // Initialize navigation when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             renderMainCategories();
             initResizablePanels();
             initSettingsSearch();
-            
+
             // Auto-click first category
             const firstCategoryBtn = document.querySelector('.main-category-btn');
             if (firstCategoryBtn) {

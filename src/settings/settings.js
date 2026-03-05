@@ -1667,17 +1667,17 @@ export function renderExtensionsSettings() {
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                            <input type="checkbox" id="visualizer-auto-upload" class="w-6 h-6 mr-3">
                             <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
+                            <input type="checkbox" id="visualizer-auto-upload" class="w-6 h-6 mr-3">
                             <label for="visualizer-min-duration" class="block text-[var(--text-primary)] text-[24px] mb-2">Minimum Shot Duration (seconds):</label>
                             <input type="number" id="visualizer-min-duration" class="w-32 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
                         </div>
 
-                        <div id="visualizer-status" class="text-[24px] p-2 rounded-lg"></div>
-
+                         <div class="flex justify-end w-full mt-4">
                         <button id="save-visualizer-credentials" class="bg-[var(--mimoja-blue)] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
                             Save Credentials
                         </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1777,13 +1777,9 @@ function setupVisualizerEventListeners() {
         const password = passwordInput.value; // Don't trim password as spaces might be valid
 
         if (!username || !password) {
-            
-                ui.showToast('Please enter both username and password', 1500, 'error');
+            ui.showToast('Please enter both username and password', 1500, 'error');
             return;
         }
-
-        statusDiv.textContent = 'Testing credentials...';
-        statusDiv.className = 'text-gray-500 text-[24px] p-2 rounded-lg';
 
         try {
             // Import verifyVisualizerCredentials from api.js
@@ -1792,19 +1788,11 @@ function setupVisualizerEventListeners() {
             const isValid = await verifyVisualizerCredentials(username, password);
 
             if (!isValid) {
-                
-                // Clear any previously saved (and now invalid) credentials
-                localStorage.removeItem('visualizerUsername');
-                localStorage.removeItem('visualizerPassword');
-                ui.showToast('Visualizer log-in failed check credentials', 900, 'error');
+                ui.showToast('Visualizer log-in failed, check credentials', 900, 'error');
                 return; // Stop here if credentials are bad
             }
 
-          
-               ui.showToast('Visualizer log-in success', 900, 'success');
-            // On success, save to localStorage for future auto-login
-            localStorage.setItem('visualizerUsername', username);
-            localStorage.setItem('visualizerPassword', btoa(password)); // Basic obfuscation
+            ui.showToast('Visualizer log-in success', 900, 'success');
 
             // If credentials are valid, proceed to save to plugin
             const autoUpload = autoUploadCheckbox.checked;
@@ -1815,7 +1803,7 @@ function setupVisualizerEventListeners() {
             localStorage.setItem('visualizerAutoUpload', autoUpload.toString());
             localStorage.setItem('visualizerEnabled', isEnabled.toString());
 
-            // 2. Prepare and save plugin settings
+            // 2. Prepare and save plugin settings - use correct field names expected by visualizer plugin manifest
             const { setPluginSettings } = await import('/src/modules/api.js');
             const pluginId = 'visualizer.reaplugin';
 
@@ -1823,30 +1811,19 @@ function setupVisualizerEventListeners() {
                 Username: username,
                 Password: password, // Send the actual password to the plugin
                 AutoUpload: autoUpload,
-                LengthThreshold: minDuration,
-                Enabled: isEnabled
+                LengthThreshold: minDuration  // Must match manifest.json schema
             };
 
             try {
                 await setPluginSettings(pluginId, settingsPayload);
-                ui.showToast('Credentials saved successfully!', 900, 'success');
-                // Hide status after a few seconds
-                setTimeout(() => {
-                    statusDiv.textContent = '';
-                }, 3000);
-
-                // Show success toast
                 ui.showToast('Visualizer settings saved successfully', 3000, 'success');
-
             } catch (error) {
                 console.error('Failed to save visualizer plugin settings:', error);
-                statusDiv.textContent = `Failed to save to REA plugin: ${error.message}.`;
-                statusDiv.className = 'text-red-500 text-[24px] p-2 rounded-lg';
+                ui.showToast(`Failed to save to REA plugin: ${error.message}`, 3000, 'error');
             }
         } catch (error) {
             console.error('Error during credential validation:', error);
-            statusDiv.textContent = `Error validating credentials: ${error.message}`;
-            statusDiv.className = 'text-red-500 text-[24px] p-2 rounded-lg';
+            ui.showToast(`Error validating credentials: ${error.message}`, 3000, 'error');
         }
     });
 }
@@ -1879,8 +1856,9 @@ async function loadVisualizerSettings() {
             autoUploadCheckbox.checked = !!savedSettings.AutoUpload;
         }
 
-        if (typeof savedSettings.LengthThreshold !== 'undefined') {
-            minDurationInput.value = parseInt(savedSettings.LengthThreshold, 10) || 5;
+        // Visualizer plugin uses 'Length' not 'LengthThreshold'
+        if (typeof savedSettings.Length !== 'undefined') {
+            minDurationInput.value = parseInt(savedSettings.Length, 10) || 5;
         }
 
         if (typeof savedSettings.Enabled !== 'undefined') {
@@ -1900,11 +1878,7 @@ async function loadVisualizerSettings() {
         }
     } catch (error) {
         console.error('Failed to load Visualizer settings:', error);
-        const statusDiv = document.getElementById('visualizer-status');
-        if (statusDiv) {
-            statusDiv.textContent = 'Could not load plugin settings.';
-            statusDiv.className = 'text-red-500 text-[24px] p-2 rounded-lg';
-        }
+        ui.showToast('Could not load Visualizer plugin settings', 3000, 'error');
     }
 }
 
