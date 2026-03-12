@@ -1184,3 +1184,76 @@ export async function verifyVisualizerCredentials(username, password) {
         return false; // Assume invalid on error
     }
 }
+
+export async function getDisplayState() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/display`);
+        if (!response.ok) {
+            throw new Error(`Failed to get display state: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        logger.error('Error getting display state:', error);
+        throw error;
+    }
+}
+
+export async function dimDisplay() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/display/dim`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to dim display: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        logger.error('Error dimming display:', error);
+        throw error;
+    }
+}
+
+export async function restoreDisplay() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/display/restore`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to restore display: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        logger.error('Error restoring display:', error);
+        throw error;
+    }
+}
+
+export async function enableWakeLock() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/display/wakelock`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to enable wake-lock: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        logger.error('Error enabling wake-lock:', error);
+        throw error;
+    }
+}
+
+export async function disableWakeLock() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/display/wakelock`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to disable wake-lock: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        logger.error('Error disabling wake-lock:', error);
+        throw error;
+    }
+}

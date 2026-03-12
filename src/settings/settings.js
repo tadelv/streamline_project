@@ -1,4 +1,4 @@
-import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand } from '/src/modules/api.js';
+import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay } from '/src/modules/api.js';
 import * as ui from '/src/modules/ui.js';
 import { initScaling } from '/src/modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '/src/modules/i18n.js';
@@ -352,6 +352,7 @@ export function renderSettingsContent(category) {
         case 'extention1':
         case 'extention2':
             return renderExtensionsSettings();
+        case 'misc':
         case 'miscellaneous':
         case 'reasettings':
         case 'brightness':
@@ -946,7 +947,7 @@ export function renderMiscellaneousSettings() {
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
                             <p class="leading-[1.2]">Brightness</p>
                         </div>
-                        <input type="range" min="0" max="100" value="75" class="w-[200px] h-[30px]">
+                        <input type="range" min="0" max="100" value="75" class="w-[200px] h-[30px]" onchange="handleBrightnessChange(this.value)">
                     </div>
                     <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
                         Adjust screen brightness level
@@ -2698,6 +2699,18 @@ window.scanAndConnectScale = async function() {
     } catch (error) {
         console.error('Error scanning for scales:', error);
         ui.showToast(`Error scanning for devices: ${error.message}`, 5000, 'error');
+    }
+};
+
+window.handleBrightnessChange = async function(value) {
+    try {
+        if (parseInt(value) === 100) {
+            await restoreDisplay();
+        } else {
+            await dimDisplay();
+        }
+    } catch (error) {
+        console.error('Error adjusting brightness:', error);
     }
 };
 
