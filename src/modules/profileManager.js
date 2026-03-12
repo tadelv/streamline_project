@@ -1,9 +1,45 @@
 import { logger } from './logger.js';
-import { updateWorkflow,sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile } from './api.js';
+import { updateWorkflow,sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile, updateProfile } from './api.js';
 import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio ,showToast} from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
 import { loadPage } from './router.js'; // Singular and correctly formatted import
 import { getTranslation } from './i18n.js';
+
+/**
+ * Rename a profile by ID
+ * @param {string} profileId - The profile ID
+ * @param {string} newTitle - The new title for the profile
+ * @returns {Promise} - Resolves when rename is complete
+ */
+export async function renameProfile(profileId, newTitle) {
+    try {
+        // Get the current profile data
+        const profiles = await getProfiles();
+        const profileData = profiles.find(p => p.id === profileId);
+        
+        if (!profileData) {
+            throw new Error(`Profile with ID ${profileId} not found`);
+        }
+        
+        // Update the title
+        profileData.profile.title = newTitle;
+        
+        // Save to API
+        await updateProfile(profileId, profileData);
+        
+        // Update local cache
+        if (availableProfiles[profileId]) {
+            availableProfiles[profileId].profile.title = newTitle;
+            await setSetting(PROFILES_CACHE_KEY, availableProfiles);
+        }
+        
+        logger.info(`Profile renamed to: ${newTitle}`);
+        return { success: true, title: newTitle };
+    } catch (error) {
+        logger.error('Failed to rename profile:', error);
+        throw error;
+    }
+}
 
 const FAV_COUNT = 5;
 const PROFILES_PATH = '/src/profiles/';

@@ -1,11 +1,325 @@
-import { init as initProfileManager, unhideProfile,availableProfiles, assignProfile, deleteOrHideProfile, loadAssignments, handleProfileUpload , verifyProfileChange } from './profileManager.js';
+import { init as initProfileManager, unhideProfile,availableProfiles, assignProfile, deleteOrHideProfile, loadAssignments, handleProfileUpload , verifyProfileChange, renameProfile } from './profileManager.js';
 import { openDB } from './idb.js';
 import { logger } from './logger.js';
 import { initResizablePanels, showToast, initFullscreenHandler } from './ui.js';
-import { sendProfile, getWorkflow, updateWorkflow } from './api.js';
+import { sendProfile, getWorkflow, updateWorkflow, callPluginEndpoint, getPluginSettings, verifyVisualizerCredentials } from './api.js';
 import { initChart, plotProfile } from './chart.js';
 import { initI18n } from './i18n.js';
-import { loadPage } from './router.js'; // Singular and correctly formatted import
+import { loadPage } from './router.js';
+
+// Visualizer credentials storage
+let cachedVisualizerCredentials = null;
+
+/**
+ * Check if Visualizer credentials are configured
+ * @returns {Promise<{configured: boolean, username: string|null, password: string|null}>}
+ */
+async function checkVisualizerCredentials() {
+    if (cachedVisualizerCredentials) {
+        return cachedVisualizerCredentials;
+    }
+    
+    try {
+        const settings = await getPluginSettings('visualizer.reaplugin');
+        const enabled = settings?.Enabled !== false; // Default to enabled
+        const username = settings?.Username;
+        const password = settings?.Password;
+        
+        cachedVisualizerCredentials = {
+            configured: enabled && !!(username && password),
+            enabled: enabled,
+            username: username || null,
+            password: password || null
+        };
+        
+        return cachedVisualizerCredentials;
+    } catch (error) {
+        logger.error('Error checking Visualizer credentials:', error);
+        return { configured: false, enabled: true, username: null, password: null };
+    }
+}
+
+/**
+ * Show the add profile options modal
+ */
+function showAddProfileModal() {
+    const modal = document.getElementById('add-profile-modal');
+    if (modal) {
+        modal.showModal();
+    }
+}
+
+/**
+ * Close the add profile options modal
+ */
+function closeAddProfileModal() {
+    const modal = document.getElementById('add-profile-modal');
+    if (modal) {
+        modal.close();
+    }
+}
+
+/**
+ * Handle upload local file button click
+ */
+function handleUploadLocalClick() {
+    closeAddProfileModal();
+    const fileInput = document.getElementById('profile-upload-input');
+    if (fileInput) {
+        fileInput.click();
+    }
+}
+
+/**
+ * Show the share code input modal
+ */
+async function handleImportShareCodeClick() {
+    closeAddProfileModal();
+    
+    // Check credentials first
+    const creds = await checkVisualizerCredentials();
+    
+    if (!creds.enabled) {
+        showToast('Visualizer plugin is disabled. Enable it in Settings.', 4000, 'warning');
+        return;
+    }
+    
+    if (!creds.configured) {
+        // Show login required modal
+        showLoginRequiredModal();
+        return;
+    }
+    
+    // Show share code input modal
+    const modal = document.getElementById('share-code-modal');
+    if (modal) {
+        const input = document.getElementById('share-code-input');
+        const errorMsg = document.getElementById('share-code-error');
+        const importBtn = document.getElementById('share-code-import-btn');
+        
+        // Clear previous input and error
+        if (input) input.value = '';
+        if (errorMsg) {
+            errorMsg.textContent = '';
+            errorMsg.classList.add('hidden');
+        }
+        if (importBtn) importBtn.disabled = false;
+        
+        modal.showModal();
+        
+        // Focus the input after modal opens
+        setTimeout(() => {
+            if (input) input.focus();
+        }, 100);
+    }
+}
+
+/**
+ * Show the login required modal
+ */
+function showLoginRequiredModal() {
+    const modal = document.getElementById('login-required-modal');
+    if (modal) {
+        modal.showModal();
+    }
+}
+
+/**
+ * Close the share code modal
+ */
+function closeShareCodeModal() {
+    const modal = document.getElementById('share-code-modal');
+    if (modal) {
+        modal.close();
+    }
+}
+
+/**
+ * Close the login required modal
+ */
+function closeLoginRequiredModal() {
+    const modal = document.getElementById('login-required-modal');
+    if (modal) {
+        modal.close();
+    }
+}
+
+/**
+ * Handle share code import
+ */
+async function handleShareCodeImport() {
+    const input = document.getElementById('share-code-input');
+    const errorMsg = document.getElementById('share-code-error');
+    const importBtn = document.getElementById('share-code-import-btn');
+    
+    if (!input) return;
+    
+    const shareCode = input.value.trim();
+    
+    // Validate input
+    if (!shareCode || shareCode.length !== 4) {
+        if (errorMsg) {
+            errorMsg.textContent = 'Please enter a valid 4-digit share code';
+            errorMsg.classList.remove('hidden');
+        }
+        return;
+    }
+    
+    // Disable button during import
+    if (importBtn) {
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importing...';
+    }
+    
+    try {
+        logger.info(`Importing profile from share code: ${shareCode}`);
+        
+        // Call the plugin import endpoint
+        const result = await callPluginEndpoint(
+            'visualizer.reaplugin',
+            'import',
+            { shareCode: shareCode }
+        );
+        
+        logger.info('Profile import result:', result);
+        
+        if (result.success) {
+            // Check for duplicate profile title and handle it
+            const importedTitle = result.profileTitle || 'Imported Profile';
+            
+            // Check if a profile with the same title already exists in current profiles
+            const existingProfileKey = Object.keys(availableProfiles).find(key => {
+                const profile = availableProfiles[key];
+                return profile && profile.profile && profile.profile.title === importedTitle;
+            });
+            
+            let finalTitle = importedTitle;
+            let profileIdToRename = result.profileId;
+            
+            if (existingProfileKey && profileIdToRename) {
+                // Profile with same title exists - rename with suffix
+                let counter = 1;
+                let newTitle = `${importedTitle} (${counter})`;
+                
+                // Keep incrementing until we find a unique name
+                while (Object.values(availableProfiles).some(p => p.profile.title === newTitle)) {
+                    counter++;
+                    newTitle = `${importedTitle} (${counter})`;
+                }
+                finalTitle = newTitle;
+                
+                // Rename the newly imported profile
+                try {
+                    await renameProfile(profileIdToRename, finalTitle);
+                    logger.info(`Renamed duplicate profile to: ${finalTitle}`);
+                } catch (renameError) {
+                    logger.warn('Could not rename duplicate profile:', renameError);
+                }
+            }
+            
+            closeShareCodeModal();
+            showToast(`Profile "${finalTitle}" imported successfully!`, 4000, 'success');
+            
+            // Reinitialize profile manager to refresh the list
+            await initProfileManager();
+            
+            // Re-render profiles
+            renderProfiles();
+        } else {
+            throw new Error(result.error || 'Import failed');
+        }
+    } catch (error) {
+        logger.error('Failed to import profile from share code:', error);
+        
+        if (errorMsg) {
+            errorMsg.textContent = error.message || 'Failed to import profile';
+            errorMsg.classList.remove('hidden');
+        }
+        
+        if (importBtn) {
+            importBtn.disabled = false;
+            importBtn.textContent = 'Import';
+        }
+    }
+}
+
+/**
+ * Initialize modal event listeners
+ */
+function initModals() {
+    // Add profile modal buttons
+    const uploadLocalBtn = document.getElementById('upload-local-btn');
+    if (uploadLocalBtn) {
+        uploadLocalBtn.addEventListener('click', handleUploadLocalClick);
+    }
+    
+    const importShareCodeBtn = document.getElementById('import-share-code-btn');
+    if (importShareCodeBtn) {
+        importShareCodeBtn.addEventListener('click', handleImportShareCodeClick);
+    }
+    
+    const addProfileModalClose = document.getElementById('add-profile-modal-close');
+    if (addProfileModalClose) {
+        addProfileModalClose.addEventListener('click', closeAddProfileModal);
+    }
+    
+    // Share code modal buttons
+    const shareCodeCancelBtn = document.getElementById('share-code-cancel-btn');
+    if (shareCodeCancelBtn) {
+        shareCodeCancelBtn.addEventListener('click', closeShareCodeModal);
+    }
+    
+    const shareCodeImportBtn = document.getElementById('share-code-import-btn');
+    if (shareCodeImportBtn) {
+        shareCodeImportBtn.addEventListener('click', handleShareCodeImport);
+    }
+    
+    const shareCodeModalClose = document.getElementById('share-code-modal-close');
+    if (shareCodeModalClose) {
+        shareCodeModalClose.addEventListener('click', closeShareCodeModal);
+    }
+    
+    // Share code input - Enter key support
+    const shareCodeInput = document.getElementById('share-code-input');
+    if (shareCodeInput) {
+        shareCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleShareCodeImport();
+            }
+        });
+        
+        // Limit to 4 characters (alphanumeric)
+        shareCodeInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4);
+            
+            // Enable/disable import button based on length
+            const importBtn = document.getElementById('share-code-import-btn');
+            if (importBtn) {
+                importBtn.disabled = e.target.value.length !== 4;
+            }
+        });
+    }
+    
+    // Login required modal buttons
+    const loginModalCancelBtn = document.getElementById('login-modal-cancel-btn');
+    if (loginModalCancelBtn) {
+        loginModalCancelBtn.addEventListener('click', closeLoginRequiredModal);
+    }
+    
+    const loginModalGoBtn = document.getElementById('login-modal-go-btn');
+    if (loginModalGoBtn) {
+        loginModalGoBtn.addEventListener('click', () => {
+            closeLoginRequiredModal();
+            // Navigate to settings page
+            loadPage('src/settings/settings.html');
+        });
+    }
+    
+    const loginRequiredModalClose = document.getElementById('login-required-modal-close');
+    if (loginRequiredModalClose) {
+        loginRequiredModalClose.addEventListener('click', closeLoginRequiredModal);
+    }
+}
 
 let selectedProfileKey = null;
 let isShowingHidden = false; // State to track if hidden profiles should be shown
@@ -788,17 +1102,22 @@ export async function initializeProfileSelector() {
     console.log('initializeProfileSelector: Rendering profiles...');
     renderProfiles();
 
+    // Clear cached credentials so we always get fresh data
+    cachedVisualizerCredentials = null;
+
+    // Initialize modals
+    initModals();
+
     // Wire up add profile button
     const originalAddProfileButton = document.getElementById('add_profile');
-    const fileInput = document.getElementById('profile-upload-input');
-    if (originalAddProfileButton && fileInput) {
+    if (originalAddProfileButton) {
         console.log('initializeProfileSelector: Setting up add profile button');
         // Remove any existing click listeners to prevent duplicates
         const newAddProfileButton = originalAddProfileButton.cloneNode(true);
         originalAddProfileButton.parentNode.replaceChild(newAddProfileButton, originalAddProfileButton);
 
         newAddProfileButton.addEventListener('click', () => {
-            fileInput.click();
+            showAddProfileModal();
         });
         // Also handle the file input to prevent duplicate listeners
         const originalFileInput = document.getElementById('profile-upload-input');

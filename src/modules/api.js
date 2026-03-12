@@ -460,6 +460,20 @@ export async function updateProfileVisibility(profileId, visibility) {
     return response.json();
 }
 
+export async function updateProfile(profileId, profileData) {
+    const response = await fetch(`${API_BASE_URL}/profiles/${profileId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profile: profileData }),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to update profile ${profileId}`);
+    }
+    return response.json();
+}
+
 export async function getProfile() {
     const response = await fetch(`${API_BASE_URL}/workflow`, { targetAddressSpace: 'local' });
     if (!response.ok) {
@@ -886,11 +900,191 @@ export async function getShotIds() {
     return response.json();
 }
 
-export async function getShots(ids) {
-    const response = await fetch(`${API_BASE_URL}/shots?ids=${ids}`);
+export async function getShots(options = {}) {
+    const { limit = 20, offset = 0, grinderId, grinderModel, beanBatchId, coffeeName, coffeeRoaster, profileTitle, ids, orderBy = 'timestamp', order = 'desc' } = options;
+    
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit);
+    if (offset) params.append('offset', offset);
+    if (grinderId) params.append('grinderId', grinderId);
+    if (grinderModel) params.append('grinderModel', grinderModel);
+    if (beanBatchId) params.append('beanBatchId', beanBatchId);
+    if (coffeeName) params.append('coffeeName', coffeeName);
+    if (coffeeRoaster) params.append('coffeeRoaster', coffeeRoaster);
+    if (profileTitle) params.append('profileTitle', profileTitle);
+    if (ids) params.append('ids', Array.isArray(ids) ? ids.join(',') : ids);
+    if (orderBy) params.append('orderBy', orderBy);
+    if (order) params.append('order', order);
+    
+    const response = await fetch(`${API_BASE_URL}/shots?${params.toString()}`);
     if (!response.ok) {
-        throw new Error('Failed to get shot');
+        throw new Error('Failed to get shots');
     }
+    return response.json();
+}
+
+export async function updateShot(id, shotData) {
+    const response = await fetch(`${API_BASE_URL}/shots/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(shotData),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to update shot ${id}`);
+    }
+    return response.json();
+}
+
+export async function deleteShot(id) {
+    const response = await fetch(`${API_BASE_URL}/shots/${id}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to delete shot ${id}`);
+    }
+    return response.json();
+}
+
+export async function getBeans(includeArchived = false) {
+    const response = await fetch(`${API_BASE_URL}/beans?includeArchived=${includeArchived}`);
+    if (!response.ok) throw new Error('Failed to get beans');
+    return response.json();
+}
+
+export async function createBean(beanData) {
+    const response = await fetch(`${API_BASE_URL}/beans`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(beanData),
+    });
+    if (!response.ok) throw new Error('Failed to create bean');
+    return response.json();
+}
+
+export async function getBean(id) {
+    const response = await fetch(`${API_BASE_URL}/beans/${id}`);
+    if (!response.ok) throw new Error(`Failed to get bean ${id}`);
+    return response.json();
+}
+
+export async function updateBean(id, beanData) {
+    const response = await fetch(`${API_BASE_URL}/beans/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(beanData),
+    });
+    if (!response.ok) throw new Error(`Failed to update bean ${id}`);
+    return response.json();
+}
+
+export async function deleteBean(id) {
+    const response = await fetch(`${API_BASE_URL}/beans/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Failed to delete bean ${id}`);
+    return response.json();
+}
+
+export async function getBeanBatches(beanId, includeArchived = false) {
+    const response = await fetch(`${API_BASE_URL}/beans/${beanId}/batches?includeArchived=${includeArchived}`);
+    if (!response.ok) throw new Error(`Failed to get batches for bean ${beanId}`);
+    return response.json();
+}
+
+export async function createBeanBatch(beanId, batchData) {
+    const response = await fetch(`${API_BASE_URL}/beans/${beanId}/batches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchData),
+    });
+    if (!response.ok) throw new Error(`Failed to create batch for bean ${beanId}`);
+    return response.json();
+}
+
+export async function getBeanBatch(id) {
+    const response = await fetch(`${API_BASE_URL}/bean-batches/${id}`);
+    if (!response.ok) throw new Error(`Failed to get bean batch ${id}`);
+    return response.json();
+}
+
+export async function updateBeanBatch(id, batchData) {
+    const response = await fetch(`${API_BASE_URL}/bean-batches/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchData),
+    });
+    if (!response.ok) throw new Error(`Failed to update bean batch ${id}`);
+    return response.json();
+}
+
+export async function deleteBeanBatch(id) {
+    const response = await fetch(`${API_BASE_URL}/bean-batches/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Failed to delete bean batch ${id}`);
+    return response.json();
+}
+
+export async function getGrinders(includeArchived = false) {
+    const response = await fetch(`${API_BASE_URL}/grinders?includeArchived=${includeArchived}`);
+    if (!response.ok) throw new Error('Failed to get grinders');
+    return response.json();
+}
+
+export async function createGrinder(grinderData) {
+    const response = await fetch(`${API_BASE_URL}/grinders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(grinderData),
+    });
+    if (!response.ok) throw new Error('Failed to create grinder');
+    return response.json();
+}
+
+export async function getGrinder(id) {
+    const response = await fetch(`${API_BASE_URL}/grinders/${id}`);
+    if (!response.ok) throw new Error(`Failed to get grinder ${id}`);
+    return response.json();
+}
+
+export async function updateGrinder(id, grinderData) {
+    const response = await fetch(`${API_BASE_URL}/grinders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(grinderData),
+    });
+    if (!response.ok) throw new Error(`Failed to update grinder ${id}`);
+    return response.json();
+}
+
+export async function deleteGrinder(id) {
+    const response = await fetch(`${API_BASE_URL}/grinders/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Failed to delete grinder ${id}`);
+    return response.json();
+}
+
+export async function uploadMachineProfile(profileData) {
+    const response = await fetch(`${API_BASE_URL}/machine/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData),
+    });
+    if (!response.ok) throw new Error('Failed to upload machine profile');
+    return response.json();
+}
+
+export async function setWaterLevels(refillLevel) {
+    const response = await fetch(`${API_BASE_URL}/machine/waterLevels`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refillLevel }),
+    });
+    if (!response.ok) throw new Error('Failed to set water levels');
+    return response.json();
+}
+
+export async function uploadFirmware(firmwareFile) {
+    const response = await fetch(`${API_BASE_URL}/machine/firmware`, {
+        method: 'POST',
+        body: firmwareFile,
+    });
+    if (!response.ok) throw new Error('Failed to upload firmware');
     return response.json();
 }
 
@@ -917,7 +1111,9 @@ export async function getPluginSettings(pluginId) {
             }
             throw new Error(`Failed to get plugin settings for ${pluginId}: ${response.statusText}`);
         }
-        return await response.json();
+        const settings = await response.json();
+        logger.info(`Plugin settings for ${pluginId} retrieved successfully.`, settings);
+        return settings;
     } catch (error) {
         logger.error(`Error getting plugin settings for ${pluginId}:`, error);
         return {}; // Return empty object on error to prevent UI from breaking
@@ -942,6 +1138,32 @@ export async function setPluginSettings(pluginId, settings) {
         return true;
     } catch (error) {
         throw error; // Re-throw to allow calling code to handle
+    }
+}
+
+export async function callPluginEndpoint(pluginId, endpoint, body, method = 'POST') {
+    try {
+        const response = await fetch(`${API_BASE_URL}/plugins/${pluginId}/${endpoint}`, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: body ? JSON.stringify(body) : null,
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Failed to call plugin endpoint ${pluginId}/${endpoint}. Status: ${response.status}, Body: ${errorBody}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        }
+        return await response.text();
+    } catch (error) {
+        logger.error(`Error calling plugin endpoint ${pluginId}/${endpoint}:`, error);
+        throw error;
     }
 }
 

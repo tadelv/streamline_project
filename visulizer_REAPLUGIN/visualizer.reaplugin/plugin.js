@@ -10,12 +10,13 @@
 function createPlugin(host) {
   "use strict";
 
-  const CHECK_INTERVAL_MS = 10000;
+  const SHOT_FETCH_DELAY_MS = 5000;
   const VISUALIZER_API_URL = "https://visualizer.coffee/api";
+  const VISUALIZER_SHARED_API = "https://visualizer.coffee/api/shots/shared?code=";
+  const VISUALIZER_PROFILE_API = "https://visualizer.coffee/api/shots/%1/profile?format=json";
 
-  let timeoutId = null;
-  let isChecking = false;
-  let isRunning = false;
+  let shotFetchTimeoutId = null;
+  let isUploading = false;
 
   const state = {
     lastUploadedShot: null,
@@ -23,25 +24,28 @@ function createPlugin(host) {
     lastCheckedShotId: null,
     username: null,
     password: null,
-    ticks: 0,
     autoUpload: true,
     lengthThreshold: 5,
+    lastMachineState: null,
   };
 
   function log(msg) {
     host.log(`[visualizer] ${msg}`);
   }
 
-  async function fetchLatestShot() {
+  async function fetchShot(shotId) {
     try {
-      const res = await fetch("http://localhost:8080/api/v1/shots/latest");
+      const url = shotId
+        ? `http://localhost:8080/api/v1/shots/${shotId}`
+        : "http://localhost:8080/api/v1/shots/latest";
+      const res = await fetch(url);
       if (!res.ok) {
-        log(`Failed to fetch latest shot: ${res.status} ${res.statusText}`);
+        log(`Failed to fetch shot: ${res.status} ${res.statusText}`);
         return null;
       }
       return await res.json();
     } catch (e) {
-      log(`Error fetching latest shot: ${e.message}`);
+      log(`Error fetching shot: ${e.message}`);
       return null;
     }
   }
@@ -204,45 +208,51 @@ function createPlugin(host) {
     return visualizerShot;
   }
 
-  async function checkForNewShots() {
-    if (isChecking || !isRunning) return;
-    isChecking = true;
+  async function handleShotComplete() {
+    if (isUploading) return;
+    isUploading = true;
 
     try {
-      log("Checking for new shots...");
       if (!state.autoUpload) {
-        log("Auto upload disabled, not checking ...");
-        return
+        log("Auto upload disabled, skipping");
+        return;
       }
-      const shot = await fetchLatestShot();
-      if (!shot || !shot.id) {
+
+      // Fetch latest shot metadata (without measurements)
+      const latestMeta = await fetchShot();
+      if (!latestMeta || !latestMeta.id) {
         log("No shot data available");
         return;
       }
 
-      if (shot.id === state.lastCheckedShotId) {
-        log(`Shot ${shot.id} already checked`);
+      if (latestMeta.id === state.lastCheckedShotId) {
+        log(`Shot ${latestMeta.id} already checked`);
         return;
       }
 
-      state.lastCheckedShotId = shot.id;
+      state.lastCheckedShotId = latestMeta.id;
 
-      // Check if credentials are configured
       if (!state.username || !state.password) {
         log("Username/password not configured. Skipping upload.");
         return;
       }
 
-      const result = await uploadShot(convertReaToVisualizerFormat(shot), null);
-      state.lastUploadedShot = shot.id;
+      // Fetch full shot with measurements for upload
+      const fullShot = await fetchShot(latestMeta.id);
+      if (!fullShot) {
+        log(`Failed to fetch full shot ${latestMeta.id}`);
+        return;
+      }
+
+      const result = await uploadShot(convertReaToVisualizerFormat(fullShot), null);
+      state.lastUploadedShot = fullShot.id;
       state.lastVisualizerId = result.id;
 
-      // Save to storage using new API
       host.storage({
         type: "write",
         key: "lastUploadedShot",
         namespace: "visualizer.reaplugin",
-        data: shot.id
+        data: fullShot.id
       });
 
       host.storage({
@@ -252,11 +262,10 @@ function createPlugin(host) {
         data: result.id
       });
 
-      log(`Uploaded ${shot.id} → ${result.id}`);
+      log(`Uploaded ${fullShot.id} → ${result.id}`);
 
-      // Emit success event
       host.emit("shotUploaded", {
-        shotId: shot.id,
+        shotId: fullShot.id,
         visualizerId: result.id,
         timestamp: Date.now()
       });
@@ -267,41 +276,8 @@ function createPlugin(host) {
         timestamp: Date.now()
       });
     } finally {
-      isChecking = false;
-      scheduleNextCheck();
+      isUploading = false;
     }
-  }
-
-  function scheduleNextCheck() {
-    if (!isRunning) return;
-
-    // Clear any existing timeout
-    // if (timeoutId !== null) {
-    //   clearTimeout(timeoutId);
-    // }
-
-    // Schedule next check
-    timeoutId = setTimeout(() => {
-      checkForNewShots();
-    }, CHECK_INTERVAL_MS);
-
-    log(`Next check scheduled in ${CHECK_INTERVAL_MS / 1000} seconds`);
-  }
-
-  function start() {
-    if (isRunning) return;
-    isRunning = true;
-    log("Started periodic checking");
-    scheduleNextCheck();
-  }
-
-  function stop() {
-    isRunning = false;
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-    log("Stopped periodic checking");
   }
 
   function handleStorageRead(payload) {
@@ -338,40 +314,117 @@ function createPlugin(host) {
     }
   }
 
-  // Handle settings update event from REA host
-  function handleSettingsUpdate(newSettings) {
-    log(`Received settings update: ${JSON.stringify(newSettings)}`);
-    
-    if (newSettings.Username !== undefined) {
-      state.username = newSettings.Username;
-      log(`Username updated: ${state.username ? 'configured' : 'cleared'}`);
+  async function importFromShareCode(shareCode) {
+    const code = shareCode.trim();
+
+    if (!code) {
+      throw new Error("No share code provided");
     }
-    
-    if (newSettings.Password !== undefined) {
-      state.password = newSettings.Password;
-      log(`Password updated`);
+
+    log(`Importing profile from share code: ${code}`);
+
+    // Step 1: Fetch shot metadata from share code
+    const sharedUrl = `${VISUALIZER_SHARED_API}${code}`;
+    log(`Fetching from: ${sharedUrl}`);
+
+    const sharedResponse = await fetch(sharedUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': getAuthHeader(),
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!sharedResponse.ok) {
+      const statusCode = sharedResponse.status;
+      if (statusCode === 401) {
+        throw new Error("Invalid Visualizer credentials");
+      }
+      throw new Error(`Failed to fetch share code: HTTP ${statusCode} ${sharedResponse.statusText}`);
     }
-    
-    if (newSettings.AutoUpload !== undefined) {
-      state.autoUpload = newSettings.AutoUpload;
-      log(`AutoUpload updated: ${state.autoUpload}`);
+
+    const sharedData = await sharedResponse.json();
+    log(`Share code response: ${JSON.stringify(sharedData).slice(0, 200)}`);
+
+    // Handle both array and object responses
+    let shotId;
+    if (Array.isArray(sharedData)) {
+      if (sharedData.length === 0) {
+        throw new Error("No shared shots found for this code");
+      }
+      shotId = sharedData[0]?.id;
+    } else {
+      shotId = sharedData?.id;
     }
-    
-    if (newSettings.LengthThreshold !== undefined) {
-      state.lengthThreshold = newSettings.LengthThreshold;
-      log(`Length threshold updated: ${state.lengthThreshold}`);
+
+    if (!shotId) {
+      throw new Error("Share code response missing shot ID");
     }
+
+    log(`Got shot ID: ${shotId}, fetching profile...`);
+
+    // Step 2: Fetch profile data using shot ID
+    const profileUrl = VISUALIZER_PROFILE_API.replace('%1', shotId);
+    log(`Fetching profile from: ${profileUrl}`);
+
+    const profileResponse = await fetch(profileUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': getAuthHeader(),
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!profileResponse.ok) {
+      const statusCode = profileResponse.status;
+      if (statusCode === 401) {
+        throw new Error("Invalid Visualizer credentials");
+      }
+      throw new Error(`Failed to fetch profile: HTTP ${statusCode} ${profileResponse.statusText}`);
+    }
+
+    const profileData = await profileResponse.json();
+    log(`Fetched profile: ${JSON.stringify(profileData).slice(0, 200)}`);
+
+    // Step 3: POST profile to REA workflow endpoint
+    log(`Posting profile to REA workflow endpoint...`);
+    const workflowResponse = await fetch('http://localhost:8080/api/v1/profiles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        profile: profileData,
+        metadata: { 'comment': `imported from visualizer: ${profileData.id}` }
+      })
+    });
+
+    if (!workflowResponse.ok) {
+      throw new Error(`Failed to import profile to REA: HTTP ${workflowResponse.status} ${workflowResponse.statusText}`);
+    }
+
+    const workflowResult = await workflowResponse.json();
+    log(`Profile imported successfully: ${JSON.stringify(workflowResult).slice(0, 100)}`);
+
+    return {
+      success: true,
+      profileTitle: profileData.title || 'Imported Profile',
+      profileId: workflowResult.id || workflowResult.profile?.id || null,
+      shotId: shotId,
+      workflowResult: workflowResult
+    };
   }
+
   // Return the plugin object
   return {
     id: "visualizer.reaplugin",
-    version: "1.0.0",
+    version: "1.1.0",
 
     onLoad(settings) {
       state.username = settings.Username;
       state.password = settings.Password;
       state.autoUpload = settings.AutoUpload != undefined ? settings.AutoUpload : true;
-      state.lengthThreshold = settings.Length != undefined ? settings.Length : 5;
+      state.lengthThreshold = settings.LengthThreshold != undefined ? settings.LengthThreshold : 5;
 
       log(`Loaded with username: ${state.username ? 'configured' : 'not configured'}`);
 
@@ -387,13 +440,14 @@ function createPlugin(host) {
         key: "lastVisualizerId",
         namespace: "visualizer.reaplugin"
       });
-
-      start();
     },
 
     onUnload() {
       log("Unloaded");
-      stop();
+      if (shotFetchTimeoutId !== null) {
+        clearTimeout(shotFetchTimeoutId);
+        shotFetchTimeoutId = null;
+      }
 
       // Save current state to storage
       if (state.lastUploadedShot) {
@@ -447,11 +501,11 @@ function createPlugin(host) {
 
           }
         }
-        return fetch(`http://localhost:8080/api/v1/shots?ids=${shotId}`)
+        return fetch(`http://localhost:8080/api/v1/shots/${shotId}`)
           .then((res) => {
             return res.json();
           }).then((json) => {
-            return uploadShot(convertReaToVisualizerFormat(json[0]), null);
+            return uploadShot(convertReaToVisualizerFormat(json), null);
           }).then((shotResponse) => {
             return {
               status: 200,
@@ -489,6 +543,62 @@ function createPlugin(host) {
         };
       }
 
+      if (request.endpoint === 'import') {
+        if (request.method !== 'POST') {
+          return {
+            status: 405,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Method not allowed' })
+          };
+        }
+
+        const shareCode = request.body?.shareCode;
+        if (!shareCode) {
+          return {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'shareCode is required' })
+          };
+        }
+
+        // Call importFromShareCode and handle the async result
+        return importFromShareCode(shareCode)
+          .then((result) => {
+            // Emit event for UI listeners
+            host.emit('profileImported', {
+              success: true,
+              profileTitle: result.profileTitle,
+              shotId: result.shotId,
+              timestamp: Date.now()
+            });
+
+            return {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(result)
+            };
+          })
+          .catch((error) => {
+            log(`Import failed: ${error.message}`);
+            
+            // Emit error event for UI listeners
+            host.emit('importError', {
+              success: false,
+              error: error.message,
+              timestamp: Date.now()
+            });
+
+            return {
+              status: error.message.includes('credentials') ? 401 : 400,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                success: false,
+                error: error.message 
+              })
+            };
+          });
+      }
+
       // Default 404 response
       return {
         status: 404,
@@ -503,21 +613,25 @@ function createPlugin(host) {
 
       switch (event.name) {
         case "stateUpdate":
-          state.ticks++;
-          // if (state.ticks % 50 === 0) {
-          //   checkForNewShots();
-          // }
+          const currentState = event.payload?.state?.state;
+          if (state.lastMachineState === "espresso" && currentState !== "espresso") {
+            log(`Shot ended (${state.lastMachineState} → ${currentState}), scheduling upload in ${SHOT_FETCH_DELAY_MS / 1000}s`);
+            if (shotFetchTimeoutId !== null) {
+              clearTimeout(shotFetchTimeoutId);
+            }
+            shotFetchTimeoutId = setTimeout(() => {
+              shotFetchTimeoutId = null;
+              handleShotComplete();
+            }, SHOT_FETCH_DELAY_MS);
+          }
+          state.lastMachineState = currentState;
           break;
-        // case "httpRequest":
-        //   const handled = this.__httpRequestHandler(event.password);
-        //   host.emit("httpResponse", {
-        //     requestId: event.requestId,
-        //     ...handled,
-        //   });
-        //   break;
 
         case "shutdown":
-          stop();
+          if (shotFetchTimeoutId !== null) {
+            clearTimeout(shotFetchTimeoutId);
+            shotFetchTimeoutId = null;
+          }
           break;
 
         case "storageRead":
@@ -529,7 +643,19 @@ function createPlugin(host) {
           break;
 
         case "settingsUpdated":
-          handleSettingsUpdate(event.payload);
+          if (event.payload?.AutoUpload !== undefined) {
+            state.autoUpload = event.payload.AutoUpload;
+            log(`AutoUpload updated: ${state.autoUpload}`);
+          }
+          if (event.payload?.Username !== undefined) {
+            state.username = event.payload.Username;
+          }
+          if (event.payload?.Password !== undefined) {
+            state.password = event.payload.Password;
+          }
+          if (event.payload?.LengthThreshold !== undefined) {
+            state.lengthThreshold = event.payload.LengthThreshold;
+          }
           break;
       }
     },

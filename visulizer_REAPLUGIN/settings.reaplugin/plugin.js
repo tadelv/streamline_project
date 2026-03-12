@@ -826,22 +826,22 @@ function createPlugin(host) {
         .toast-container {
             position: fixed !important;
             bottom: 100px !important;
-            left: 50% !important;
+            left: 40% !important;
             right: auto !important;
             transform: translateX(-50%) !important;
             z-index: 99999 !important;
             display: flex !important;
-            flex-direction: column !important;
+            flex-direction: column-reverse !important;
             align-items: center !important;
-            justify-content: center !important;
-            gap: 16px;
+            justify-content: flex-start !important;
+            gap: 8px;
             width: 90%;
-            max-width: 1200px;
+            max-width: 900px;
             pointer-events: none;
         }
 
         .toast {
-            padding: 32px 64px !important;
+            padding: 16px 32px !important;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
             animation: slideIn 0.4s ease-out;
@@ -849,14 +849,16 @@ function createPlugin(host) {
             min-width: 600px !important;
             max-width: 100% !important;
             text-align: center !important;
-            font-size: 28px !important;
-            font-weight: 700 !important;
+            font-size: 20px !important;
+            font-weight: 400 !important;
             font-family: 'Inter', sans-serif !important;
             letter-spacing: 0.5px;
             word-wrap: break-word;
             white-space: normal !important;
             display: block !important;
             pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
         }
 
         .toast-success {
@@ -873,22 +875,9 @@ function createPlugin(host) {
             background: var(--mimoja-blue);
             color: var(--white);
         }
-            animation: slideIn 0.4s ease-out;
-            width: auto;
-            min-width: 400px;
-            max-width: 800px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: 700;
-            font-family: 'Inter', sans-serif;
-            letter-spacing: 0.5px;
-            word-wrap: break-word;
-            white-space: normal;
-        }
 
-        .toast-info {
-            background: var(--mimoja-blue);
-            color: var(--white);
+        .toast.fade-out {
+            opacity: 0;
         }
 
         @keyframes slideIn {
@@ -1553,22 +1542,27 @@ function createPlugin(host) {
             }
         }
 
-        // Show toast notification function
+        // Show toast notification function with improved stacking
         function showToast(message, isError = false) {
             const toastContainer = document.getElementById('toast-container');
             if (!toastContainer) return;
 
             const toast = document.createElement('div');
-            toast.className = isError ? 'error-toast' : 'success-toast';
+            toast.className = isError ? 'toast toast-error' : 'toast toast-success';
             toast.textContent = message;
+            
+            // Add unique ID for tracking
+            toast.id = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            
             toastContainer.appendChild(toast);
 
             // Auto-remove after 3 seconds
             setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s';
+                toast.classList.add('fade-out');
                 setTimeout(() => {
-                    toast.remove();
+                    if (toast.parentNode === toastContainer) {
+                        toast.remove();
+                    }
                 }, 300);
             }, 3000);
         }
@@ -2357,18 +2351,9 @@ function createPlugin(host) {
                         <p>Skin Settings</p>
                     </div>
                     <div class="settings-divider"><hr /></div>
-                    <div class="settings-section-flex">
-                        <div class="setting-row-flex">
-                            <div class="setting-label-bold">
-                                <p>Theme</p>
-                            </div>
-                            <div class="btn-status">
-                                <input type="checkbox" name="theme-toggle" id="theme-toggle" class="hidden" />
-                                <label for="theme-toggle" style="display: inline-flex; align-items: center; width: 36px; height: 18px; border-radius: 18px; cursor: pointer; background-color: var(--text-secondary); position: relative; transition: background-color 0.2s;"></label>
-                            </div>
-                        </div>
+                   
                         <p class="setting-description">
-                            Toggle between light and dark themes
+                            Customer your own skin specific settings.
                         </p>
                     </div>
                 </div>
@@ -2418,6 +2403,9 @@ function createPlugin(host) {
                             <div class="flex items-center justify-between relative w-full max-w-full">
                                 <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
                                     <p class="leading-[1.2]">Visualizer</p>
+                                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Enable or disable the Visualizer extension
+                    </p>
                                 </div>
                                 <select id="visualizer-enabled" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
                                     <option value="true">Enabled</option>
@@ -2425,78 +2413,41 @@ function createPlugin(host) {
                                 </select>
                             </div>
 
-                            <div id="visualizer-form-container">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                                    <div class="mb-4">
-                                        <label for="visualizer-username" class="block text-[var(--text-primary)] text-[24px] mb-2">Username:</label>
-                                        <input type="text" id="visualizer-username" class="visualizer-input w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer username">
+                             <div class="justify-between grid-cols-4 mt-2 w-full">
+                        <div id="visualizer-form-container" class="w-full mt-6">
+                            <div class="grid grid-cols-4">
+                                <div class="col-span-3 flex flex-col gap-6">
+                                    <div class="flex flex-col gap-2">
+                                        <label for="visualizer-username" class="text-[var(--text-primary)] text-[24px]">Username:</label>
+                                        <input type="text" id="visualizer-username" class="w-full max-w-[500px] p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer username">
                                     </div>
-
-                                    <div class="mb-4">
-                                        <label for="visualizer-password" class="block text-[var(--text-primary)] text-[24px] mb-2">Password:</label>
-                                        <input type="password" id="visualizer-password" class="visualizer-input w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer password">
+                                    <div class="flex flex-col gap-2">
+                                        <label for="visualizer-password" class="text-[var(--text-primary)] text-[24px]">Password:</label>
+                                        <input type="password" id="visualizer-password" class="w-full max-w-[500px] p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer password">
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
+                                        <input type="checkbox" id="visualizer-auto-upload" class="w-8 h-8">
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <label for="visualizer-min-duration" class="text-[var(--text-primary)] text-[24px]">Minimum Shot Duration (seconds):</label>
+                                        <input type="number" id="visualizer-min-duration" class="w-24 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
                                     </div>
                                 </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                                    <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
-                                    <input type="checkbox" id="visualizer-auto-upload" class="w-6 h-6 mr-3">                                    
-                                    <label for="visualizer-min-duration" class="block text-[var(--text-primary)] text-[24px] mb-2">Minimum Shot Duration (seconds):</label>
-                                    <input type="number" id="visualizer-min-duration" class="w-32 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
+                                <div class="col-span-1 col-end-5 flex justify-end">
+                                    <button id="save-visualizer-credentials" class=" w-[150px] h-[50px] pt-3 pb-[15px] border border-solid border-[var(--mimoja-blue)] text-[var(--mimoja-blue)] rounded-[22.5px]">
+                                        Save Credentials
+                                    </button>
                                 </div>
-
-                                <div id="visualizer-status" class="text-[24px] p-2 rounded-lg"></div>
-
-                                <button id="save-visualizer-credentials" class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
-                                    Save Credentials
-                                </button>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Divider -->
-                    <div class="h-0 relative w-full">
-                        <hr class="border-t border-[#c9c9c9] w-full" />
-                    </div>
-
-                    <div class="flex flex-col items-start relative w-full max-w-full">
-                        <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
-                            <div class="flex items-center justify-between relative w-full max-w-full">
-                                <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                                    <p class="leading-[1.2]">Extension 2</p>
-                                </div>
-                                <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                                    <option>Enabled</option>
-                                    <option>Disabled</option>
-                                </select>
-                            </div>
-                            <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full max-w-full break-words">
-                                Manage the second extension
-                            </p>
                         </div>
                     </div>
 
-                    <!-- Divider -->
-                    <div class="h-0 relative w-full">
-                        <hr class="border-t border-[#c9c9c9] w-full" />
-                    </div>
+                    
 
-                    <div class="flex flex-col items-start relative w-full max-w-full">
-                        <div class="flex flex-col gap-[30px] items-start relative w-full max-w-full">
-                            <div class="flex items-center justify-between relative w-full max-w-full">
-                                <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                                    <p class="leading-[1.2]">Extension 3</p>
-                                </div>
-                                <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                                    <option>Enabled</option>
-                                    <option>Disabled</option>
-                                </select>
-                            </div>
-                            <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full max-w-full break-words">
-                                Manage the third extension
-                            </p>
-                        </div>
-                    </div>
+                    
                 </div>
             \`;
         }

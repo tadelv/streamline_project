@@ -1190,25 +1190,42 @@ export function renderWaterTankSettings() {
                 <p class="leading-[1.2]">Water Tank Settings</p>
             </div>
 
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Tank Temperature (°C)</p>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <input type="number" id="tankTempInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
-                                   value="${settingsCache.de1.tankTemp !== undefined ? settingsCache.de1.tankTemp : 80}"
-                                   step="1" min="0" max="100"
-                                   onchange="window.updateDe1Setting('tankTemp', parseInt(this.value))">
-                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
-                                    onclick="window.updateDe1Setting('tankTemp', parseInt(document.getElementById('tankTempInput').value))">
-                                Save
-                            </button>
-                        </div>
+            <!-- Divider -->
+            <div class="h-0 relative w-full">
+                <hr class="border-t border-[#c9c9c9] w-full" />
+            </div>
+
+            <div class="content-stretch flex flex-col items-center relative w-full">
+                <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px]">
+                    <div class="content-stretch flex items-center relative shrink-0">
+                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[30px]">
+                            Tank Temperature
+                        </p>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Set the water tank temperature in degrees Celsius
+                    <div class="content-stretch flex gap-[20px] h-[72px] items-center justify-center relative shrink-0 w-full">
+                        <button id="tank-temp-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                                onclick="window.flashPlusMinusButton(this); window.adjustTankTemp(-1);">
+                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none flex items-center justify-center"
+                             style="width: 130px;">
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="tankTempInput" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
+                                   value="${settingsCache.de1.tankTemp !== undefined ? settingsCache.de1.tankTemp : 25}"
+                                   step="1" min="10" max="40"
+                                   onchange="window.updateDe1Setting('tankTemp', parseInt(this.value))">
+                            <span class="ml-2 text-nowrap">°C</span>
+                        </div>
+                        <button id="tank-temp-plus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
+                                onclick="window.flashPlusMinusButton(this); window.adjustTankTemp(1);">
+                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full text-center">
+                        Set the water tank temperature (10-40°C)
                     </p>
                 </div>
             </div>
@@ -1646,85 +1663,54 @@ export function renderExtensionsSettings() {
                     <div class="content-stretch flex items-center justify-between relative w-full">
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
                             <p class="leading-[1.2]">Visualizer</p>
-                        </div>
-                        <select id="visualizer-enabled" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                            <option value="true">Enabled</option>
-                            <option value="false">Disabled</option>
-                        </select>
-                    </div>
-
-                    <div id="visualizer-form-container">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                            <div class="mb-4">
-                                <label for="visualizer-username" class="block text-[var(--text-primary)] text-[24px] mb-2">Username:</label>
-                                <input type="text" id="visualizer-username" class="w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer username">
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="visualizer-password" class="block text-[var(--text-primary)] text-[24px] mb-2">Password:</label>
-                                <input type="password" id="visualizer-password" class="w-full p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer password">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                            <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
-                            <input type="checkbox" id="visualizer-auto-upload" class="w-6 h-6 mr-3">
-                            <label for="visualizer-min-duration" class="block text-[var(--text-primary)] text-[24px] mb-2">Minimum Shot Duration (seconds):</label>
-                            <input type="number" id="visualizer-min-duration" class="w-32 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
-                        </div>
-
-                         <div class="flex justify-end w-full mt-4">
-                        <button id="save-visualizer-credentials" class="bg-[var(--mimoja-blue)] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
-                            Save Credentials
-                        </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Divider -->
-            <div class="h-0 relative w-full">
-                <hr class="border-t border-[#c9c9c9] w-full" />
-            </div>
-
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Extension 2</p>
-                        </div>
-                        <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                            <option>Enabled</option>
-                            <option>Disabled</option>
-                        </select>
-                    </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Manage the second extension
+                             <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Upload shots to visualizer.coffee
                     </p>
-                </div>
-            </div>
-
-            <!-- Divider -->
-            <div class="h-0 relative w-full">
-                <hr class="border-t border-[#c9c9c9] w-full" />
-            </div>
-
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Extension 3</p>
                         </div>
-                        <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
-                            <option>Enabled</option>
-                            <option>Disabled</option>
-                        </select>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="visualizer-enabled" class="sr-only peer">
+                            <div class="w-[100px] h-[50px] bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[5px] after:start-[5px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[40px] after:w-[40px] after:transition-all peer-checked:bg-[#385a92]"></div>
+                        </label>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Manage the third extension
-                    </p>
+
+                    <div class="justify-between grid-cols-4 mt-2 w-full">
+                        <div id="visualizer-form-container" class="w-full mt-6">
+                            <div class="grid grid-cols-4">
+                                <div class="col-span-3 flex flex-col gap-6">
+                                    <div class="flex flex-col gap-2">
+                                        <label for="visualizer-username" class="text-[var(--text-primary)] text-[24px]">Username:</label>
+                                        <input type="text" id="visualizer-username" class="w-full max-w-[500px] p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer username">
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label for="visualizer-password" class="text-[var(--text-primary)] text-[24px]">Password:</label>
+                                        <input type="password" id="visualizer-password" class="w-full max-w-[500px] p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" placeholder="Enter your Visualizer password">
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <label for="visualizer-auto-upload" class="text-[var(--text-primary)] text-[24px]">Auto-upload shots to Visualizer</label>
+                                        <input type="checkbox" id="visualizer-auto-upload" class="w-8 h-8">
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <label for="visualizer-min-duration" class="text-[var(--text-primary)] text-[24px]">Minimum Shot Duration (seconds):</label>
+                                        <input type="number" id="visualizer-min-duration" class="w-24 p-3 rounded-lg border border-[var(--border-color)] bg-[var(--profile-button-background-color)] text-[var(--text-primary)] text-[24px] focus:outline-none focus:ring-2 focus:ring-[var(--mimoja-blue)]" min="1" value="5">
+                                    </div>
+                                </div>
+                                <div class="col-span-1 col-end-5 flex justify-end">
+                                    <button id="save-visualizer-credentials" class=" w-[150px] h-[50px] pt-3 pb-[15px] border border-solid border-[var(--mimoja-blue)] text-[var(--profile-button-text-color)] rounded-[22.5px]">
+                                        Save Credentials
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+
+                   
+
+                    
                 </div>
             </div>
+
+            
         </div>
     `;
 
@@ -1742,8 +1728,8 @@ function setupVisualizerEventListeners() {
     const autoUploadCheckbox = document.getElementById('visualizer-auto-upload');
     const minDurationInput = document.getElementById('visualizer-min-duration');
     const statusDiv = document.getElementById('visualizer-status');
-    const enabledSelect = document.getElementById('visualizer-enabled');
     const formContainer = document.getElementById('visualizer-form-container');
+    const enabledToggle = document.getElementById('visualizer-enabled');
 
     if (!saveButton) {
         console.warn('Save button for Visualizer credentials not found');
@@ -1753,20 +1739,65 @@ function setupVisualizerEventListeners() {
     // Load existing settings when the form loads
     loadVisualizerSettings();
 
-    // Initially hide the form if disabled
-    if (enabledSelect && formContainer) {
-        if (enabledSelect.value === 'false') {
+    // Initially hide the form if auto-upload is disabled
+    if (autoUploadCheckbox && formContainer) {
+        if (!autoUploadCheckbox.checked) {
             formContainer.style.display = 'none';
         }
     }
 
-    // Add event listener to toggle form visibility based on selection
-    if (enabledSelect) {
-        enabledSelect.addEventListener('change', function() {
-            if (this.value === 'true') {
-                formContainer.style.display = 'block';
-            } else {
-                formContainer.style.display = 'none';
+    // Sync the enabled toggle with auto-upload checkbox
+    if (enabledToggle && autoUploadCheckbox) {
+        enabledToggle.checked = autoUploadCheckbox.checked;
+        
+        enabledToggle.addEventListener('change', async function() {
+            const isEnabled = this.checked;
+            
+            // Sync with auto-upload checkbox
+            autoUploadCheckbox.checked = isEnabled;
+            
+            // Toggle form visibility
+            formContainer.style.display = isEnabled ? 'block' : 'none';
+            
+            // Save the AutoUpload state to plugin
+            try {
+                const { setPluginSettings } = await import('/src/modules/api.js');
+                const pluginId = 'visualizer.reaplugin';
+                
+                await setPluginSettings(pluginId, { AutoUpload: isEnabled });
+                localStorage.setItem('visualizerAutoUpload', isEnabled.toString());
+                ui.showToast(`Visualizer ${isEnabled ? 'enabled' : 'disabled'}`, 1500, 'success');
+            } catch (error) {
+                console.error('Failed to save Visualizer state:', error);
+                ui.showToast('Failed to update Visualizer state', 2000, 'error');
+            }
+        });
+    }
+
+    // Auto-upload checkbox also controls form visibility and syncs with toggle
+    if (autoUploadCheckbox) {
+        autoUploadCheckbox.addEventListener('change', async function() {
+            const isAutoUpload = this.checked;
+            
+            // Sync with enabled toggle
+            if (enabledToggle) {
+                enabledToggle.checked = isAutoUpload;
+            }
+            
+            // Toggle form visibility
+            if (formContainer) {
+                formContainer.style.display = isAutoUpload ? 'block' : 'none';
+            }
+            
+            // Save the AutoUpload state to plugin
+            try {
+                const { setPluginSettings } = await import('/src/modules/api.js');
+                const pluginId = 'visualizer.reaplugin';
+                
+                await setPluginSettings(pluginId, { AutoUpload: isAutoUpload });
+                localStorage.setItem('visualizerAutoUpload', isAutoUpload.toString());
+            } catch (error) {
+                console.error('Failed to save Visualizer auto-upload state:', error);
             }
         });
     }
@@ -1797,11 +1828,9 @@ function setupVisualizerEventListeners() {
             // If credentials are valid, proceed to save to plugin
             const autoUpload = autoUploadCheckbox.checked;
             const minDuration = parseInt(minDurationInput.value, 10) || 5;
-            const isEnabled = enabledSelect.value === 'true';
 
             // 1. Save UI-only settings to localStorage
             localStorage.setItem('visualizerAutoUpload', autoUpload.toString());
-            localStorage.setItem('visualizerEnabled', isEnabled.toString());
 
             // 2. Prepare and save plugin settings - use correct field names expected by visualizer plugin manifest
             const { setPluginSettings } = await import('/src/modules/api.js');
@@ -1809,9 +1838,9 @@ function setupVisualizerEventListeners() {
 
             const settingsPayload = {
                 Username: username,
-                Password: password, // Send the actual password to the plugin
+                Password: password,
                 AutoUpload: autoUpload,
-                LengthThreshold: minDuration  // Must match manifest.json schema
+                LengthThreshold: minDuration
             };
 
             try {
@@ -1840,8 +1869,8 @@ async function loadVisualizerSettings() {
         const passwordInput = document.getElementById('visualizer-password');
         const autoUploadCheckbox = document.getElementById('visualizer-auto-upload');
         const minDurationInput = document.getElementById('visualizer-min-duration');
-        const enabledSelect = document.getElementById('visualizer-enabled');
         const formContainer = document.getElementById('visualizer-form-container');
+        const enabledToggle = document.getElementById('visualizer-enabled');
 
         if (savedSettings && savedSettings.Username) {
             usernameInput.value = savedSettings.Username;
@@ -1852,8 +1881,12 @@ async function loadVisualizerSettings() {
         // Always clear the password field for security
         passwordInput.value = '';
 
-        if (typeof savedSettings.AutoUpload !== 'undefined') {
-            autoUploadCheckbox.checked = !!savedSettings.AutoUpload;
+        const autoUploadValue = typeof savedSettings.AutoUpload !== 'undefined' ? savedSettings.AutoUpload : true;
+        autoUploadCheckbox.checked = !!autoUploadValue;
+
+        // Sync toggle with auto-upload
+        if (enabledToggle) {
+            enabledToggle.checked = !!autoUploadValue;
         }
 
         // Visualizer plugin uses 'Length' not 'LengthThreshold'
@@ -1861,20 +1894,9 @@ async function loadVisualizerSettings() {
             minDurationInput.value = parseInt(savedSettings.Length, 10) || 5;
         }
 
-        if (typeof savedSettings.Enabled !== 'undefined') {
-            enabledSelect.value = savedSettings.Enabled.toString();
-        } else {
-            // Default to enabled if not set
-            enabledSelect.value = 'true';
-        }
-
-        // Set form visibility based on the enabled state
+        // Set form visibility based on the autoUpload state
         if (formContainer) {
-            if (enabledSelect && enabledSelect.value === 'false') {
-                formContainer.style.display = 'none';
-            } else {
-                formContainer.style.display = 'block';
-            }
+            formContainer.style.display = autoUploadValue ? 'block' : 'none';
         }
     } catch (error) {
         console.error('Failed to load Visualizer settings:', error);
@@ -2172,10 +2194,9 @@ export async function initializeSettings() {
 
     document.getElementById('save-settings-btn').addEventListener('click', async () => {
         ui.showToast('Saving all settings...', 3000, 'info');
-         const visualizerEnabledSelect = document.getElementById('visualizer-enabled');
-        if (visualizerEnabledSelect) {
-            const isEnabled = visualizerEnabledSelect.value ;
-            localStorage.setItem('visualizerEnabled', isEnabled.toString());
+        const visualizerAutoUpload = document.getElementById('visualizer-auto-upload');
+        if (visualizerAutoUpload) {
+            localStorage.setItem('visualizerAutoUpload', visualizerAutoUpload.checked.toString());
         }
         // Implementation would save all modified settings
         loadPage('/index.html');
@@ -2302,6 +2323,18 @@ export async function initializeSettings() {
             // Ensure value stays within bounds (0 to 10 ml/s)
             newValue = Math.max(0, Math.min(10, newValue));
             input.value = newValue.toFixed(1);
+            // Trigger the onchange event to update the setting
+            input.dispatchEvent(new Event('change'));
+        }
+    };
+
+    window.adjustTankTemp = function(change) {
+        const input = document.getElementById('tankTempInput');
+        if (input) {
+            let newValue = parseInt(input.value, 10) + change;
+            // Ensure value stays within bounds (10 to 40°C)
+            newValue = Math.max(10, Math.min(40, newValue));
+            input.value = newValue;
             // Trigger the onchange event to update the setting
             input.dispatchEvent(new Event('change'));
         }
