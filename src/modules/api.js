@@ -31,6 +31,8 @@ export const MachineState = {
 };
 
 export let reconnectingWebSocket = null; // Exporting for app.js access
+export let currentMachineState = null;
+let previousMachineState = null;
 let scaleWebSocket = null;
 
 // Local cache for current shot settings, initialized with default values and correct types
@@ -184,10 +186,18 @@ export function connectWebSocket(onData, onReconnect) {
     reconnectingWebSocket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            // Update local shot settings cache if snapshot includes snapshot settings
+            previousMachineState = currentMachineState;
+            currentMachineState = data.state;
+            
+            if (previousMachineState !== currentMachineState) {
+                if (currentMachineState === MachineState.SLEEPING) {
+                    dimDisplay();
+                } else if (currentMachineState === MachineState.IDLE) {
+                    restoreDisplay();
+                }
+            }
+            
             onData(data);
-            // setDebug(true);
-            // logger.debug(data)
         } catch (error) {
             logger.error('Error parsing WebSocket message:', error);
         }
@@ -1254,6 +1264,21 @@ export async function disableWakeLock() {
         return response.json();
     } catch (error) {
         logger.error('Error disabling wake-lock:', error);
+        throw error;
+    }
+}
+
+export async function signalHeartbeat() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/machine/heartbeat`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error(`Failed to signal heartbeat: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        logger.error('Error signaling heartbeat:', error);
         throw error;
     }
 }

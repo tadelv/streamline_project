@@ -1,4 +1,4 @@
-import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay } from '/src/modules/api.js';
+import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState } from '/src/modules/api.js';
 import * as ui from '/src/modules/ui.js';
 import { initScaling } from '/src/modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '/src/modules/i18n.js';
@@ -134,7 +134,7 @@ const settingsTree = {
         name: 'Miscellaneous',
         subcategories: [
             { id: 'reasettings', name: 'Rea settings', settingsCategory: 'rea' },
-            { id: 'brightness', name: 'Brightness', settingsCategory: 'misc' },
+            { id: 'brightness', name: 'Brightness', settingsCategory: 'brightness' },
             { id: 'appversion', name: 'App Version', settingsCategory: 'misc' },
             { id: 'unitssettings', name: 'Units Settings', settingsCategory: 'language' },
             { id: 'fontsize', name: 'Font Size', settingsCategory: 'appearance' },
@@ -355,14 +355,20 @@ export function renderSettingsContent(category) {
         case 'misc':
         case 'miscellaneous':
         case 'reasettings':
+        case 'screensaver':
+            return renderScreenSaverSettings();
         case 'brightness':
+            return renderBrightnessSettings();
         case 'appversion':
+            return renderAppVersionSettings();
         case 'unitssettings':
         case 'fontsize':
         case 'resolution':
         case 'smartcharging':
-        case 'screensaver':
         case 'machineadvancedsettings':
+        case 'misc':
+        case 'miscellaneous':
+        case 'reasettings':
             return renderMiscellaneousSettings();
         case 'updates':
         case 'firmwareupdate':
@@ -911,7 +917,87 @@ export function renderUserManualSettings() {
     `;
 }
 
-// Render miscellaneous settings
+// Render Screen Saver settings
+export function renderScreenSaverSettings() {
+    return `
+        <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
+                <p class="leading-[1.2]">Screen Saver</p>
+            </div>
+
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Screen Saver</p>
+                        </div>
+                        <select class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[2617.374px] w-[200px] text-white text-[24px] p-2">
+                            <option>Enabled</option>
+                            <option>Disabled</option>
+                        </select>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Enable or disable screen saver functionality
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Render Brightness settings
+export function renderBrightnessSettings() {
+    return `
+        <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
+                <p class="leading-[1.2]">Brightness</p>
+            </div>
+
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Brightness</p>
+                        </div>
+                        <input type="range" min="0" max="100" value="75" class="w-[200px] h-[30px]" onchange="handleBrightnessChange(this.value)">
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Adjust screen brightness level
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Render App Version settings
+export function renderAppVersionSettings() {
+    return `
+        <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
+            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
+                <p class="leading-[1.2]">App Version</p>
+            </div>
+
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">App Version</p>
+                        </div>
+                        <div class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold flex items-center justify-center">
+                            1.0.0
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Current application version
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Render miscellaneous settings (legacy - for backward compatibility)
 export function renderMiscellaneousSettings() {
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
@@ -2702,15 +2788,33 @@ window.scanAndConnectScale = async function() {
     }
 };
 
+let previousBrightnessState = null;
+
 window.handleBrightnessChange = async function(value) {
     try {
-        if (parseInt(value) === 100) {
+        const brightnessValue = parseInt(value);
+        
+        if (brightnessValue === 100) {
             await restoreDisplay();
         } else {
             await dimDisplay();
         }
+        
+        previousBrightnessState = brightnessValue;
     } catch (error) {
         console.error('Error adjusting brightness:', error);
+    }
+};
+
+window.handleMachineStateChange = async function(newState) {
+    try {
+        if (newState === MachineState.SLEEPING) {
+            await dimDisplay();
+        } else if (newState === MachineState.IDLE) {
+            await restoreDisplay();
+        }
+    } catch (error) {
+        console.error('Error auto-adjusting display based on machine state:', error);
     }
 };
 
