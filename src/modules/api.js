@@ -186,15 +186,27 @@ export function connectWebSocket(onData, onReconnect) {
     reconnectingWebSocket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+            logger.info('Raw WebSocket data:', data);
+            
+            // Handle both cases: data.state could be a string or an object with .state property
+            const stateValue = typeof data.state === 'object' ? data.state.state : data.state;
+            // logger.info('Extracted state value:', stateValue);
+            
             previousMachineState = currentMachineState;
-            currentMachineState = data.state;
+            currentMachineState = stateValue;
+            // logger.info('Current state after assignment:', currentMachineState);
             
             if (previousMachineState !== currentMachineState) {
+                logger.info('State changed! Checking conditions...');
                 if (currentMachineState === MachineState.SLEEPING) {
+                    logger.info('Machine state changed to SLEEPING. Dimming display.');
                     dimDisplay();
                 } else if (currentMachineState === MachineState.IDLE) {
+                    logger.info('Machine state changed to IDLE. Restoring display.');
                     restoreDisplay();
                 }
+            } else {
+                logger.info('State did not change, skipping display adjustment.');
             }
             
             onData(data);
