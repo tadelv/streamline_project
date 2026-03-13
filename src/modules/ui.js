@@ -73,9 +73,9 @@ function updateDoseValue(type, newValue) {
     const currentDoseOut = drinkOutEl ? parseFloat(drinkOutEl.textContent) : 0;
 
     const payload = {
-        doseData: {
-            doseIn: type === 'in' ? parseFloat(newValue) : currentDoseIn,
-            doseOut: type === 'out' ? parseFloat(newValue) : currentDoseOut
+        context: {
+            targetDoseWeight: type === 'in' ? parseFloat(newValue) : currentDoseIn,
+            targetYield: type === 'out' ? parseFloat(newValue) : currentDoseOut
         }
     };
 
@@ -88,9 +88,9 @@ function updateDoseValue(type, newValue) {
 
 export function updateDoseAndDrinkOutValue(newDoseIn, newDrinkOut) {
     const payload = {
-        doseData: {
-            doseIn: newDoseIn,
-            doseOut: newDrinkOut
+        context: {
+            targetDoseWeight: newDoseIn,
+            targetYield: newDrinkOut
         }
     };
 
@@ -140,8 +140,8 @@ function updateTemperatureValue(newValue) {
 
 function updateGrindValue(newValue) {
     const workflowUpdate = {
-        grinderData: {
-            setting: parseFloat(newValue).toFixed(2)
+        context: {
+            grinderSetting: parseFloat(newValue).toFixed(2)
         }
     };
     updateWorkflow(workflowUpdate).then(() => {
@@ -1584,8 +1584,11 @@ export function updateFlushDisplay(duration) {
 
 export function updateGrindDisplay(grinderData) {
     const grindValueEl = document.getElementById('grind-value');
-    if (grindValueEl && grinderData && grinderData.setting) {
-        grindValueEl.textContent = parseFloat(grinderData.setting).toFixed(1);
+    // Support both new context format (grinderData.grinderSetting) and legacy format (grinderData.setting)
+    // Prefer grinderSetting over setting (context takes precedence)
+    const grindValue = grinderData?.grinderSetting ?? grinderData?.setting;
+    if (grindValueEl && grindValue !== undefined) {
+        grindValueEl.textContent = parseFloat(grindValue).toFixed(1);
     }
 }
 

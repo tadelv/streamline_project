@@ -452,8 +452,9 @@ async function loadInitialData() {
         logger.debug("Workflow data received:", workflow);
 
         const profile = workflow?.profile;
-        const doseData = workflow?.doseData;
-        const grinderData = workflow?.grinderData;
+        const context = workflow?.context;
+        const doseData = workflow?.doseData; // Legacy fallback
+        const grinderData = workflow?.grinderData; // Legacy fallback
         const flushtimeout = workflow?.rinseData;
 
         // Get the profile manager to access the favorite assignments
@@ -561,12 +562,19 @@ async function loadInitialData() {
 
         }
 
-        if (grinderData) {
+        // Update grind display - prefer context.grinderSetting over legacy grinderData.setting
+        if (context?.grinderSetting) {
+            ui.updateGrindDisplay({ grinderSetting: context.grinderSetting });
+        } else if (grinderData?.setting) {
             ui.updateGrindDisplay(grinderData);
         }
-        logger.debug("Dose data received:", doseData);
-        ui.updateDoseInDisplay(doseData.doseIn);
-        ui.updateDrinkOut(doseData.doseOut);
+        logger.debug("Dose data received:", context || doseData);
+        
+        const doseInValue = context?.targetDoseWeight ?? doseData?.doseIn;
+        const doseOutValue = context?.targetYield ?? doseData?.doseOut;
+        
+        if (doseInValue !== undefined) ui.updateDoseInDisplay(doseInValue);
+        if (doseOutValue !== undefined) ui.updateDrinkOut(doseOutValue);
         ui.updateDrinkRatio();
 
     } catch (error) {
