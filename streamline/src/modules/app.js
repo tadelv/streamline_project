@@ -7,7 +7,7 @@ import * as history from './history.js';
 import * as shotData from './shotData.js';
 import * as profileManager from './profileManager.js';
 import * as api from './api.js';
-import { loadPage } from './router.js';
+import { loadPage, initRouter, isSubPage } from './router.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
 
@@ -675,44 +675,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         initScaling();
         logger.info('App DOMContentLoaded: UI initialized.');
 
-        logger.info('App DOMContentLoaded: Awaiting History module...');
-        await history.initHistory();
-        logger.info('App DOMContentLoaded: History module finished.');
+        // Check URL and load appropriate page if navigating directly to a route
+        await initRouter();
+        logger.info('App DOMContentLoaded: Router initialized.');
 
-        logger.info('App DOMContentLoaded: Awaiting Profile Manager module...');
-        await profileManager.init();
-        logger.info('App DOMContentLoaded: Profile Manager module finished.');
+        // Only run main page initializations if NOT on a sub-page (settings, profile_selector, etc.)
+        if (!isSubPage()) {
+            logger.info('App DOMContentLoaded: Awaiting History module...');
+            await history.initHistory();
+            logger.info('App DOMContentLoaded: History module finished.');
 
-        logger.info('App DOMContentLoaded: Awaiting initial data...');
-        await loadInitialData();
-        logger.info('App DOMContentLoaded: Initial data finished.');
+            logger.info('App DOMContentLoaded: Awaiting Profile Manager module...');
+            await profileManager.init();
+            logger.info('App DOMContentLoaded: Profile Manager module finished.');
 
-        logger.info('App DOMContentLoaded: Awaiting DE1 connection...');
-        await initializeDe1Connection();
-        logger.info('App DOMContentLoaded: DE1 connection finished.');
+            logger.info('App DOMContentLoaded: Awaiting initial data...');
+            await loadInitialData();
+            logger.info('App DOMContentLoaded: Initial data finished.');
 
-        logger.info('App DOMContentLoaded: Initializing Visualizer...');
-        await initVisualizer();
-        logger.info('App DOMContentLoaded: Visualizer initialized.');
+            logger.info('App DOMContentLoaded: Awaiting DE1 connection...');
+            await initializeDe1Connection();
+            logger.info('App DOMContentLoaded: DE1 connection finished.');
 
-        logger.info('App DOMContentLoaded: Setting up WebSockets and timers...');
-        connectWebSocket(handleData, () => {
-            logger.info('WebSocket reconnected. Resetting DE1 connection status.');
-            isDe1Connected = false; // Reset DE1 connection status so handleData can detect reconnection
-        });
-        connectScaleWebSocket(
-            handleScaleData,
-            onScaleReconnect,
-            onScaleDisconnect
-        );
-        initWaterTankSocket();
-        connectTimeToReadyWebSocket(handleTimeToReadyData);
-        ensureGatewayModeTracking();
-        resetDataTimeout(); // Start the timeout timer initially.
-        connectShotSettingsWebSocket(handleShotSettingsData);
-        getDe1AdvancedSettings();
-        getDe1Settings();
-        logger.info('App DOMContentLoaded: WebSockets and timers set up.');
+            logger.info('App DOMContentLoaded: Initializing Visualizer...');
+            await initVisualizer();
+            logger.info('App DOMContentLoaded: Visualizer initialized.');
+
+            logger.info('App DOMContentLoaded: Setting up WebSockets and timers...');
+            connectWebSocket(handleData, () => {
+                logger.info('WebSocket reconnected. Resetting DE1 connection status.');
+                isDe1Connected = false; // Reset DE1 connection status so handleData can detect reconnection
+            });
+            connectScaleWebSocket(
+                handleScaleData,
+                onScaleReconnect,
+                onScaleDisconnect
+            );
+            initWaterTankSocket();
+            connectTimeToReadyWebSocket(handleTimeToReadyData);
+            ensureGatewayModeTracking();
+            resetDataTimeout(); // Start the timeout timer initially.
+            connectShotSettingsWebSocket(handleShotSettingsData);
+            getDe1AdvancedSettings();
+            getDe1Settings();
+            logger.info('App DOMContentLoaded: WebSockets and timers set up.');
+        } // End of if (!isSubPage())
 
         logger.info('App initialization finished successfully.');
 
@@ -791,14 +798,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        document.getElementById('profile-name').onclick = () => {
-            loadPage('src/profiles/profile_selector.html');
-        };
+        const profileNameEl = document.getElementById('profile-name');
+        if (profileNameEl) {
+            profileNameEl.onclick = () => {
+                loadPage('src/profiles/profile_selector.html');
+            };
+        }
 
         // Add event listener for the settings button
-        document.getElementById('settings-btn')?.addEventListener('click', () => {
-            loadPage('src/settings/settings.html');
-        });
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => {
+                loadPage('src/settings/settings.html');
+            });
+        }
     } catch (error) {
         logger.error('CRITICAL: Unhandled error during application initialization:', error);
         // Optionally, display a user-friendly error message on the page

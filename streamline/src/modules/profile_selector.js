@@ -409,7 +409,7 @@ async function handleConfirm() {
         if (verified) {
             logger.info('Profile sent and verified. Navigating to main page.');
             showToast(`Profile Set`, 3000, 'success');
-            loadPage('../../index.html');
+            loadPage('index.html');
         } else {
             alert('Failed to set the profile on the machine. Please try again.');
         }
@@ -420,7 +420,7 @@ async function handleConfirm() {
 }
 
 function handleCancel() {
-    loadPage('../../index.html');
+    loadPage('index.html');
 }
 
 

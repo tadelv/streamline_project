@@ -1,5 +1,42 @@
 const pageCache = new Map();
 
+function getCleanUrl(pageUrl) {
+    const filename = pageUrl.split('/').pop().replace('.html', '');
+    return `/streamline/?page=${filename}`;
+}
+
+function getPageUrlFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    
+    if (!page || page === 'index') {
+        return null; // Main index page
+    }
+    
+    const pageMap = {
+        'settings': 'src/settings/settings.html',
+        'profile_selector': 'src/profiles/profile_selector.html',
+    };
+    return pageMap[page] || null;
+}
+
+export function isSubPage() {
+    return getPageUrlFromQuery() !== null;
+}
+
+export async function initRouter() {
+    const pageUrl = getPageUrlFromQuery();
+    
+    if (pageUrl) {
+        await loadPage(pageUrl);
+    }
+}
+
+window.addEventListener('popstate', async (event) => {
+    if (event.state && event.state.pageUrl) {
+        await loadPage(event.state.pageUrl);
+    }
+});
 async function fetchPage(url) {
     if (pageCache.has(url)) {
         return pageCache.get(url);
@@ -138,9 +175,13 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                     window.initScaling();
                 } else {
                     // Import and initialize scaling if not already available
-                    const { initScaling } = await import('/src/modules/scaling.js');
+                    const { initScaling } = await import('./scaling.js');
                     initScaling();
                 }
+
+                const cleanUrl = getCleanUrl(pageUrl);
+                const pageTitle = cleanUrl.split('/').pop() || 'Streamline';
+                window.history.pushState({ pageUrl }, pageTitle, cleanUrl);
             } catch (e) {
                 console.warn('Scaling module not available or failed to initialize:', e);
             }
@@ -169,7 +210,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                     try {
                         // Import the module and call its initialization function
                         // Using absolute path that works in browser environment
-                        const { initializeProfileSelector } = await import('/src/modules/profile_selector.js');
+                        const { initializeProfileSelector } = await import('./profile_selector.js');
                         if (initializeProfileSelector) {
                             await initializeProfileSelector();
                             console.log('Router: Profile selector initialized successfully.');
@@ -181,7 +222,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                     console.log('Router: Initializing settings page...');
                     try {
                         // Import the settings module and call its initialization function
-                        const { initializeSettings } = await import('/src/settings/settings.js?t=' + Date.now());
+                        const { initializeSettings } = await import('../settings/settings.js?t=' + Date.now());
                         if (initializeSettings) {
                             await initializeSettings();
                             console.log('Router: Settings page initialized successfully.');
@@ -195,7 +236,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
 
                     // Initialize scaling for the settings page
                     try {
-                        const scalingModule = await import('/src/modules/scaling.js');
+                        const scalingModule = await import('./scaling.js');
                         if (scalingModule.initScaling) {
                             scalingModule.initScaling();
                         }
@@ -208,14 +249,14 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                     // For the main index page, we need to reinitialize UI components
                     try {
                         // Reinitialize theme toggle, translations, and other UI components
-                        const i18nModule = await import('/src/modules/i18n.js');
-                        const uiModule = await import('/src/modules/ui.js');
-                        const scalingModule = await import('/src/modules/scaling.js');
-                        const historyModule = await import('/src/modules/history.js');
-                        const profileManagerModule = await import('/src/modules/profileManager.js');
-                        const shotDataModule = await import('/src/modules/shotData.js');
-                        const chartModule = await import('/src/modules/chart.js'); // Import chart module
-                        const { initWaterTankSocket } = await import('/src/modules/waterTank.js');
+                        const i18nModule = await import('./i18n.js');
+                        const uiModule = await import('./ui.js');
+                        const scalingModule = await import('./scaling.js');
+                        const historyModule = await import('./history.js');
+                        const profileManagerModule = await import('./profileManager.js');
+                        const shotDataModule = await import('./shotData.js');
+                        const chartModule = await import('./chart.js'); // Import chart module
+                        const { initWaterTankSocket } = await import('./waterTank.js');
                         const { showScaleInfo } = uiModule;
 
                         await i18nModule.initI18n(); // Reinitialize translations
@@ -238,7 +279,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
 
                         // Import and call loadInitialData directly to ensure profile information is updated
                         // But make sure to wait for the profile manager to fully update the UI first
-                        const appModule = await import('/src/modules/app.js');
+                        const appModule = await import('./app.js');
                         console.log('Router: appModule imported');
                         if (appModule.loadInitialData) {
                             // Add a sufficient delay to ensure DOM is fully updated and all UI components are ready
@@ -281,7 +322,7 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
 
                         // Re-establish WebSocket connections that are needed for real-time data
                         try {
-                            const apiModule = await import('/src/modules/api.js');
+                            const apiModule = await import('./api.js');
                             const workflow = await apiModule.getWorkflow();
                             const doseData = workflow?.doseData;
                             const grinderData = workflow?.grinderData;

@@ -1,9 +1,9 @@
-import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState } from '/src/modules/api.js';
-import * as ui from '/src/modules/ui.js';
-import { initScaling } from '/src/modules/scaling.js';
-import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '/src/modules/i18n.js';
-import { loadPage } from '/src/modules/router.js'; // Singular and correctly formatted import
-import { logger } from '/src/modules/logger.js';
+import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState } from '../modules/api.js';
+import * as ui from '../modules/ui.js';
+import { initScaling } from '../modules/scaling.js';
+import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
+import { loadPage } from '../modules/router.js'; // Singular and correctly formatted import
+import { logger } from '../modules/logger.js';
 
 // Enhanced cache for settings data with loading states
 let settingsCache = {
@@ -1238,7 +1238,7 @@ export function renderHotWaterSettings() {
                              style="width: 130px;">
                             <input type="text" inputmode="numeric" pattern="[0-9]*" id="hotWaterFlowInput" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
                                    value="${settingsCache.de1.hotWaterFlow !== undefined ? settingsCache.de1.hotWaterFlow : 2.5}"
-                                   step="0.1" min="0" max="10"
+                                   step="0.1" min="0" max="8"
                                    onchange="window.updateDe1Setting('hotWaterFlow', parseFloat(this.value))">
                             <span class="ml-2 text-nowrap">ml/s</span>
                         </div>
@@ -1250,7 +1250,7 @@ export function renderHotWaterSettings() {
                         </button>
                     </div>
                     <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full text-center">
-                        Flow rate for hot water
+                        Flow rate for hot water : 0.0 - 8.0 ml/s
                     </p>
                 </div>
             </div>
@@ -1848,7 +1848,7 @@ function setupVisualizerEventListeners() {
             
             // Save the AutoUpload state to plugin
             try {
-                const { setPluginSettings } = await import('/src/modules/api.js');
+                const { setPluginSettings } = await import('../modules/api.js');
                 const pluginId = 'visualizer.reaplugin';
                 
                 await setPluginSettings(pluginId, { AutoUpload: isEnabled });
@@ -1878,7 +1878,7 @@ function setupVisualizerEventListeners() {
             
             // Save the AutoUpload state to plugin
             try {
-                const { setPluginSettings } = await import('/src/modules/api.js');
+                const { setPluginSettings } = await import('../modules/api.js');
                 const pluginId = 'visualizer.reaplugin';
                 
                 await setPluginSettings(pluginId, { AutoUpload: isAutoUpload });
@@ -1901,7 +1901,7 @@ function setupVisualizerEventListeners() {
 
         try {
             // Import verifyVisualizerCredentials from api.js
-            const { verifyVisualizerCredentials } = await import('/src/modules/api.js');
+            const { verifyVisualizerCredentials } = await import('../modules/api.js');
 
             const isValid = await verifyVisualizerCredentials(username, password);
 
@@ -1920,7 +1920,7 @@ function setupVisualizerEventListeners() {
             localStorage.setItem('visualizerAutoUpload', autoUpload.toString());
 
             // 2. Prepare and save plugin settings - use correct field names expected by visualizer plugin manifest
-            const { setPluginSettings } = await import('/src/modules/api.js');
+            const { setPluginSettings } = await import('../modules/api.js');
             const pluginId = 'visualizer.reaplugin';
 
             const settingsPayload = {
@@ -1947,7 +1947,7 @@ function setupVisualizerEventListeners() {
 // Function to load existing Visualizer settings
 async function loadVisualizerSettings() {
     try {
-        const { getPluginSettings } = await import('/src/modules/api.js');
+        const { getPluginSettings } = await import('../modules/api.js');
         const pluginId = 'visualizer.reaplugin';
 
         const savedSettings = await getPluginSettings(pluginId);
@@ -2177,7 +2177,7 @@ async function _preloadSettingsInternal() {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
 
-                loadPage('/index.html');
+                loadPage('index.html');
                 return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
             }
         }
@@ -2195,7 +2195,7 @@ async function _preloadSettingsInternal() {
                 setTimeout(() => {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
-                loadPage('/index.html');
+                loadPage('index.html');
 
                 return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
             }
@@ -2214,7 +2214,7 @@ async function _preloadSettingsInternal() {
                 setTimeout(() => {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
-                loadPage('/index.html');
+                loadPage('index.html');
                 return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
             }
         }
@@ -2274,20 +2274,26 @@ export async function initializeSettings() {
     initDeviceWebSocket();
 
     // Set up event listeners
-    document.getElementById('cancel-settings-btn').addEventListener('click', () => {
-        // Navigate back to main page using router
-        loadPage('/index.html');
-    });
+    const cancelBtn = document.getElementById('cancel-settings-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            // Navigate back to main page using router
+            loadPage('index.html');
+        });
+    }
 
-    document.getElementById('save-settings-btn').addEventListener('click', async () => {
-        ui.showToast('Saving all settings...', 3000, 'info');
-        const visualizerAutoUpload = document.getElementById('visualizer-auto-upload');
-        if (visualizerAutoUpload) {
-            localStorage.setItem('visualizerAutoUpload', visualizerAutoUpload.checked.toString());
-        }
-        // Implementation would save all modified settings
-        loadPage('/index.html');
-    });
+    const saveBtn = document.getElementById('save-settings-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            ui.showToast('Saving all settings...', 3000, 'info');
+            const visualizerAutoUpload = document.getElementById('visualizer-auto-upload');
+            if (visualizerAutoUpload) {
+                localStorage.setItem('visualizerAutoUpload', visualizerAutoUpload.checked.toString());
+            }
+            // Implementation would save all modified settings
+            loadPage('index.html');
+        });
+    }
 
     initResizableSubNav();
 

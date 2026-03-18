@@ -55,7 +55,7 @@ function parseCSV(csvText) {
  */
 async function loadTranslations() {
     try {
-        const response = await fetch('/src/ui/de1 gui translation - Sheet1.csv');
+        const response = await fetch('src/ui/de1 gui translation - Sheet1.csv');
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);

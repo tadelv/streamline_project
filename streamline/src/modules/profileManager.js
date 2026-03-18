@@ -42,7 +42,7 @@ export async function renameProfile(profileId, newTitle) {
 }
 
 const FAV_COUNT = 5;
-const PROFILES_PATH = '/src/profiles/';
+const PROFILES_PATH = 'profiles/';
 const LONG_PRESS_DURATION = 800; // ms
 
 const SETTINGS_NAMESPACE = 'streamline-app';
@@ -408,7 +408,7 @@ async function handleLongPress(index) {
         setTimeout(() => showToast(`Select a profile and press confirm to assign.`, 2400, 'info'), 500);
         // Store the button index for later use when confirming a profile
         sessionStorage.setItem('pendingAssignmentIndex', index);
-        loadPage('src/profiles/profile_selector.html');
+loadPage('src/profiles/profile_selector.html');
     }
 }
 

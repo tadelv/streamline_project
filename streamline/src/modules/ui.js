@@ -602,7 +602,7 @@ export function initScreensaver() {
     screensaverElement.style.left = '0';
     screensaverElement.style.width = '100vw';
     screensaverElement.style.height = '100vh';
-    screensaverElement.style.backgroundImage = 'url("/src/ui/saver-1.jpg")';
+    screensaverElement.style.backgroundImage = 'url("ui/saver-1.jpg")';
     screensaverElement.style.backgroundSize = 'cover';
     screensaverElement.style.backgroundPosition = 'center';
     screensaverElement.style.zIndex = '10000';
