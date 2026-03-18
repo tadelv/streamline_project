@@ -2,7 +2,7 @@ const pageCache = new Map();
 
 function getCleanUrl(pageUrl) {
     const filename = pageUrl.split('/').pop().replace('.html', '');
-    return `/streamline/?page=${filename}`;
+    return `?page=${filename}`;
 }
 
 function getPageUrlFromQuery() {

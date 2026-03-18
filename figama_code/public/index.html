@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dose Input</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="dose-container">
+            <!-- Title -->
+            <div class="title">
+                <p>DOSE</p>
+            </div>
+
+            <!-- Horizontal Divider Line -->
+            <div class="horizontal-divider">
+                <svg viewBox="0 0 1770 1" preserveAspectRatio="none">
+                    <line stroke="#121212" x2="1770" y1="0.5" y2="0.5" />
+                </svg>
+            </div>
+
+            <!-- Vertical Divider Line -->
+            <div class="vertical-divider-container">
+                <div class="vertical-divider-rotated">
+                    <svg viewBox="0 0 975 1" preserveAspectRatio="none">
+                        <line stroke="#121212" x2="975" y1="0.5" y2="0.5" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="input-label">
+                    <p>Input value between 1–120</p>
+                </div>
+                <div class="input-box">
+                    <div class="input-border"></div>
+                    <div class="input-cursor">
+                        <svg viewBox="0 0 169.232 3" preserveAspectRatio="none">
+                            <line stroke="#1867D6" stroke-width="3" x2="169.232" y1="1.5" y2="1.5" />
+                        </svg>
+                    </div>
+                    <div class="input-value">
+                        <p id="displayValue">20g</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous Values -->
+            <div class="previous-values-section">
+                <div class="previous-values-title">
+                    <p>Previous Values</p>
+                </div>
+                <div class="previous-values-grid">
+                    <!-- Row 1 -->
+                    <div class="previous-values-row">
+                        <button class="previous-value-btn" data-value="18.4">
+                            <p>18.4</p>
+                        </button>
+                        <button class="previous-value-btn" data-value="21">
+                            <p>21</p>
+                        </button>
+                        <button class="previous-value-btn" data-value="25.5">
+                            <p>25.5</p>
+                        </button>
+                        <button class="previous-value-btn" data-value="30">
+                            <p>30</p>
+                        </button>
+                    </div>
+                    <!-- Row 2 -->
+                    <div class="previous-values-row">
+                        <button class="previous-value-btn" data-value="14">
+                            <p>14</p>
+                        </button>
+                        <button class="previous-value-btn" data-value="19.9">
+                            <p>19.9</p>
+                        </button>
+                        <button class="previous-value-btn" data-value="29">
+                            <p>29</p>
+                        </button>
+                        <button class="previous-value-btn" data-value="80">
+                            <p>80</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NumPad -->
+            <div class="numpad">
+                <!-- Row 1: 1, 2, 3 -->
+                <div class="numpad-row">
+                    <button class="numpad-btn" data-number="1"><p>1</p></button>
+                    <button class="numpad-btn" data-number="2"><p>2</p></button>
+                    <button class="numpad-btn" data-number="3"><p>3</p></button>
+                </div>
+                <!-- Row 2: 4, 5, 6 -->
+                <div class="numpad-row">
+                    <button class="numpad-btn" data-number="4"><p>4</p></button>
+                    <button class="numpad-btn" data-number="5"><p>5</p></button>
+                    <button class="numpad-btn" data-number="6"><p>6</p></button>
+                </div>
+                <!-- Row 3: 7, 8, 9 -->
+                <div class="numpad-row">
+                    <button class="numpad-btn" data-number="7"><p>7</p></button>
+                    <button class="numpad-btn" data-number="8"><p>8</p></button>
+                    <button class="numpad-btn" data-number="9"><p>9</p></button>
+                </div>
+                <!-- Row 4: ., 0, Delete -->
+                <div class="numpad-row">
+                    <button class="numpad-btn numpad-decimal" data-action="decimal"><p class="decimal-dot">.</p></button>
+                    <button class="numpad-btn" data-number="0"><p>0</p></button>
+                    <button class="numpad-btn numpad-delete" data-action="delete">
+                        <svg viewBox="0 0 54.8076 43.5" class="delete-icon">
+                            <path d="M49.9746 0C52.644 0 54.8076 2.16461 54.8076 4.83398V38.667C54.8074 41.3362 52.6439 43.5 49.9746 43.5H15.6025C14.3529 43.4999 13.1907 42.8565 12.5283 41.7969L0.799805 23.0312L0 21.75L0.799805 20.4697L12.5283 1.7041C13.1907 0.644322 14.3528 0.000123843 15.6025 0H49.9746ZM5.69922 21.75L16.2715 38.667H49.9746V4.83398H16.2715L5.69922 21.75ZM37.3906 12.791C38.3343 11.8474 39.8648 11.8475 40.8086 12.791C41.752 13.7348 41.7522 15.2653 40.8086 16.209L34.6631 22.3535L40.8086 28.499C41.752 29.4428 41.7522 30.9733 40.8086 31.917C39.8649 32.8607 38.3344 32.8604 37.3906 31.917L31.2451 25.7715L25.1006 31.917C24.1569 32.8607 22.6264 32.8604 21.6826 31.917C20.7391 30.9732 20.7389 29.4427 21.6826 28.499L27.8271 22.3535L21.6826 16.209C20.739 15.2652 20.7389 13.7347 21.6826 12.791C22.6264 11.8473 24.1568 11.8474 25.1006 12.791L31.2451 18.9355L37.3906 12.791Z" fill="#121212" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="cancel-btn">
+                    <p>CANCEL</p>
+                </button>
+                <button class="confirm-btn">
+                    <p>CONFIRM</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

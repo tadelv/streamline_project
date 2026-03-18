@@ -10,6 +10,7 @@ import * as api from './api.js';
 import { loadPage, initRouter, isSubPage } from './router.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
+import { initNumpadModal, attachToNumericInputs, openModal, isMobile } from './numpad-modal.js';
 
 window.app = { api, ui, chart };
 
@@ -20,6 +21,55 @@ window.loadInitialData = loadInitialData;
 window.resetDataTimeout = resetDataTimeout;
 window.onScaleDisconnect = onScaleDisconnect;
 window.onScaleReconnect = onScaleReconnect;
+
+function initMobileValueInputs() {
+    if (!isMobile()) return;
+    
+    const valueElements = [
+        { id: 'dose-in-value', type: 'dose-in', label: 'Dose In' },
+        { id: 'drink-out-value', type: 'drink-out', label: 'Drink Out' },
+        { id: 'temp-value', type: 'temperature', label: 'Temperature' },
+        { id: 'grind-value', type: 'grind', label: 'Grind' }
+    ];
+    
+    valueElements.forEach(({ id, type, label }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            const currentValue = el.textContent.replace(/[^0-9.]/g, '') || '0';
+            
+            const mockInput = {
+                value: currentValue,
+                setAttribute: () => {},
+                dispatchEvent: (event) => {
+                    if (event.type === 'change' || event.type === 'input') {
+                        const newVal = mockInput.value;
+                        el.textContent = type === 'temperature' ? `${newVal}°c` : 
+                                        type === 'grind' ? newVal : `${newVal}g`;
+                        
+                        if (type === 'dose-in') {
+                            window.app.ui.updateDoseValue('in', newVal);
+                        } else if (type === 'drink-out') {
+                            window.app.ui.updateDoseValue('out', newVal);
+                        }
+                    }
+                }
+            };
+            
+            openModal(mockInput, {
+                previousValues: [],
+                onConfirm: (val) => {}
+            });
+        });
+    });
+    
+    logger.info('Mobile value inputs initialized');
+}
+
 // Helper function to format state strings
 function formatStateString(text) {
     if (!text) return '';
@@ -673,6 +723,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         ui.initUI({ onWeightClick: handleWeightClick });
         ui.initScreensaver(); // Initialize screensaver functionality
         initScaling();
+        initNumpadModal();
+        initMobileValueInputs();
         logger.info('App DOMContentLoaded: UI initialized.');
 
         // Check URL and load appropriate page if navigating directly to a route

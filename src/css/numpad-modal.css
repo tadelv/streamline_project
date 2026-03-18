@@ -1,0 +1,278 @@
+.numpad-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.numpad-modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.numpad-modal-container {
+    width: 100%;
+    max-width: 100%;
+    background-color: white;
+    border-radius: 24px 24px 0 0;
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.numpad-modal-overlay.active .numpad-modal-container {
+    transform: translateY(0);
+}
+
+.numpad-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 0 8px;
+}
+
+.numpad-modal-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: #121212;
+}
+
+.numpad-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #121212;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+}
+
+.numpad-modal-input-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.numpad-modal-input-label {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #666;
+}
+
+.numpad-modal-input-box {
+    position: relative;
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 2.5 / 1;
+}
+
+.numpad-modal-input-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 2px solid #1867d6;
+    border-radius: 8px;
+}
+
+.numpad-modal-input-cursor {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 60%;
+    background-color: #1867d6;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+}
+
+.numpad-modal-input-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 32px;
+    color: #121212;
+}
+
+.numpad-modal-previous-values {
+    margin-bottom: 16px;
+}
+
+.numpad-modal-previous-title {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.numpad-modal-previous-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.numpad-modal-previous-btn {
+    padding: 10px 20px;
+    border-radius: 20px;
+    background: transparent;
+    border: 1px solid #121212;
+    cursor: pointer;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    color: #121212;
+    transition: background-color 0.2s;
+}
+
+.numpad-modal-previous-btn:active {
+    background-color: #f3f4f6;
+}
+
+.numpad-modal-numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.numpad-modal-numpad-btn {
+    background-color: #e5e5e5;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: #121212;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.numpad-modal-numpad-btn:active {
+    background-color: #d0d0d0;
+    transform: scale(0.96);
+}
+
+.numpad-modal-numpad-btn.numpad-decimal {
+    font-weight: 700;
+}
+
+.numpad-modal-numpad-btn.numpad-delete {
+    background-color: #ff6b6b;
+}
+
+.numpad-modal-numpad-btn.numpad-delete:active {
+    background-color: #e55a5a;
+}
+
+.numpad-modal-numpad-btn .delete-icon-small {
+    width: 24px;
+    height: 20px;
+}
+
+.numpad-modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.numpad-modal-cancel {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1px solid #121212;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    color: #121212;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.numpad-modal-cancel:active {
+    background-color: #f3f4f6;
+}
+
+.numpad-modal-confirm {
+    flex: 1.5;
+    padding: 14px;
+    border-radius: 12px;
+    background-color: #385a92;
+    border: none;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.numpad-modal-confirm:active {
+    background-color: #2d4a72;
+}
+
+@media (max-width: 400px) {
+    .numpad-modal-numpad-btn {
+        padding: 14px;
+        font-size: 22px;
+        min-height: 52px;
+    }
+
+    .numpad-modal-input-value {
+        font-size: 28px;
+    }
+}
+
+@media (min-width: 768px) {
+    .numpad-modal-overlay {
+        align-items: center;
+    }
+
+    .numpad-modal-container {
+        max-width: 400px;
+        border-radius: 16px;
+        padding: 24px;
+    }
+
+    .numpad-modal-numpad-btn {
+        padding: 20px;
+        font-size: 28px;
+        min-height: 64px;
+    }
+
+    .numpad-modal-input-value {
+        font-size: 36px;
+    }
+}

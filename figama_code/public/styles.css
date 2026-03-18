@@ -1,0 +1,368 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    overflow: hidden;
+}
+
+.app-container {
+    position: relative;
+    width: 1920px;
+    height: 1200px;
+}
+
+.dose-container {
+    position: relative;
+    width: 1920px;
+    height: 1200px;
+    background-color: white;
+}
+
+/* Title */
+.title {
+    position: absolute;
+    left: 75px;
+    top: 108px;
+    transform: translateY(-50%);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 58.5px;
+    color: #121212;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.title p {
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Horizontal Divider */
+.horizontal-divider {
+    position: absolute;
+    left: 75px;
+    top: 225px;
+    width: 1770px;
+    height: 0;
+}
+
+.horizontal-divider svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: -1px;
+}
+
+/* Vertical Divider */
+.vertical-divider-container {
+    position: absolute;
+    left: 50%;
+    top: 225px;
+    width: 0;
+    height: 975px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vertical-divider-rotated {
+    width: 975px;
+    height: 0;
+    transform: rotate(90deg);
+    transform-origin: center;
+}
+
+.vertical-divider-rotated svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: -1px;
+}
+
+/* Input Section */
+.input-section {
+    position: absolute;
+    left: calc(8.33% + 95.75px);
+    top: 312.75px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: flex-end;
+}
+
+.input-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 30px;
+    color: #121212;
+    text-align: center;
+    width: 456.75px;
+}
+
+.input-label p {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.input-box {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: max-content;
+    grid-template-rows: max-content;
+    place-items: start;
+}
+
+.input-border {
+    grid-column: 1;
+    grid-row: 1;
+    width: 456px;
+    height: 182.25px;
+    border: 3px solid #1867d6;
+    margin: 0;
+}
+
+.input-cursor {
+    grid-column: 1;
+    grid-row: 1;
+    width: 0;
+    height: 126.924px;
+    margin-left: 321.75px;
+    margin-top: 27.6675px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.input-cursor svg {
+    width: 126.924px;
+    height: 3px;
+    transform: rotate(90deg);
+    position: absolute;
+    top: -3px;
+}
+
+.input-value {
+    grid-column: 1;
+    grid-row: 1;
+    width: 396px;
+    height: 124.5px;
+    margin-left: 32.25px;
+    margin-top: 27.75px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 73.5px;
+    color: #121212;
+    text-align: center;
+}
+
+.input-value p {
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Previous Values */
+.previous-values-section {
+    position: absolute;
+    left: 101.25px;
+    top: 726px;
+    display: flex;
+    flex-direction: column;
+    gap: 45px;
+}
+
+.previous-values-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 30px;
+    color: #121212;
+    text-align: center;
+    width: 750px;
+}
+
+.previous-values-title p {
+    margin: 0;
+    line-height: 1.2;
+}
+
+.previous-values-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 52.5px;
+}
+
+.previous-values-row {
+    display: flex;
+    gap: 52.5px;
+}
+
+.previous-value-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 22.5px 37.5px;
+    border-radius: 37.5px;
+    background: transparent;
+    border: 1px solid #121212;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.previous-value-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.previous-value-btn p {
+    width: 75px;
+    height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 30px;
+    color: #121212;
+    text-align: center;
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* NumPad */
+.numpad {
+    position: absolute;
+    left: calc(50% + 105px);
+    top: 334.5px;
+    display: flex;
+    flex-direction: column;
+    gap: 52.5px;
+}
+
+.numpad-row {
+    display: flex;
+    gap: 37.5px;
+}
+
+.numpad-btn {
+    background-color: #c9c9c9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 37.5px 75px;
+    border-radius: 150px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.numpad-btn:hover {
+    background-color: #b9b9b9;
+}
+
+.numpad-btn:active {
+    transform: scale(0.95);
+}
+
+.numpad-btn p {
+    width: 75px;
+    height: 75px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 73.5px;
+    color: #121212;
+    text-align: center;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.numpad-decimal p.decimal-dot {
+    font-weight: 700;
+}
+
+.numpad-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-icon {
+    width: 41.107px;
+    height: 32.625px;
+}
+
+/* Action Buttons */
+.action-buttons {
+    position: absolute;
+    left: calc(58.33% + 54.5px);
+    top: 48.75px;
+    display: flex;
+    gap: 37.5px;
+}
+
+.cancel-btn {
+    width: 264px;
+    padding: 41.25px 0;
+    border-radius: 67.5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cancel-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.cancel-btn p {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 30px;
+    color: #121212;
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.confirm-btn {
+    width: 369px;
+    padding: 41.25px 0;
+    border-radius: 67.5px;
+    background-color: #385a92;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.confirm-btn:hover {
+    background-color: #2d4a72;
+}
+
+.confirm-btn p {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    color: white;
+    letter-spacing: 0.9px;
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
