@@ -1932,3 +1932,6 @@ export function initResizablePanels(separatorId) {
     separator.addEventListener('mousedown', startDrag);
     separator.addEventListener('touchstart', startDrag);
 }
+
+// Export functions needed by app.js
+export { updateDoseValue };

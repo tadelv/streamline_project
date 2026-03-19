@@ -80,6 +80,18 @@
     width: 100%;
     max-width: 200px;
     aspect-ratio: 2.5 / 1;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.numpad-modal-input-box * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    pointer-events: none;
 }
 
 .numpad-modal-input-border {
@@ -94,9 +106,9 @@
 
 .numpad-modal-input-cursor {
     position: absolute;
-    right: 12px;
+    left: 50%;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
     width: 2px;
     height: 60%;
     background-color: #1867d6;
@@ -178,6 +190,7 @@
     align-items: center;
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .numpad-modal-numpad-btn:active {

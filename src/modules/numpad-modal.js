@@ -20,8 +20,11 @@ function shouldUseNumpad() {
                           navigator.maxTouchPoints > 0 ||
                           window.matchMedia('(pointer: coarse)').matches;
     
-    // Desktop: large screen (≥1200px × ≥900px) AND no touch
-    const isDesktop = width >= 1200 && height >= 900 && !isTouchDevice;
+    // Check for Firefox responsive design mode (width < 1024 or narrow height)
+    const isNarrowViewport = width < 1024 || height < 900;
+    
+    // Desktop: large screen (≥1200px × ≥900px) AND no touch AND normal viewport
+    const isDesktop = width >= 1200 && height >= 900 && !isTouchDevice && !isNarrowViewport;
     
     // Return true unless it's definitely a desktop
     return !isDesktop;
@@ -123,19 +126,37 @@ function createModalHTML() {
 }
 
 function updateDisplay() {
+    console.log('[Numpad] updateDisplay called, currentValue:', currentValue, 'currentFieldType:', currentFieldType);
     const displayElement = document.getElementById('numpad-display-value');
+    const cursorElement = document.querySelector('.numpad-modal-input-cursor');
     if (displayElement) {
         const config = fieldConfig[currentFieldType] || fieldConfig['dose-in'];
         displayElement.textContent = currentValue + config.unit;
+        
+        // Position cursor after the text
+        if (cursorElement && displayElement) {
+            requestAnimationFrame(() => {
+                const textWidth = displayElement.getBoundingClientRect().width;
+                const containerWidth = displayElement.parentElement.getBoundingClientRect().width;
+                const containerCenter = containerWidth / 2;
+                const cursorLeft = containerCenter + textWidth / 2 + 4;
+                cursorElement.style.left = cursorLeft + 'px';
+                cursorElement.style.right = 'auto';
+            });
+        }
+    } else {
+        console.log('[Numpad] ERROR: displayElement not found!');
     }
 }
 
 function handleNumberClick(num) {
+    console.log('[Numpad] handleNumberClick called with:', num, 'currentValue before:', currentValue);
     if (currentValue === '0' || currentValue === '') {
         currentValue = num;
     } else if (currentValue.length < 5) {
         currentValue = currentValue + num;
     }
+    console.log('[Numpad] handleNumberClick currentValue after:', currentValue);
     updateDisplay();
 }
 
@@ -197,7 +218,9 @@ function getFieldDisplayValue(value, fieldType) {
 }
 
 function openModal(inputElement, options = {}) {
+    console.log('[Numpad] openModal called', { fieldType: options.fieldType, inputElement });
     if (!numpadModalInitialized) {
+        console.log('[Numpad] Initializing numpad modal...');
         initializeNumpadModal();
     }
     
@@ -209,6 +232,8 @@ function openModal(inputElement, options = {}) {
     // Remove any existing units for editing
     currentValue = inputValue.replace(/[g°c]/g, '').trim() || config.defaultValue;
     originalValue = currentValue;
+    
+    console.log('[Numpad] currentValue set to:', currentValue);
     
     // Update modal title and label
     const titleEl = document.querySelector('.numpad-modal-title');
@@ -227,6 +252,35 @@ function openModal(inputElement, options = {}) {
     const overlay = document.getElementById('numpad-modal-overlay');
     overlay.classList.add('active');
     
+    // Prevent OS keyboard by preventing focus on any element
+    // Keep focus prevention but make touchstart selective to not block button clicks
+    const container = overlay.querySelector('.numpad-modal-container');
+    const preventFocus = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    };
+    container.addEventListener('focus', preventFocus, true);
+    container.addEventListener('focusin', preventFocus, true);
+    
+    // Only prevent touchstart on input-like elements, not buttons
+    const preventTouchKeyboard = (e) => {
+        const tagName = e.target.tagName;
+        // Only prevent default on input/textarea to block OS keyboard
+        // Allow clicks on buttons (BUTTON tag or elements with onclick/role=button)
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    };
+    container.addEventListener('touchstart', preventTouchKeyboard, { passive: false });
+    // Note: mousedown is intentionally NOT prevented to allow button clicks
+    
+    // Store reference to remove listeners later
+    container._numpadPreventFocus = preventFocus;
+    container._numpadPreventTouch = preventTouchKeyboard;
+    
     renderPreviousValues();
     updateDisplay();
     
@@ -237,6 +291,22 @@ function closeModal() {
     const overlay = document.getElementById('numpad-modal-overlay');
     overlay.classList.remove('active');
     document.body.style.overflow = '';
+    
+    // Clean up keyboard prevention listeners
+    const container = overlay.querySelector('.numpad-modal-container');
+    if (container) {
+        if (container._numpadPreventFocus) {
+            const preventFocus = container._numpadPreventFocus;
+            container.removeEventListener('focus', preventFocus, true);
+            container.removeEventListener('focusin', preventFocus, true);
+            delete container._numpadPreventFocus;
+        }
+        if (container._numpadPreventTouch) {
+            const preventTouchKeyboard = container._numpadPreventTouch;
+            container.removeEventListener('touchstart', preventTouchKeyboard, { passive: false });
+            delete container._numpadPreventTouch;
+        }
+    }
 }
 
 function handleCancel() {
@@ -246,11 +316,15 @@ function handleCancel() {
 
 function handleConfirm() {
     const finalValue = currentValue === '0' ? '' : currentValue;
+    console.log('[Numpad] handleConfirm called, finalValue:', finalValue, 'currentInputElement:', currentInputElement);
     
     if (currentInputElement) {
+        console.log('[Numpad] Setting input element value to:', finalValue);
         currentInputElement.value = finalValue;
         currentInputElement.dispatchEvent(new Event('change', { bubbles: true }));
         currentInputElement.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+        console.log('[Numpad] ERROR: currentInputElement is null!');
     }
     
     if (onConfirmCallback) {
@@ -263,14 +337,20 @@ function handleConfirm() {
 function initializeNumpadModal() {
     if (numpadModalInitialized) return;
     
+    console.log('[Numpad] initializeNumpadModal called - creating modal HTML');
     createModalHTML();
     
+    console.log('[Numpad] Attaching event listeners...');
     document.getElementById('numpad-modal-close').addEventListener('click', handleCancel);
     document.getElementById('numpad-cancel').addEventListener('click', handleCancel);
     document.getElementById('numpad-confirm').addEventListener('click', handleConfirm);
     
-    document.querySelectorAll('.numpad-modal-numpad-btn[data-number]').forEach(button => {
-        button.addEventListener('click', () => {
+    const numpadButtons = document.querySelectorAll('.numpad-modal-numpad-btn[data-number]');
+    console.log('[Numpad] Found numpad buttons:', numpadButtons.length);
+    
+    numpadButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            console.log('[Numpad] Button clicked:', button.getAttribute('data-number'));
             const number = button.getAttribute('data-number');
             handleNumberClick(number);
         });
@@ -287,6 +367,7 @@ function initializeNumpadModal() {
     });
     
     numpadModalInitialized = true;
+    console.log('[Numpad] Initialization complete');
 }
 
 function attachToNumericInputs(selector = 'input[type="number"]', options = {}) {
@@ -319,26 +400,16 @@ function attachToNumericInputs(selector = 'input[type="number"]', options = {}) 
     });
 }
 
-function initNumpadModal(cssPath = 'src/css/numpad-modal.css') {
-    // Try multiple possible CSS paths
-    const possiblePaths = [
-        cssPath,
-        '../css/numpad-modal.css',
-        './src/css/numpad-modal.css'
-    ];
+function initNumpadModal() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isNarrowViewport = width < 1024 || height < 900;
+    const shouldUse = shouldUseNumpad();
     
-    // Try to load CSS
-    possiblePaths.forEach(path => {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = path;
-        link.onerror = () => link.remove(); // Remove if failed
-        document.head.appendChild(link);
-    });
+    console.log('[NumpadModal] Debug - width:', width, 'height:', height, 'isTouch:', isTouchDevice, 'isNarrow:', isNarrowViewport, 'shouldUseNumpad:', shouldUse);
     
-    console.log('[NumpadModal] Initializing, shouldUseNumpad:', shouldUseNumpad(), 'viewport:', window.innerWidth);
-    
-    if (shouldUseNumpad()) {
+    if (shouldUse) {
         initializeNumpadModal();
     }
 }
