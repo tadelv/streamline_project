@@ -37,12 +37,19 @@ function initMobileValueInputs() {
         if (!el) return;
         
         el.style.cursor = 'pointer';
+        el.setAttribute('tabindex', '-1'); // Prevent focus
+        el.setAttribute('role', 'button'); // Indicate it's clickable but not an input
         
-        // Prevent keyboard from showing on touch
-        el.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Prevent keyboard
+        // Prevent keyboard from showing on touch - block all touch events
+        const preventKeyboard = (e) => {
+            e.preventDefault();
             e.stopPropagation();
-        }, { passive: false });
+            return false;
+        };
+        
+        el.addEventListener('touchstart', preventKeyboard, { passive: false });
+        el.addEventListener('touchend', preventKeyboard, { passive: false });
+        el.addEventListener('touchmove', preventKeyboard, { passive: false });
         
         el.addEventListener('click', (e) => {
             e.stopPropagation();
