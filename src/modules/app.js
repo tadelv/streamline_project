@@ -62,7 +62,8 @@ function initMobileValueInputs() {
             
             openModal(mockInput, {
                 previousValues: [],
-                onConfirm: (val) => {}
+                onConfirm: (val) => {},
+                fieldType: type
             });
         });
     });

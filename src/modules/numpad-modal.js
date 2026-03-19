@@ -5,10 +5,75 @@ let originalValue = '0';
 let previousValues = [];
 let onConfirmCallback = null;
 
+// Mobile/tablet detection - can be overridden for testing
 function isMobile() {
-    return window.matchMedia('(max-width: 768px)').matches && 
-           (window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
+    // Check for explicit override (useful for testing)
+    if (window._forceNumpadMobile !== undefined) {
+        return window._forceNumpadMobile;
+    }
+    
+    // Check OS from user agent
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /android/i.test(userAgent);
+    
+    // Check if it's a touch device
+    const isTouchDevice = 'ontouchstart' in window || 
+                          navigator.maxTouchPoints > 0 ||
+                          window.matchMedia('(pointer: coarse)').matches;
+    
+    // Check viewport dimensions - include tablets up to 1920x1200
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isTabletSize = width <= 1920 && height >= 800;
+    const isSmallScreen = window.matchMedia('(max-width: 1024px)').matches;
+    
+    // Return true if:
+    // 1. iOS/Android device OR
+    // 2. Touch device with tablet size OR
+    // 3. Touch device with small screen
+    return (isIOS || isAndroid) || (isTouchDevice && (isSmallScreen || isTabletSize));
 }
+
+// Debug function to test the modal - call this in browser console
+window.testNumpadModal = function(force = true) {
+    window._forceNumpadMobile = force;
+    if (force) {
+        initializeNumpadModal();
+        
+        const valueElements = [
+            { id: 'dose-in-value', type: 'dose-in' },
+            { id: 'drink-out-value', type: 'drink-out' },
+            { id: 'temp-value', type: 'temperature' },
+            { id: 'grind-value', type: 'grind' }
+        ];
+        
+        valueElements.forEach(({ id, type }) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            el.style.cursor = 'pointer';
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const currentValue = el.textContent.replace(/[^0-9.]/g, '') || '0';
+                
+                const mockInput = {
+                    value: currentValue,
+                    dispatchEvent: (event) => {
+                        if (event.type === 'change' || event.type === 'input') {
+                            const newVal = mockInput.value;
+                            el.textContent = type === 'temperature' ? `${newVal}°c` : 
+                                            type === 'grind' ? newVal : `${newVal}g`;
+                        }
+                    }
+                };
+                
+                openModal(mockInput, { previousValues: [], fieldType: type });
+            });
+        });
+    }
+};
 
 function createModalHTML() {
     const overlay = document.createElement('div');
@@ -69,7 +134,8 @@ function createModalHTML() {
 function updateDisplay() {
     const displayElement = document.getElementById('numpad-display-value');
     if (displayElement) {
-        displayElement.textContent = currentValue + 'g';
+        const config = fieldConfig[currentFieldType] || fieldConfig['dose-in'];
+        displayElement.textContent = currentValue + config.unit;
     }
 }
 
@@ -125,16 +191,44 @@ function renderPreviousValues() {
     });
 }
 
+let currentFieldType = 'dose-in';
+
+const fieldConfig = {
+    'dose-in': { title: 'DOSE', unit: 'g', defaultValue: '20', label: 'Input value between 1–120' },
+    'drink-out': { title: 'DRINK OUT', unit: 'g', defaultValue: '40', label: 'Input value between 1–200' },
+    'temperature': { title: 'TEMPERATURE', unit: '°c', defaultValue: '93', label: 'Input value between 70–110' },
+    'grind': { title: 'GRIND', unit: '', defaultValue: '1.0', label: 'Input value between 0.1–10.0' }
+};
+
+function getFieldDisplayValue(value, fieldType) {
+    const config = fieldConfig[fieldType] || fieldConfig['dose-in'];
+    return value + config.unit;
+}
+
 function openModal(inputElement, options = {}) {
     if (!numpadModalInitialized) {
         initializeNumpadModal();
     }
     
     currentInputElement = inputElement;
+    currentFieldType = options.fieldType || 'dose-in';
     
-    const inputValue = inputElement.value || inputElement.getAttribute('data-default') || '0';
-    currentValue = inputValue.replace('g', '').trim() || '0';
+    const config = fieldConfig[currentFieldType] || fieldConfig['dose-in'];
+    const inputValue = inputElement.value || inputElement.getAttribute('data-default') || config.defaultValue;
+    // Remove any existing units for editing
+    currentValue = inputValue.replace(/[g°c]/g, '').trim() || config.defaultValue;
     originalValue = currentValue;
+    
+    // Update modal title and label
+    const titleEl = document.querySelector('.numpad-modal-title');
+    if (titleEl) {
+        titleEl.textContent = config.title;
+    }
+    
+    const labelEl = document.querySelector('.numpad-modal-input-label');
+    if (labelEl) {
+        labelEl.textContent = config.label;
+    }
     
     previousValues = options.previousValues || [];
     onConfirmCallback = options.onConfirm || null;
@@ -235,14 +329,31 @@ function attachToNumericInputs(selector = 'input[type="number"]', options = {}) 
 }
 
 function initNumpadModal(cssPath = 'src/css/numpad-modal.css') {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = cssPath;
-    document.head.appendChild(link);
+    // Try multiple possible CSS paths
+    const possiblePaths = [
+        cssPath,
+        '../css/numpad-modal.css',
+        './src/css/numpad-modal.css'
+    ];
+    
+    // Try to load CSS
+    possiblePaths.forEach(path => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = path;
+        link.onerror = () => link.remove(); // Remove if failed
+        document.head.appendChild(link);
+    });
+    
+    console.log('[NumpadModal] Initializing, isMobile:', isMobile(), 'viewport:', window.innerWidth);
     
     if (isMobile()) {
         initializeNumpadModal();
     }
 }
 
-export { initNumpadModal, attachToNumericInputs, openModal, isMobile };
+// Expose for manual testing in browser console
+window.initNumpadModal = initNumpadModal;
+window.openNumpadModal = openModal;
+
+export { initNumpadModal, attachToNumericInputs, openModal, isMobile, initializeNumpadModal };
