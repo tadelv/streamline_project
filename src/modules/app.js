@@ -37,19 +37,9 @@ function initMobileValueInputs() {
         if (!el) return;
         
         el.style.cursor = 'pointer';
-        el.setAttribute('tabindex', '-1'); // Prevent focus
-        el.setAttribute('role', 'button'); // Indicate it's clickable but not an input
-        
-        // Prevent keyboard from showing on touch - block all touch events
-        const preventKeyboard = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        };
-        
-        el.addEventListener('touchstart', preventKeyboard, { passive: false });
-        el.addEventListener('touchend', preventKeyboard, { passive: false });
-        el.addEventListener('touchmove', preventKeyboard, { passive: false });
+        // Tell browser this is for clicking, not text input
+        el.style.touchAction = 'manipulation';
+        el.style.webkitTapHighlightColor = 'transparent';
         
         el.addEventListener('click', (e) => {
             e.stopPropagation();
