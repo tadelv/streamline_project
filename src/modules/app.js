@@ -37,6 +37,13 @@ function initMobileValueInputs() {
         if (!el) return;
         
         el.style.cursor = 'pointer';
+        
+        // Prevent keyboard from showing on touch
+        el.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent keyboard
+            e.stopPropagation();
+        }, { passive: false });
+        
         el.addEventListener('click', (e) => {
             e.stopPropagation();
             
