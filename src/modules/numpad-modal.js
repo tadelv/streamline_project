@@ -6,34 +6,25 @@ let previousValues = [];
 let onConfirmCallback = null;
 
 // Mobile/tablet detection - can be overridden for testing
-function isMobile() {
+function shouldUseNumpad() {
     // Check for explicit override (useful for testing)
     if (window._forceNumpadMobile !== undefined) {
         return window._forceNumpadMobile;
     }
     
-    // Check OS from user agent
-    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isAndroid = /android/i.test(userAgent);
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     
     // Check if it's a touch device
     const isTouchDevice = 'ontouchstart' in window || 
                           navigator.maxTouchPoints > 0 ||
                           window.matchMedia('(pointer: coarse)').matches;
     
-    // Check viewport dimensions - include tablets up to 1920x1200
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const isTabletSize = width <= 1920 && height >= 800;
-    const isSmallScreen = window.matchMedia('(max-width: 1024px)').matches;
+    // Desktop: large screen (≥1200px × ≥900px) AND no touch
+    const isDesktop = width >= 1200 && height >= 900 && !isTouchDevice;
     
-    // Return true if:
-    // 1. iOS/Android device OR
-    // 2. Touch device with tablet size OR
-    // 3. Touch device with small screen
-    return (isIOS || isAndroid) || (isTouchDevice && (isSmallScreen || isTabletSize));
+    // Return true unless it's definitely a desktop
+    return !isDesktop;
 }
 
 // Debug function to test the modal - call this in browser console
@@ -299,7 +290,7 @@ function initializeNumpadModal() {
 }
 
 function attachToNumericInputs(selector = 'input[type="number"]', options = {}) {
-    if (!isMobile()) return;
+    if (!shouldUseNumpad()) return;
     
     const inputs = document.querySelectorAll(selector);
     
@@ -345,9 +336,9 @@ function initNumpadModal(cssPath = 'src/css/numpad-modal.css') {
         document.head.appendChild(link);
     });
     
-    console.log('[NumpadModal] Initializing, isMobile:', isMobile(), 'viewport:', window.innerWidth);
+    console.log('[NumpadModal] Initializing, shouldUseNumpad:', shouldUseNumpad(), 'viewport:', window.innerWidth);
     
-    if (isMobile()) {
+    if (shouldUseNumpad()) {
         initializeNumpadModal();
     }
 }
@@ -356,4 +347,4 @@ function initNumpadModal(cssPath = 'src/css/numpad-modal.css') {
 window.initNumpadModal = initNumpadModal;
 window.openNumpadModal = openModal;
 
-export { initNumpadModal, attachToNumericInputs, openModal, isMobile, initializeNumpadModal };
+export { initNumpadModal, attachToNumericInputs, openModal, shouldUseNumpad, initializeNumpadModal };

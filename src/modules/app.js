@@ -10,7 +10,7 @@ import * as api from './api.js';
 import { loadPage, initRouter, isSubPage } from './router.js';
 import { initWaterTankSocket } from './waterTank.js';
 import { logger, setDebug } from './logger.js';
-import { initNumpadModal, attachToNumericInputs, openModal, isMobile } from './numpad-modal.js';
+import { initNumpadModal, attachToNumericInputs, openModal, shouldUseNumpad } from './numpad-modal.js';
 
 window.app = { api, ui, chart };
 
@@ -23,7 +23,7 @@ window.onScaleDisconnect = onScaleDisconnect;
 window.onScaleReconnect = onScaleReconnect;
 
 function initMobileValueInputs() {
-    if (!isMobile()) return;
+    if (!shouldUseNumpad()) return;
     
     const valueElements = [
         { id: 'dose-in-value', type: 'dose-in', label: 'Dose In' },
