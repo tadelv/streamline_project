@@ -1,4 +1,4 @@
-import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState } from '../modules/api.js';
+import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId } from '../modules/api.js';
 import * as ui from '../modules/ui.js';
 import { initScaling } from '../modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
@@ -2860,14 +2860,31 @@ function updateConnectionStatus(deviceId, isConnected) {
 // Function to start auto-connect functionality
 window.startAutoConnect = async function() {
     try {
-        // Trigger a scan with auto-connect enabled using the imported function
-        const autoconnectresponse = await connectScaleDevice();
-        logger.info('Auto-connect response:', autoconnectresponse);
-        ui.showToast('Auto-connect started, nearby devices will be connected automatically', 4000, 'info');
-        if (autoconnectresponse.state === 'connected') {
-            logger.info(`Auto-connected to device: ${autoconnectresponse.device.name} (${autoconnectresponse.device.id})`);
-            ui.showToast(`Auto-connected to ${autoconnectresponse.device.name}`, 3000, 'success');
-            renderAllDevices(); // Refresh the device lists to show connected devices
+        const deviceWs = getDeviceWebSocket();
+        if (!deviceWs || deviceWs.readyState !== WebSocket.OPEN) {
+            initDeviceWebSocketWithCallback(
+                () => {
+                    sendDeviceCommand({ command: 'scan', connect: true });
+                    logger.info('Auto-connect initiated via WebSocket');
+                    ui.showToast('Auto-connect started, nearby devices will be connected automatically', 4000, 'info');
+                },
+                (data) => {
+                    if (data.devices) {
+                        const connectedDevice = data.devices.find(d => d.state === 'connected');
+                        if (connectedDevice) {
+                            logger.info(`Auto-connected to device: ${connectedDevice.name} (${connectedDevice.id})`);
+                            ui.showToast(`Auto-connected to ${connectedDevice.name}`, 3000, 'success');
+                            renderAllDevices();
+                        }
+                    }
+                },
+                () => {},
+                () => {}
+            );
+        } else {
+            sendDeviceCommand({ command: 'scan', connect: true });
+            logger.info('Auto-connect initiated via WebSocket');
+            ui.showToast('Auto-connect started, nearby devices will be connected automatically', 4000, 'info');
         }
         
         // Update the toggle button state

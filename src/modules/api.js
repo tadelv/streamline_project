@@ -418,6 +418,51 @@ export function sendDeviceCommand(command) {
     }
 }
 
+export function getDeviceWebSocket() {
+    return deviceWebSocket;
+}
+
+const SCALE_DEVICE_ID_KEY = 'streamline_scale_device_id';
+
+export function saveScaleDeviceId(deviceId) {
+    try {
+        localStorage.setItem(SCALE_DEVICE_ID_KEY, deviceId);
+        logger.info('Scale device ID saved:', deviceId);
+    } catch (error) {
+        logger.error('Error saving scale device ID:', error);
+    }
+}
+
+export function getScaleDeviceId() {
+    try {
+        return localStorage.getItem(SCALE_DEVICE_ID_KEY);
+    } catch (error) {
+        logger.error('Error getting scale device ID:', error);
+        return null;
+    }
+}
+
+export function initDeviceWebSocketWithCallback(onReady, onData, onReconnect, onDisconnect) {
+    if (deviceWebSocket && deviceWebSocket.readyState === WebSocket.OPEN) {
+        logger.info('Device WebSocket already connected');
+        if (onReady) onReady();
+        if (onData) {
+            connectDeviceWebSocket(onData, onReconnect, onDisconnect);
+        }
+        return;
+    }
+
+    const handleFirstOpen = () => {
+        deviceWebSocket.removeEventListener('open', handleFirstOpen);
+        logger.info('Device WebSocket ready for commands');
+        if (onReady) onReady();
+        connectDeviceWebSocket(onData, onReconnect, onDisconnect);
+    };
+
+    connectDeviceWebSocket(onData, onReconnect, onDisconnect);
+    deviceWebSocket.addEventListener('open', handleFirstOpen);
+}
+
 
 
 export async function getProfiles() {

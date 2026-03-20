@@ -1,4 +1,4 @@
-import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, getDe1AdvancedSettings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials, connectScaleDevice, tareScale, connectTimeToReadyWebSocket } from './api.js';
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, getDe1AdvancedSettings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials, connectScaleDevice, tareScale, connectTimeToReadyWebSocket, sendDeviceCommand, saveScaleDeviceId, getScaleDeviceId, getDeviceWebSocket, initDeviceWebSocketWithCallback } from './api.js';
 import { initScaling } from './scaling.js';
 import * as chart from './chart.js';
 import * as ui from './ui.js';
@@ -416,8 +416,20 @@ async function handleWeightClick() {
     ui.updateWeight('Connecting...');
 
     try {
-        await connectScaleDevice();
-        logger.info('Scale connection initiated, waiting for weight data...');
+        const deviceWs = getDeviceWebSocket();
+        if (!deviceWs || deviceWs.readyState !== WebSocket.OPEN) {
+            initDeviceWebSocketWithCallback(
+                () => {
+                    sendDeviceCommand({ command: 'scan', connect: true });
+                },
+                () => {},
+                () => {},
+                () => {}
+            );
+        } else {
+            sendDeviceCommand({ command: 'scan', connect: true });
+        }
+        logger.info('Scale connection initiated via WebSocket, waiting for weight data...');
         let attempts = 0;
         const maxAttempts = 15;
         const poll = setInterval(async () => {
@@ -446,6 +458,7 @@ async function handleWeightClick() {
 
                 if (scale) {
                     clearInterval(poll);
+                    saveScaleDeviceId(scale.id);
                     logger.info('Scale BLE link established. Re-initializing WebSocket connection.');
                     isConnectingScale = false;
                     // Re-create the WebSocket with proper handlers to ensure a clean connection.
