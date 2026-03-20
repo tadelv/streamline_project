@@ -134,22 +134,7 @@ export async function connectScaleDevice() {
 }
 
 
-export async function disconnectBLEDevice(deviceid) {
-    try {
-        logger.info('Attempting to disconnect from BLE device...');
-        const response = await fetch(`${API_BASE_URL}/devices/disconnect?deviceId=${deviceid}`, {
-            method: 'PUT',
-        });
-        if (!response.ok) {
-            throw new Error(`Failed to send disconnect request for BLE device: ${response.statusText}`);
-        }
-        logger.info('Successfully sent disconnect request for BLE device.');
-    } catch (error) {
-        logger.error('Error during BLE device disconnection attempt:', error);
-        throw error;
-    }
 
-}
 
 
 export async function tareScale() {

@@ -1,7 +1,8 @@
 {
     "mcpServers": {
-        "my-mcp-server-44eed80f": {
-            "url": "http://127.0.0.1:3845/sse"
+        "figma-desktop": {
+            "type": "http",
+            "url": "http://127.0.0.1:3845/mcp"
         }
       
     },

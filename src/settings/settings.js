@@ -1,4 +1,4 @@
-import { disconnectBLEDevice, getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState } from '../modules/api.js';
+import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState } from '../modules/api.js';
 import * as ui from '../modules/ui.js';
 import { initScaling } from '../modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
@@ -3128,7 +3128,7 @@ function renderSingleDeviceList(devices) {
 window.handleDeviceConnection = async function(deviceId, action) {
     if (action === 'connect') {
         try {
-            await connectScaleDevice();
+            await sendDeviceCommand({ command: 'connect', deviceId });
             ui.showToast(`Connected to device ${deviceId}`, 3000, 'success');
             // Device list will update automatically via WebSocket onData callback
         } catch (error) {
@@ -3137,7 +3137,7 @@ window.handleDeviceConnection = async function(deviceId, action) {
         }
     } else if (action === 'disconnect') {
         try {
-            await disconnectBLEDevice(deviceId);
+            await sendDeviceCommand({ command: 'disconnect', deviceId });
             ui.showToast(`Disconnected from device ${deviceId}`, 3000, 'info');
             // Device list will update automatically via WebSocket onData callback
         } catch (error) {
