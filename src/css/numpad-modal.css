@@ -5,9 +5,10 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
     display: none;
     justify-content: center;
-    align-items: flex-end;
+    align-items: center;
     z-index: 10000;
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -253,6 +254,93 @@
 }
 
 .numpad-modal-confirm:active {
+    background-color: #2d4a72;
+}
+
+/* Dark Theme Styles */
+[data-theme='dark'] .numpad-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+[data-theme='dark'] .numpad-modal-container {
+    background-color: #101217;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme='dark'] .numpad-modal-title {
+    color: #ffffff;
+}
+
+[data-theme='dark'] .numpad-modal-close {
+    color: #ffffff;
+}
+
+[data-theme='dark'] .numpad-modal-input-label {
+    color: var(--low-contrast-white, #959595);
+}
+
+[data-theme='dark'] .numpad-modal-input-border {
+    border-color: #385A92;
+}
+
+[data-theme='dark'] .numpad-modal-input-cursor {
+    background-color: #385A92;
+}
+
+[data-theme='dark'] .numpad-modal-input-value {
+    color: #ffffff;
+}
+
+[data-theme='dark'] .numpad-modal-previous-title {
+    color: var(--low-contrast-white, #959595);
+}
+
+[data-theme='dark'] .numpad-modal-previous-btn {
+    background-color: #1F2234;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+[data-theme='dark'] .numpad-modal-previous-btn:active {
+    background-color: #2b3048;
+}
+
+[data-theme='dark'] .numpad-modal-numpad-btn {
+    background-color: #1F2234;
+    color: #ffffff;
+}
+
+[data-theme='dark'] .numpad-modal-numpad-btn:active {
+    background-color: #3c4671;
+}
+
+[data-theme='dark'] .numpad-modal-numpad-btn:hover {
+    background-color: #2b3048;
+}
+
+[data-theme='dark'] .numpad-modal-numpad-btn.numpad-delete {
+    background-color: #DA515E;
+}
+
+[data-theme='dark'] .numpad-modal-numpad-btn.numpad-delete:active {
+    background-color: #c44550;
+}
+
+[data-theme='dark'] .numpad-modal-cancel {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+[data-theme='dark'] .numpad-modal-cancel:active {
+    background-color: #1F2234;
+}
+
+[data-theme='dark'] .numpad-modal-confirm {
+    background-color: #385A92;
+}
+
+[data-theme='dark'] .numpad-modal-confirm:active {
     background-color: #2d4a72;
 }
 
