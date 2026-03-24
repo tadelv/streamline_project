@@ -29,7 +29,12 @@ function initMobileValueInputs() {
         { id: 'dose-in-value', type: 'dose-in', label: 'Dose In' },
         { id: 'drink-out-value', type: 'drink-out', label: 'Drink Out' },
         { id: 'temp-value', type: 'temperature', label: 'Temperature' },
-        { id: 'grind-value', type: 'grind', label: 'Grind' }
+        { id: 'grind-value', type: 'grind', label: 'Grind' },
+        { id: 'steam-duration-value', type: 'steam-duration', label: 'Steam Duration' },
+        { id: 'steam-flow-value', type: 'steam-flow', label: 'Steam Flow' },
+        { id: 'flush-value', type: 'flush', label: 'Flush' },
+        { id: 'hot-water-vol-value', type: 'hot-water-vol', label: 'Hot Water Volume' },
+        { id: 'hot-water-temp-value', type: 'hot-water-temp', label: 'Hot Water Temp' }
     ];
     
     valueElements.forEach(({ id, type, label }) => {
@@ -40,8 +45,16 @@ function initMobileValueInputs() {
         // Tell browser this is for clicking, not text input
         el.style.touchAction = 'manipulation';
         el.style.webkitTapHighlightColor = 'transparent';
+        el.setAttribute('tabindex', '-1');
+        
+        // Prevent touch keyboard on mobile/tablet
+        el.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, { passive: false });
         
         el.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             
             const currentValue = el.textContent.replace(/[^0-9.]/g, '') || '0';
@@ -53,12 +66,28 @@ function initMobileValueInputs() {
                     if (event.type === 'change' || event.type === 'input') {
                         const newVal = mockInput.value;
                         el.textContent = type === 'temperature' ? `${newVal}°c` : 
-                                        type === 'grind' ? newVal : `${newVal}g`;
-                        
+                                        type === 'grind' ? newVal : 
+                                        type === 'steam-duration' ? `${newVal}s` :
+                                        type === 'steam-flow' ? newVal :
+                                        type === 'flush' ? `${newVal}s` :
+                                        type === 'hot-water-vol' ? `${newVal}ml` :
+                                        type === 'hot-water-temp' ? `${newVal}°c` :
+                                        `${newVal}g`;
+                                        
                         if (type === 'dose-in') {
                             window.app.ui.updateDoseValue('in', newVal);
                         } else if (type === 'drink-out') {
                             window.app.ui.updateDoseValue('out', newVal);
+                        } else if (type === 'steam-duration') {
+                            window.app.ui.updateSteamDisplay({ targetSteamDuration: parseFloat(newVal) });
+                        } else if (type === 'steam-flow') {
+                            window.app.ui.updateSteamDisplay({ targetSteamFlow: parseFloat(newVal) });
+                        } else if (type === 'flush') {
+                            window.app.ui.updateFlushDisplay(parseFloat(newVal));
+                        } else if (type === 'hot-water-vol') {
+                            window.app.ui.updateHotWaterDisplay({ targetHotWaterVolume: parseFloat(newVal) });
+                        } else if (type === 'hot-water-temp') {
+                            window.app.ui.updateHotWaterDisplay({ targetHotWaterTemp: parseFloat(newVal) });
                         }
                     }
                 }

@@ -40,7 +40,12 @@ window.testNumpadModal = function(force = true) {
             { id: 'dose-in-value', type: 'dose-in' },
             { id: 'drink-out-value', type: 'drink-out' },
             { id: 'temp-value', type: 'temperature' },
-            { id: 'grind-value', type: 'grind' }
+            { id: 'grind-value', type: 'grind' },
+            { id: 'steam-duration-value', type: 'steam-duration' },
+            { id: 'steam-flow-value', type: 'steam-flow' },
+            { id: 'flush-value', type: 'flush' },
+            { id: 'hot-water-vol-value', type: 'hot-water-vol' },
+            { id: 'hot-water-temp-value', type: 'hot-water-temp' }
         ];
         
         valueElements.forEach(({ id, type }) => {
@@ -58,7 +63,13 @@ window.testNumpadModal = function(force = true) {
                         if (event.type === 'change' || event.type === 'input') {
                             const newVal = mockInput.value;
                             el.textContent = type === 'temperature' ? `${newVal}°c` : 
-                                            type === 'grind' ? newVal : `${newVal}g`;
+                                            type === 'grind' ? newVal : 
+                                            type === 'steam-duration' ? `${newVal}s` :
+                                            type === 'steam-flow' ? newVal :
+                                            type === 'flush' ? `${newVal}s` :
+                                            type === 'hot-water-vol' ? `${newVal}ml` :
+                                            type === 'hot-water-temp' ? `${newVal}°c` :
+                                            `${newVal}g`;
                         }
                     }
                 };
@@ -209,7 +220,12 @@ const fieldConfig = {
     'dose-in': { title: 'DOSE', unit: 'g', defaultValue: '20', label: 'Input value between 1–120' },
     'drink-out': { title: 'DRINK OUT', unit: 'g', defaultValue: '40', label: 'Input value between 1–200' },
     'temperature': { title: 'TEMPERATURE', unit: '°c', defaultValue: '93', label: 'Input value between 70–110' },
-    'grind': { title: 'GRIND', unit: '', defaultValue: '1.0', label: 'Input value between 0.1–10.0' }
+    'grind': { title: 'GRIND', unit: '', defaultValue: '1.0', label: 'Input value between 0.1–10.0' },
+    'steam-duration': { title: 'STEAM DURATION', unit: 's', defaultValue: '30', label: 'Input value between 1–120' },
+    'steam-flow': { title: 'STEAM FLOW', unit: 'ml/s', defaultValue: '1.0', label: 'Input value between 0.1–10.0' },
+    'flush': { title: 'FLUSH', unit: 's', defaultValue: '5', label: 'Input value between 1–60' },
+    'hot-water-vol': { title: 'HOT WATER VOL', unit: 'ml', defaultValue: '50', label: 'Input value between 1–500' },
+    'hot-water-temp': { title: 'HOT WATER TEMP', unit: '°c', defaultValue: '85', label: 'Input value between 70–110' }
 };
 
 function getFieldDisplayValue(value, fieldType) {

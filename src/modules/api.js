@@ -171,7 +171,7 @@ export function connectWebSocket(onData, onReconnect) {
     reconnectingWebSocket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            logger.info('Raw WebSocket data:', data);
+            // logger.info('Raw WebSocket data:', data);
             
             // Handle both cases: data.state could be a string or an object with .state property
             const stateValue = typeof data.state === 'object' ? data.state.state : data.state;
@@ -191,7 +191,7 @@ export function connectWebSocket(onData, onReconnect) {
                     restoreDisplay();
                 }
             } else {
-                logger.info('State did not change, skipping display adjustment.');
+                // logger.info('State did not change, skipping display adjustment.');
             }
             
             onData(data);

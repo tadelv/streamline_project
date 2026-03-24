@@ -1,4 +1,4 @@
-import { getProfile,  updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings, verifyVisualizerCredentials } from './api.js';
+import { getProfile, getWorkflow, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings, verifyVisualizerCredentials } from './api.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
@@ -124,12 +124,15 @@ export function updateDrinkOutPresetsDisplay(doseIn, drinkOut) {
 }
 
 function updateTemperatureValue(newValue) {
-    getProfile().then(profile => {
-        if (profile && profile.steps) {
-            profile.steps.forEach(step => {
-                step.temperature = newValue.toString();
+    getWorkflow().then(workflow => {
+        if (workflow && workflow.profile && workflow.profile.steps) {
+            // Update temperature on ALL steps as number (not string)
+            workflow.profile.steps.forEach(step => {
+                step.temperature = parseFloat(newValue);
             });
-            updateWorkflow({ profile: profile }).then(() => {
+            
+            // Partial update via workflow - only send profile field
+            updateWorkflow({ profile: workflow.profile }).then(() => {
                 logger.debug('Temperature updated via workflow:', newValue);
             }).catch(error => {
                 logger.error('Failed to update temperature via workflow:', error);
