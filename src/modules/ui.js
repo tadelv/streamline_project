@@ -1,4 +1,5 @@
 import { getProfile, getWorkflow, updateWorkflow, setMachineState, setTargetHotWaterVolume, setTargetHotWaterTemp, setTargetHotWaterDuration, setDe1Settings, setTargetSteamFlow, setTargetSteamDuration, MachineState, reaHostname, setPluginSettings, getPlugins, getPluginSettings, verifyVisualizerCredentials } from './api.js';
+import { shouldUseNumpad } from './numpad-modal.js';
 import { logger } from './logger.js';
 import * as chart from './chart.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage, getTranslation } from './i18n.js';
@@ -199,6 +200,9 @@ export function updateDrinkRatio() {
 }
 
 function makeEditable(element, onCommit) {
+    // Skip on mobile/tablet - numpad modal handles input
+    if (shouldUseNumpad()) return;
+    
     element.addEventListener('click', () => {
         if (element.parentNode.querySelector('input')) return;
 

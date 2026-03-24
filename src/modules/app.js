@@ -47,12 +47,6 @@ function initMobileValueInputs() {
         el.style.webkitTapHighlightColor = 'transparent';
         el.setAttribute('tabindex', '-1');
         
-        // Prevent touch keyboard on mobile/tablet
-        el.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-        }, { passive: false });
-        
         el.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
