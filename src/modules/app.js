@@ -82,6 +82,8 @@ function initMobileValueInputs() {
                             window.app.ui.updateHotWaterDisplay({ targetHotWaterVolume: parseFloat(newVal) });
                         } else if (type === 'hot-water-temp') {
                             window.app.ui.updateHotWaterDisplay({ targetHotWaterTemp: parseFloat(newVal) });
+                        } else if (type === 'grind') {
+                            window.app.ui.updateGrindValue(newVal);
                         }
                     }
                 }

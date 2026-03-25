@@ -1,9 +1,65 @@
+import { getValueFromStore, setValueInStore, getShots } from './api.js';
+
 let numpadModalInitialized = false;
 let currentInputElement = null;
 let currentValue = '0';
 let originalValue = '0';
 let previousValues = [];
 let onConfirmCallback = null;
+
+async function getPreviousValues(fieldType) {
+    try {
+        const values = await getValueFromStore('numpad', `previous-values-${fieldType}`);
+        return values || [];
+    } catch (error) {
+        console.log('[Numpad] Error getting previous values:', error);
+        return [];
+    }
+}
+
+async function savePreviousValue(fieldType, value) {
+    try {
+        const existing = await getPreviousValues(fieldType);
+        const newList = [value, ...existing.filter(v => v !== value)].slice(0, 8);
+        await setValueInStore('numpad', `previous-values-${fieldType}`, newList);
+    } catch (error) {
+        console.log('[Numpad] Error saving previous value:', error);
+    }
+}
+
+async function getValuesFromShotHistory(fieldType, limit = 8) {
+    try {
+        const response = await getShots({ limit: 20 });
+        
+        // Handle paginated response: { shots: [...], total: X }
+        // or direct array response
+        let shots = [];
+        if (Array.isArray(response)) {
+            shots = response;
+        } else if (response && Array.isArray(response.shots)) {
+            shots = response.shots;
+        } else {
+            console.log('[Numpad] Unexpected shots response format:', response);
+            return [];
+        }
+        
+        const values = [];
+        shots.forEach(shot => {
+            const workflow = shot.workflow || {};
+            if (fieldType === 'dose-in' && workflow.doseData?.doseIn) {
+                values.push(workflow.doseData.doseIn.toString());
+            } else if (fieldType === 'drink-out' && workflow.doseData?.drinkOut) {
+                values.push(workflow.doseData.drinkOut.toString());
+            } else if (fieldType === 'grind' && workflow.grinderData?.setting) {
+                values.push(workflow.grinderData.setting.toString());
+            }
+        });
+        return [...new Set(values)].slice(0, limit);
+    } catch (error) {
+        console.log('[Numpad] Error getting shot history:', error);
+        return [];
+    }
+}
 
 // Mobile/tablet detection - can be overridden for testing
 function shouldUseNumpad() {
@@ -92,37 +148,45 @@ function createModalHTML() {
                 <button class="numpad-modal-close" id="numpad-modal-close">&times;</button>
             </div>
             
-            <div class="numpad-modal-input-section">
-                <span class="numpad-modal-input-label">Input value between 1–120</span>
-                <div class="numpad-modal-input-box">
-                    <div class="numpad-modal-input-border"></div>
-                    <div class="numpad-modal-input-cursor"></div>
-                    <span class="numpad-modal-input-value" id="numpad-display-value">0g</span>
+            <div class="numpad-modal-content">
+                <div class="numpad-modal-left">
+                    <div class="numpad-modal-input-section">
+                        <span class="numpad-modal-input-label">Input value between 1–120</span>
+                        <div class="numpad-modal-input-box">
+                            <div class="numpad-modal-input-border"></div>
+                            <div class="numpad-modal-input-cursor"></div>
+                            <span class="numpad-modal-input-value" id="numpad-display-value">0g</span>
+                        </div>
+                    </div>
+                    
+                    <div class="numpad-modal-previous-values" id="numpad-previous-values-container" style="display: none;">
+                        <div class="numpad-modal-previous-title">Previous Values</div>
+                        <div class="numpad-modal-previous-grid" id="numpad-previous-grid"></div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="numpad-modal-previous-values" id="numpad-previous-values-container" style="display: none;">
-                <div class="numpad-modal-previous-title">Previous Values</div>
-                <div class="numpad-modal-previous-grid" id="numpad-previous-grid"></div>
-            </div>
-            
-            <div class="numpad-modal-numpad">
-                <button class="numpad-modal-numpad-btn" data-number="1">1</button>
-                <button class="numpad-modal-numpad-btn" data-number="2">2</button>
-                <button class="numpad-modal-numpad-btn" data-number="3">3</button>
-                <button class="numpad-modal-numpad-btn" data-number="4">4</button>
-                <button class="numpad-modal-numpad-btn" data-number="5">5</button>
-                <button class="numpad-modal-numpad-btn" data-number="6">6</button>
-                <button class="numpad-modal-numpad-btn" data-number="7">7</button>
-                <button class="numpad-modal-numpad-btn" data-number="8">8</button>
-                <button class="numpad-modal-numpad-btn" data-number="9">9</button>
-                <button class="numpad-modal-numpad-btn numpad-decimal" data-action="decimal">.</button>
-                <button class="numpad-modal-numpad-btn" data-number="0">0</button>
-                <button class="numpad-modal-numpad-btn numpad-delete" data-action="delete">
-                    <svg viewBox="0 0 54.8076 43.5" class="delete-icon-small">
-                        <path d="M49.9746 0C52.644 0 54.8076 2.16461 54.8076 4.83398V38.667C54.8074 41.3362 52.6439 43.5 49.9746 43.5H15.6025C14.3529 43.4999 13.1907 42.8565 12.5283 41.7969L0.799805 23.0312L0 21.75L0.799805 20.4697L12.5283 1.7041C13.1907 0.644322 14.3528 0.000123843 15.6025 0H49.9746ZM5.69922 21.75L16.2715 38.667H49.9746V4.83398H16.2715L5.69922 21.75ZM37.3906 12.791C38.3343 11.8474 39.8648 11.8475 40.8086 12.791C41.752 13.7348 41.7522 15.2653 40.8086 16.209L34.6631 22.3535L40.8086 28.499C41.752 29.4428 41.7522 30.9733 40.8086 31.917C39.8649 32.8607 38.3344 32.8604 37.3906 31.917L31.2451 25.7715L25.1006 31.917C24.1569 32.8607 22.6264 32.8604 21.6826 31.917C20.7391 30.9732 20.7389 29.4427 21.6826 28.499L27.8271 22.3535L21.6826 16.209C20.739 15.2652 20.7389 13.7347 21.6826 12.791C22.6264 11.8473 24.1568 11.8474 25.1006 12.791L31.2451 18.9355L37.3906 12.791Z" fill="#121212" />
-                    </svg>
-                </button>
+                
+                <div class="numpad-modal-divider"></div>
+                
+                <div class="numpad-modal-right">
+                    <div class="numpad-modal-numpad">
+                        <button class="numpad-modal-numpad-btn" data-number="1">1</button>
+                        <button class="numpad-modal-numpad-btn" data-number="2">2</button>
+                        <button class="numpad-modal-numpad-btn" data-number="3">3</button>
+                        <button class="numpad-modal-numpad-btn" data-number="4">4</button>
+                        <button class="numpad-modal-numpad-btn" data-number="5">5</button>
+                        <button class="numpad-modal-numpad-btn" data-number="6">6</button>
+                        <button class="numpad-modal-numpad-btn" data-number="7">7</button>
+                        <button class="numpad-modal-numpad-btn" data-number="8">8</button>
+                        <button class="numpad-modal-numpad-btn" data-number="9">9</button>
+                        <button class="numpad-modal-numpad-btn numpad-decimal" data-action="decimal">.</button>
+                        <button class="numpad-modal-numpad-btn" data-number="0">0</button>
+                        <button class="numpad-modal-numpad-btn numpad-delete" data-action="delete">
+                            <svg viewBox="0 0 54.8076 43.5" class="delete-icon-small">
+                                <path d="M49.9746 0C52.644 0 54.8076 2.16461 54.8076 4.83398V38.667C54.8074 41.3362 52.6439 43.5 49.9746 43.5H15.6025C14.3529 43.4999 13.1907 42.8565 12.5283 41.7969L0.799805 23.0312L0 21.75L0.799805 20.4697L12.5283 1.7041C13.1907 0.644322 14.3528 0.000123843 15.6025 0H49.9746ZM5.69922 21.75L16.2715 38.667H49.9746V4.83398H16.2715L5.69922 21.75ZM37.3906 12.791C38.3343 11.8474 39.8648 11.8475 40.8086 12.791C41.752 13.7348 41.7522 15.2653 40.8086 16.209L34.6631 22.3535L40.8086 28.499C41.752 29.4428 41.7522 30.9733 40.8086 31.917C39.8649 32.8607 38.3344 32.8604 37.3906 31.917L31.2451 25.7715L25.1006 31.917C24.1569 32.8607 22.6264 32.8604 21.6826 31.917C20.7391 30.9732 20.7389 29.4427 21.6826 28.499L27.8271 22.3535L21.6826 16.209C20.739 15.2652 20.7389 13.7347 21.6826 12.791C22.6264 11.8473 24.1568 11.8474 25.1006 12.791L31.2451 18.9355L37.3906 12.791Z" fill="#121212" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
             
             <div class="numpad-modal-actions">
@@ -233,7 +297,7 @@ function getFieldDisplayValue(value, fieldType) {
     return value + config.unit;
 }
 
-function openModal(inputElement, options = {}) {
+async function openModal(inputElement, options = {}) {
     console.log('[Numpad] openModal called', { fieldType: options.fieldType, inputElement });
     if (!numpadModalInitialized) {
         console.log('[Numpad] Initializing numpad modal...');
@@ -262,7 +326,15 @@ function openModal(inputElement, options = {}) {
         labelEl.textContent = config.label;
     }
     
-    previousValues = options.previousValues || [];
+    // Load previous values
+    let storedValues = await getPreviousValues(currentFieldType);
+    
+    // If no stored values and field supports shot history, get from shots
+    if (storedValues.length === 0 && ['dose-in', 'drink-out', 'grind'].includes(currentFieldType)) {
+        storedValues = await getValuesFromShotHistory(currentFieldType);
+    }
+    
+    previousValues = storedValues.length > 0 ? storedValues : (options.previousValues || []);
     onConfirmCallback = options.onConfirm || null;
     
     const overlay = document.getElementById('numpad-modal-overlay');
@@ -342,6 +414,9 @@ function handleConfirm() {
     } else {
         console.log('[Numpad] ERROR: currentInputElement is null!');
     }
+    
+    // Save to previous values
+    savePreviousValue(currentFieldType, finalValue);
     
     if (onConfirmCallback) {
         onConfirmCallback(finalValue);

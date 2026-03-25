@@ -142,7 +142,7 @@ function updateTemperatureValue(newValue) {
     });
 }
 
-function updateGrindValue(newValue) {
+export function updateGrindValue(newValue) {
     const workflowUpdate = {
         context: {
             grinderSetting: parseFloat(newValue).toFixed(2)
