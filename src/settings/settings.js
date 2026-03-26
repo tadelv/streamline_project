@@ -1,4 +1,4 @@
-import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand } from '../modules/api.js';
+import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand, enableWakeLock, disableWakeLock, getPresenceSettings, setPresenceSettings, getPresenceSchedules, createPresenceSchedule, updatePresenceSchedule, deletePresenceSchedule } from '../modules/api.js';
 import * as ui from '../modules/ui.js';
 import { initScaling } from '../modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
@@ -135,6 +135,8 @@ const settingsTree = {
         subcategories: [
             { id: 'reasettings', name: 'Rea settings', settingsCategory: 'rea' },
             { id: 'brightness', name: 'Brightness', settingsCategory: 'brightness' },
+            { id: 'wakelock', name: 'Wake Lock', settingsCategory: 'wakelock' },
+            { id: 'presence', name: 'Presence Detection', settingsCategory: 'presence' },
             { id: 'appversion', name: 'App Version', settingsCategory: 'misc' },
             { id: 'unitssettings', name: 'Units Settings', settingsCategory: 'language' },
             { id: 'fontsize', name: 'Font Size', settingsCategory: 'appearance' },
@@ -359,6 +361,10 @@ export function renderSettingsContent(category) {
             return renderScreenSaverSettings();
         case 'brightness':
             return renderBrightnessSettings();
+        case 'wakelock':
+            return renderWakeLockSettings();
+        case 'presence':
+            return renderPresenceSettings();
         case 'appversion':
             return renderAppVersionSettings();
         case 'unitssettings':
@@ -968,6 +974,188 @@ export function renderBrightnessSettings() {
             </div>
         </div>
     `;
+}
+
+// Render Wake Lock settings
+export function renderWakeLockSettings() {
+    const wakeLockEnabled = localStorage.getItem('wakeLockEnabled') === 'true';
+
+    return `
+        <div class="space-y-6">
+            <div>
+                <h2 class="text-[28px] font-bold text-[var(--text-primary)] mb-4">Wake Lock Settings</h2>
+                <p class="text-[var(--text-secondary)] text-[20px] mb-6">
+                    Control screen wake-lock to prevent the display from sleeping during operation.
+                </p>
+            </div>
+
+            <div class="bg-[#385a92] rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label class="text-[24px] font-semibold text-[var(--text-primary)]">Enable Wake Lock</label>
+                        <p class="text-[18px] text-[var(--text-secondary)] mt-1">
+                            Keep the screen on while the app is active
+                        </p>
+                    </div>
+                    <input type="checkbox"
+                           id="wake-lock-toggle"
+                           class="toggle toggle-lg toggle-primary"
+                           ${wakeLockEnabled ? 'checked' : ''}
+                           onchange="handleWakeLockToggle(this.checked)">
+                </div>
+            </div>
+
+            <div class="text-[18px] text-[var(--text-secondary)] mt-4">
+                <p><strong>Note:</strong> Wake-lock automatically releases when the WebSocket disconnects.</p>
+            </div>
+        </div>
+    `;
+}
+
+// Render Presence Detection settings (async — populates container after fetch)
+export function renderPresenceSettings() {
+    // Return a loading placeholder synchronously, then populate async
+    loadPresenceSettingsAsync();
+    return `
+        <div id="presence-settings-container">
+            <div class="flex items-center justify-center p-8">
+                <span class="loading loading-spinner loading-lg"></span>
+                <span class="ml-4 text-[20px] text-[var(--text-secondary)]">Loading presence settings...</span>
+            </div>
+        </div>
+    `;
+}
+
+// Helper function to format days of week
+function formatDaysOfWeek(days) {
+    if (!days || days.length === 0) return 'Every day';
+    // ISO 8601: 1=Monday, 7=Sunday
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days.map(d => dayNames[d - 1]).join(', ');
+}
+
+// Async loader for presence settings content
+async function loadPresenceSettingsAsync() {
+    // Small delay to ensure the placeholder DOM is rendered first
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const container = document.getElementById('presence-settings-container');
+    if (!container) return;
+
+    try {
+        const settings = await getPresenceSettings();
+        const schedules = settings.schedules || [];
+
+        const schedulesHtml = schedules.map(schedule => `
+            <div class="bg-[#2c4a7a] rounded-lg p-4 flex items-center justify-between" data-schedule-id="${schedule.id}">
+                <div class="flex-grow">
+                    <div class="text-[22px] font-semibold text-[var(--text-primary)]">
+                        ${schedule.time} - ${formatDaysOfWeek(schedule.daysOfWeek)}
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <input type="checkbox"
+                           class="toggle toggle-md toggle-primary"
+                           ${schedule.enabled ? 'checked' : ''}
+                           onchange="handleScheduleToggle('${schedule.id}', this.checked)">
+                    <button class="btn btn-sm btn-error" onclick="handleDeleteSchedule('${schedule.id}')">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <div class="space-y-6">
+                <div>
+                    <h2 class="text-[28px] font-bold text-[var(--text-primary)] mb-4">Presence Detection</h2>
+                    <p class="text-[var(--text-secondary)] text-[20px] mb-6">
+                        Automatically manage machine sleep/wake based on user presence and schedules.
+                    </p>
+                </div>
+
+                <div class="bg-[#385a92] rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <label class="text-[24px] font-semibold text-[var(--text-primary)]">Enable Presence Detection</label>
+                            <p class="text-[18px] text-[var(--text-secondary)] mt-1">
+                                Track user presence to automatically sleep the machine
+                            </p>
+                        </div>
+                        <input type="checkbox"
+                               id="presence-enabled-toggle"
+                               class="toggle toggle-lg toggle-primary"
+                               ${settings.userPresenceEnabled ? 'checked' : ''}
+                               onchange="handlePresenceToggle(this.checked)">
+                    </div>
+
+                    <div class="mt-6">
+                        <label class="text-[22px] font-semibold text-[var(--text-primary)] block mb-3">
+                            Sleep Timeout (minutes)
+                        </label>
+                        <input type="number"
+                               id="sleep-timeout-input"
+                               class="input input-bordered w-full max-w-xs text-[20px]"
+                               value="${settings.sleepTimeoutMinutes || 30}"
+                               min="1"
+                               max="120"
+                               oninput="this.value = Math.max(1, Math.min(120, this.value))"
+                               onchange="handleSleepTimeoutChange(this.value)">
+                        <p class="text-[18px] text-[var(--text-secondary)] mt-2">
+                            Minutes of inactivity before auto-sleep
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-[#385a92] rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-[24px] font-semibold text-[var(--text-primary)]">Wake Schedules</h3>
+                        <button class="btn btn-primary" onclick="handleAddSchedule()">
+                            Add Schedule
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        ${schedules.length > 0 ? schedulesHtml : '<p class="text-[var(--text-secondary)] text-[18px]">No schedules configured</p>'}
+                    </div>
+                </div>
+
+                <dialog id="add-schedule-modal" class="modal">
+                    <div class="modal-box bg-[#385a92] max-w-2xl">
+                        <h3 class="font-bold text-[24px] text-[var(--text-primary)] mb-4">Add Wake Schedule</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[20px] text-[var(--text-primary)] block mb-2">Time</label>
+                                <input type="time" id="schedule-time-input" class="input input-bordered w-full text-[20px]">
+                            </div>
+
+                            <div>
+                                <label class="text-[20px] text-[var(--text-primary)] block mb-2">Days of Week</label>
+                                <div class="flex gap-2 flex-wrap">
+                                    <label class="cursor-pointer"><input type="checkbox" value="1" class="checkbox checkbox-primary mr-1"> Mon</label>
+                                    <label class="cursor-pointer"><input type="checkbox" value="2" class="checkbox checkbox-primary mr-1"> Tue</label>
+                                    <label class="cursor-pointer"><input type="checkbox" value="3" class="checkbox checkbox-primary mr-1"> Wed</label>
+                                    <label class="cursor-pointer"><input type="checkbox" value="4" class="checkbox checkbox-primary mr-1"> Thu</label>
+                                    <label class="cursor-pointer"><input type="checkbox" value="5" class="checkbox checkbox-primary mr-1"> Fri</label>
+                                    <label class="cursor-pointer"><input type="checkbox" value="6" class="checkbox checkbox-primary mr-1"> Sat</label>
+                                    <label class="cursor-pointer"><input type="checkbox" value="7" class="checkbox checkbox-primary mr-1"> Sun</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-action">
+                            <button class="btn" onclick="document.getElementById('add-schedule-modal').close()">Cancel</button>
+                            <button class="btn btn-primary" onclick="handleSaveSchedule()">Save</button>
+                        </div>
+                    </div>
+                </dialog>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error rendering presence settings:', error);
+        container.innerHTML = `<div class="text-error text-[20px]">Failed to load presence settings</div>`;
+    }
 }
 
 // Render App Version settings
@@ -2758,6 +2946,13 @@ export function initDisplayWebSocket() {
             brightnessSlider.value = data.brightness;
             previousBrightnessState = data.brightness;
         }
+
+        // Update wake-lock toggle if it exists
+        const wakeLockToggle = document.getElementById('wake-lock-toggle');
+        if (wakeLockToggle && data.wakeLockEnabled !== undefined) {
+            wakeLockToggle.checked = data.wakeLockEnabled;
+            localStorage.setItem('wakeLockEnabled', data.wakeLockEnabled.toString());
+        }
     });
 
     logger.info('Display WebSocket initialized');
@@ -2855,6 +3050,113 @@ window.handleBrightnessAutoToggle = async function(isEnabled) {
         }
     } catch (error) {
         console.error('Error toggling auto brightness:', error);
+    }
+};
+
+// Wake Lock handlers
+window.handleWakeLockToggle = async function(enabled) {
+    try {
+        if (enabled) {
+            await enableWakeLock();
+            localStorage.setItem('wakeLockEnabled', 'true');
+            ui.showToast('Wake lock enabled', 3000, 'success');
+        } else {
+            await disableWakeLock();
+            localStorage.setItem('wakeLockEnabled', 'false');
+            ui.showToast('Wake lock disabled', 3000, 'success');
+        }
+    } catch (error) {
+        console.error('Error toggling wake lock:', error);
+        ui.showToast('Failed to toggle wake lock', 5000, 'error');
+    }
+};
+
+// Presence Detection handlers
+window.handlePresenceToggle = async function(enabled) {
+    try {
+        await setPresenceSettings({ userPresenceEnabled: enabled });
+        ui.showToast(`Presence detection ${enabled ? 'enabled' : 'disabled'}`, 3000, 'success');
+    } catch (error) {
+        console.error('Error toggling presence detection:', error);
+        ui.showToast('Failed to update presence detection', 5000, 'error');
+    }
+};
+
+window.handleSleepTimeoutChange = async function(minutes) {
+    try {
+        const value = parseInt(minutes, 10);
+        if (value < 1 || value > 120) {
+            ui.showToast('Sleep timeout must be between 1 and 120 minutes', 5000, 'error');
+            return;
+        }
+        await setPresenceSettings({ sleepTimeoutMinutes: value });
+        ui.showToast('Sleep timeout updated', 3000, 'success');
+    } catch (error) {
+        console.error('Error updating sleep timeout:', error);
+        ui.showToast('Failed to update sleep timeout', 5000, 'error');
+    }
+};
+
+window.handleAddSchedule = function() {
+    document.getElementById('add-schedule-modal').showModal();
+};
+
+window.handleSaveSchedule = async function() {
+    try {
+        const timeInput = document.getElementById('schedule-time-input').value;
+        if (!timeInput) {
+            ui.showToast('Please select a time', 3000, 'error');
+            return;
+        }
+
+        const checkboxes = document.querySelectorAll('#add-schedule-modal input[type="checkbox"]:checked');
+        const daysOfWeek = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
+
+        const schedule = {
+            time: timeInput,
+            daysOfWeek: daysOfWeek,
+            enabled: true
+        };
+
+        await createPresenceSchedule(schedule);
+        ui.showToast('Schedule created', 3000, 'success');
+
+        // Clear form inputs
+        document.getElementById('schedule-time-input').value = '';
+        document.querySelectorAll('#add-schedule-modal input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+        document.getElementById('add-schedule-modal').close();
+        updateSettingsContentArea('presence');
+    } catch (error) {
+        console.error('Error creating schedule:', error);
+        ui.showToast('Failed to create schedule', 5000, 'error');
+    }
+};
+
+window.handleScheduleToggle = async function(scheduleId, enabled) {
+    try {
+        await updatePresenceSchedule(scheduleId, { enabled });
+        ui.showToast(`Schedule ${enabled ? 'enabled' : 'disabled'}`, 3000, 'success');
+        // No need to reload entire view - the toggle state is already updated in the DOM
+    } catch (error) {
+        console.error('Error toggling schedule:', error);
+        ui.showToast('Failed to update schedule', 5000, 'error');
+        // On error, revert the toggle in the UI
+        const toggle = document.querySelector(`input[onchange*="${scheduleId}"]`);
+        if (toggle) toggle.checked = !enabled;
+    }
+};
+
+window.handleDeleteSchedule = async function(scheduleId) {
+    if (!confirm('Are you sure you want to delete this schedule?')) return;
+
+    try {
+        await deletePresenceSchedule(scheduleId);
+        ui.showToast('Schedule deleted', 3000, 'success');
+        updateSettingsContentArea('presence');
+    } catch (error) {
+        console.error('Error deleting schedule:', error);
+        ui.showToast('Failed to delete schedule', 5000, 'error');
     }
 };
 

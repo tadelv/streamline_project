@@ -91,17 +91,19 @@ async function displayShot(index) {
     const grindSizeEl = document.getElementById('history-grind-size');
 
     if (doseInEl) {
-        if (shot.workflow && shot.workflow.doseData && typeof shot.workflow.doseData.doseIn !== 'undefined') {
-            doseInEl.textContent = `In ${shot.workflow.doseData.doseIn}g`;
+        const doseIn = shot.workflow?.context?.targetDoseWeight ?? shot.workflow?.doseData?.doseIn;
+        if (typeof doseIn !== 'undefined' && doseIn !== null) {
+            doseInEl.textContent = `In ${doseIn}g`;
         } else {
             doseInEl.textContent = `In: N/A`;
         }
     }
 
     if (grindSizeEl) {
-        if (shot.workflow && shot.workflow.grinderData && typeof shot.workflow.grinderData.setting !== 'undefined') {
-            const settingInt = parseInt(shot.workflow.grinderData.setting, 10);
-            grindSizeEl.textContent = !isNaN(settingInt) ? `Grind ${settingInt}` : `Grind N/A`;
+        const grindSetting = shot.workflow?.context?.grinderSetting ?? shot.workflow?.grinderData?.setting;
+        if (typeof grindSetting !== 'undefined' && grindSetting !== null) {
+            const settingFloat = parseFloat(grindSetting);
+            grindSizeEl.textContent = !isNaN(settingFloat) ? `Grind ${settingFloat}` : `Grind N/A`;
         } else {
             grindSizeEl.textContent = `Grind N/A`;
         }

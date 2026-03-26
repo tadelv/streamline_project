@@ -1404,3 +1404,120 @@ export async function signalHeartbeat() {
         throw error;
     }
 }
+
+// Presence API functions
+export async function getPresenceSettings() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/presence/settings`);
+        if (!response.ok) {
+            const error = new Error(`Failed to get presence settings: ${response.status} ${response.statusText}`);
+            logger.error('Error getting presence settings:', error);
+            throw error;
+        }
+        return response.json();
+    } catch (error) {
+        if (!error.message.includes('Failed to get')) {
+            logger.error('Error getting presence settings:', error);
+        }
+        throw error;
+    }
+}
+
+export async function setPresenceSettings(settings) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/presence/settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        if (!response.ok) {
+            const error = new Error(`Failed to update presence settings: ${response.status} ${response.statusText}`);
+            logger.error('Error updating presence settings:', error);
+            throw error;
+        }
+        return response.json();
+    } catch (error) {
+        if (!error.message.includes('Failed to update')) {
+            logger.error('Error updating presence settings:', error);
+        }
+        throw error;
+    }
+}
+
+export async function getPresenceSchedules() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/presence/schedules`);
+        if (!response.ok) {
+            const error = new Error(`Failed to get schedules: ${response.status} ${response.statusText}`);
+            logger.error('Error getting presence schedules:', error);
+            throw error;
+        }
+        return response.json();
+    } catch (error) {
+        if (!error.message.includes('Failed to get')) {
+            logger.error('Error getting presence schedules:', error);
+        }
+        throw error;
+    }
+}
+
+export async function createPresenceSchedule(schedule) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/presence/schedules`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(schedule)
+        });
+        if (!response.ok) {
+            const error = new Error(`Failed to create schedule: ${response.status} ${response.statusText}`);
+            logger.error('Error creating presence schedule:', error);
+            throw error;
+        }
+        return response.json();
+    } catch (error) {
+        if (!error.message.includes('Failed to create')) {
+            logger.error('Error creating presence schedule:', error);
+        }
+        throw error;
+    }
+}
+
+export async function updatePresenceSchedule(id, schedule) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/presence/schedules/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(schedule)
+        });
+        if (!response.ok) {
+            const error = new Error(`Failed to update schedule ${id}: ${response.status} ${response.statusText}`);
+            logger.error('Error updating presence schedule:', error);
+            throw error;
+        }
+        return response.json();
+    } catch (error) {
+        if (!error.message.includes('Failed to update')) {
+            logger.error('Error updating presence schedule:', error);
+        }
+        throw error;
+    }
+}
+
+export async function deletePresenceSchedule(id) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/presence/schedules/${id}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) {
+            const error = new Error(`Failed to delete schedule ${id}: ${response.status} ${response.statusText}`);
+            logger.error('Error deleting presence schedule:', error);
+            throw error;
+        }
+        return response.json();
+    } catch (error) {
+        if (!error.message.includes('Failed to delete')) {
+            logger.error('Error deleting presence schedule:', error);
+        }
+        throw error;
+    }
+}

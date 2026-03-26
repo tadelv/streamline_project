@@ -228,26 +228,25 @@
             <!-- Footer: Shot History and Data -->
             <div class="w-[385px] h-60 left-[479px] top-[955px] absolute bg-[var(--bgmain-color)] border border-b-0 border-[var(--border-color)]" aria-label="Shot History">
                 <div id= 'shot-history-label'class="w-[156px] left-[115px] top-[46px] absolute text-center justify-start text-[var(--data-card-title-text-color)] text-[20px] font-bold font-['Inter'] leading-6" data-i18n-key="SHOT HISTORY">SHOT HISTORY</div>
-                <div class="w-72 left-[49px] top-[92px] absolute inline-flex justify-between items-center">
-                    <button id="history-prev-btn" aria-label="Previous Shot"><svg class="w-6 h-6 rotate-180" aria-hidden="true" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-                    <div class="text-center " aria-live="polite">
-                        <p id="history-date" class=" pb-4 text-[20px] font-bold font-['Inter'] text-[var(--text-primary)]">Tue, 14 Sept, 18:45</p>
-                        <p id="history-profile-name" class="pb-1 text-[20px] font-['Inter'] text-[var(--text-primary)] overflow-hidden text-clip">Londinium</p>
-                        <div class="flex justify-center items-center gap-2">
-                            <p id="history-dose-in" class="text-[20px] font-['Inter'] text-[var(--text-primary)]" data-i18n-key="Dose In">In 20g</p>
-                            <span class="text-[var(--text-primary)] text-[20px]  font-['Inter']" aria-hidden="true">|</span>
-                            <p id="history-grind-size" class="text-[20px]  font-['Inter'] text-[var(--text-primary)]" data-i18n-key="Grind Size">Grind 1.4</p>
-                        </div>
-
+                <div class="left-[49px] top-[92px] absolute flex flex-col items-center" aria-live="polite">
+                    <div class="w-72 inline-flex justify-between items-center">
+                        <button id="history-prev-btn" aria-label="Previous Shot"><svg class="w-6 h-6 rotate-180" aria-hidden="true" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        <p id="history-date" class="text-[20px] font-bold font-['Inter'] text-[var(--text-primary)]">Tue, 14 Sept, 18:45</p>
+                        <button id="history-next-btn" aria-label="Next Shot"><svg class="w-6 h-6 " aria-hidden="true" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     </div>
-                    <button id="history-next-btn" aria-label="Next Shot"><svg class="w-6 h-6 " aria-hidden="true" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.25 27L42.75 27M42.75 27L27 11.25M42.75 27L27 42.75" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <p id="history-profile-name" class="pb-1 pt-4 text-[20px] font-['Inter'] text-[var(--text-primary)] overflow-hidden text-clip">Londinium</p>
+                    <div class="flex justify-center items-center gap-2">
+                        <p id="history-dose-in" class="text-[20px] font-['Inter'] text-[var(--text-primary)]" data-i18n-key="Dose In">In 20g</p>
+                        <span class="text-[var(--text-primary)] text-[20px]  font-['Inter']" aria-hidden="true">|</span>
+                        <p id="history-grind-size" class="text-[20px]  font-['Inter'] text-[var(--text-primary)]" data-i18n-key="Grind Size">Grind 1.4</p>
+                    </div>
                 </div>
             </div>
             <div class="w-[1050px] h-60 left-[863px] top-[955px] border-r-0 border-b-0 absolute bg-[var(--bgmain-color)] border border-[var(--border-color)]" role="grid" aria-label="Detailed Shot Data">
                 <div class="grid grid-cols-7 w-full left-[198px] top-[35px] absolute" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;" role="row">
                     <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="Time" role="columnheader">Time</div>
                     <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="Grams" role="columnheader">Grams</div>
-                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL" role="columnheader">mL</div>
+                    <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start pl-[20px]" data-i18n-key="mL" role="columnheader">mL</div>
                     <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="°C" role="columnheader">°C</div>
                     <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="mL/s" role="columnheader">mL/s</div>
                     <div class="h-9 text-[var(--data-card-title-text-color)] text-[20px] font-semibold font-['NotoSansMono'] leading-6 text-left flex items-center justify-start" data-i18n-key="Pressure" role="columnheader">Pressure</div>
@@ -260,7 +259,7 @@
                         <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
                             <div id="shot-data-pi-time" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">15s </div>
                             <div id="shot-data-pi-weight" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">10g</div>
-                            <div id="shot-data-pi-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">17ml</div>
+                            <div id="shot-data-pi-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start pl-[20px]" role="gridcell">17ml</div>
                             <div id="shot-data-pi-temp" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">90°c</div>
                             <div id="shot-data-pi-flow" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">0–8.1 ml/s</div>
                             <div id="shot-data-pi-pressure" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">0–3.3 bar</div>
@@ -272,7 +271,7 @@
                         <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
                             <div id="shot-data-ex-time" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">30s </div>
                             <div id="shot-data-ex-weight" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">29g</div>
-                            <div id="shot-data-ex-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">30ml</div>
+                            <div id="shot-data-ex-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start pl-[20px]" role="gridcell">30ml</div>
                             <div id="shot-data-ex-temp" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">90°–80°c</div>
                             <div id="shot-data-ex-flow" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">0.4–2.5 ml/s</div>
                             <div id="shot-data-ex-pressure" class="h-9 text-[var(--text-primary)] text-[20px] font-normal font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">3–9 bar</div>
@@ -284,7 +283,7 @@
                         <div class="col-span-5 grid grid-cols-6 w-full" style="grid-template-columns: 90px 90px 90px 100px 200px 200px;">
                             <div id="shot-data-total-time" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">45s </div>
                             <div id="shot-data-total-weight" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">39g (1:2.5)</div>
-                            <div id="shot-data-total-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start" role="gridcell">57ml</div>
+                            <div id="shot-data-total-volume" class="h-9 text-[var(--text-primary)] text-[20px] font-semibold font-mono-custom leading-6 text-left flex items-center justify-start pl-[20px]" role="gridcell">57ml</div>
                             <div class="h-9 text-left flex items-center justify-start invisible" role="gridcell">Temp</div>
                             <div class="h-9 text-left flex items-center justify-start invisible" role="gridcell">Flow</div>
                             <div class="h-9 text-left flex items-center justify-start invisible" role="gridcell">Pressure</div>
