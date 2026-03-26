@@ -167,3 +167,100 @@ body {
 .flash-animation {
     animation: button-flash 0.28s linear forwards; /* 'forwards' keeps the end state */
 }
+
+/* Brightness Slider Styling */
+.brightness-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 200px;
+  height: 8px;
+  border-radius: 5px;
+  background: linear-gradient(to right, #385a92 0%, #385a92 75%, #e8e8e8 75%, #e8e8e8 100%);
+  outline: none;
+  cursor: pointer;
+}
+
+.brightness-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #385a92;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid #c5cdda;
+  transition: all 0.2s ease;
+}
+
+.brightness-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(56, 90, 146, 0.4);
+}
+
+.brightness-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #385a92;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid #c5cdda;
+  transition: all 0.2s ease;
+}
+
+.brightness-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(56, 90, 146, 0.4);
+}
+
+.brightness-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+.brightness-slider::-moz-range-progress {
+  background: #385a92;
+  height: 8px;
+  border-radius: 5px;
+}
+
+/* Brightness Toggle Button Styling */
+.brightness-toggle-checkbox {
+  display: none;
+}
+
+.brightness-toggle-label {
+  display: block;
+  width: 104.8px;
+  height: 62.88px;
+  background-color: #e8e8e8;
+  border: 2px solid #c9c9c9;
+  border-radius: 2617.374px;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.brightness-toggle-label::after {
+  content: '';
+  position: absolute;
+  width: 41.92px;
+  height: 41.92px;
+  background-color: #c9c9c9;
+  border-radius: 50%;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  transition: left 0.3s ease;
+}
+
+.brightness-toggle-checkbox:checked + .brightness-toggle-label {
+  background-color: #385a92;
+  border-color: #385a92;
+}
+
+.brightness-toggle-checkbox:checked + .brightness-toggle-label::after {
+  background-color: #ffffff;
+  left: calc(100% - 41.92px - 8px);
+}

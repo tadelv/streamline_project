@@ -1,6 +1,6 @@
 import { logger } from './logger.js';
 import { updateWorkflow,sendProfile, getWorkflow, getValueFromStore, setValueInStore, getProfiles, deleteProfile, updateProfileVisibility, uploadProfile, updateProfile } from './api.js';
-import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio ,showToast} from './ui.js';
+import { updateProfileName, updateTemperatureDisplay, updateDrinkOut, updateDrinkRatio, updateDoseInDisplay, showToast} from './ui.js';
 import { openDB, getSetting, setSetting } from './idb.js';
 import { loadPage } from './router.js'; // Singular and correctly formatted import
 import { getTranslation } from './i18n.js';
@@ -56,7 +56,6 @@ const PROFILES_CACHE_KEY = 'available-profiles-cache';
 let favoriteButtons = [];
 export let availableProfiles = {};
 let favoriteAssignments = {};
-let currentButtonIndex = null;
 
 // Global flag to prevent duplicate execution of profile updates
 let profileUpdateInProgress = false;
@@ -292,14 +291,15 @@ async function handleProfileClick(index) {
         if (profile.target_weight) {
             const workflowUpdate = {
                 profile: profile,
-                doseData: {
-                    doseIn: profile.dose_weight || 18, // Default to 18g if not specified
-                    doseOut: parseFloat(profile.target_weight) // Use the profile's target weight
+                context: {
+                    targetDoseWeight: profile.dose_weight || 18, // Default to 18g if not specified
+                    targetYield: parseFloat(profile.target_weight) // Use the profile's target weight
                 }
             };
             logger.info(`Calling updateWorkflow with dose data (callId: ${callId})`);
             workflowResponse = await updateWorkflow(workflowUpdate);
             updateDrinkOut(profile.target_weight);
+            updateDoseInDisplay(profile.dose_weight || 18);
             updateDrinkRatio();
         } else {
             // Just update with the profile if no target weight is specified

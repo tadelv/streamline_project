@@ -34,6 +34,8 @@ export let reconnectingWebSocket = null; // Exporting for app.js access
 export let currentMachineState = null;
 let previousMachineState = null;
 let scaleWebSocket = null;
+let displayWebSocket = null;
+let displayWebSocketReady = false;
 
 // Local cache for current shot settings, initialized with default values and correct types
 let currentShotSettings = {
@@ -440,6 +442,90 @@ export function getScaleDeviceId() {
         logger.error('Error getting scale device ID:', error);
         return null;
     }
+}
+
+/**
+ * Initialize display WebSocket connection
+ * @param {Function} onData - Callback for display state updates
+ */
+export function connectDisplayWebSocket(onData) {
+    if (displayWebSocket && displayWebSocket.readyState === WebSocket.OPEN) {
+        logger.info('Display WebSocket already connected');
+        return;
+    }
+
+    displayWebSocket = new ReconnectingWebSocket(`${WS_PROTOCOL}//${reaHostname}:${REA_PORT}/ws/v1/display`, [], {
+        debug: true,
+        reconnectInterval: 3000,
+    });
+
+    displayWebSocket.onopen = () => {
+        logger.info('Display WebSocket connected');
+        displayWebSocketReady = true;
+    };
+
+    displayWebSocket.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (onData) {
+                onData(data);
+            }
+        } catch (error) {
+            logger.error('Error parsing display WebSocket message:', error);
+        }
+    };
+
+    displayWebSocket.onerror = (error) => {
+        logger.error('Display WebSocket error:', error);
+    };
+
+    displayWebSocket.onclose = () => {
+        logger.info('Display WebSocket closed');
+        displayWebSocketReady = false;
+    };
+}
+
+/**
+ * Send a command to the display WebSocket channel
+ * @param {Object} command - The command payload
+ * @param {string} command.command - The command type: 'setBrightness', 'requestWakeLock', or 'releaseWakeLock'
+ * @param {number} [command.brightness] - Brightness value 0-100 (required for setBrightness)
+ */
+export function sendDisplayCommand(command) {
+    if (!displayWebSocket) {
+        logger.error('Display WebSocket not initialized. Cannot send command.');
+        return;
+    }
+
+    if (!displayWebSocketReady || displayWebSocket.readyState !== WebSocket.OPEN) {
+        logger.warn('Display WebSocket not ready. Queuing command:', command);
+        // Retry after a short delay
+        setTimeout(() => {
+            if (displayWebSocketReady && displayWebSocket.readyState === WebSocket.OPEN) {
+                try {
+                    displayWebSocket.send(JSON.stringify(command));
+                    logger.info('Display command sent (after retry):', command);
+                } catch (error) {
+                    logger.error('Error sending display command on retry:', error);
+                }
+            } else {
+                logger.error('Display WebSocket still not ready after retry.');
+            }
+        }, 100);
+        return;
+    }
+
+    try {
+        displayWebSocket.send(JSON.stringify(command));
+        logger.info('Display command sent:', command);
+    } catch (error) {
+        logger.error('Error sending display command:', error);
+        throw error;
+    }
+}
+
+export function getDisplayWebSocket() {
+    return displayWebSocket;
 }
 
 export function initDeviceWebSocketWithCallback(onReady, onData, onReconnect, onDisconnect) {
@@ -1250,30 +1336,24 @@ export async function getDisplayState() {
     }
 }
 
-export async function dimDisplay() {
+export function dimDisplay() {
     try {
-        const response = await fetch(`${API_BASE_URL}/display/dim`, {
-            method: 'POST',
+        sendDisplayCommand({
+            command: 'setBrightness',
+            brightness: 10
         });
-        if (!response.ok) {
-            throw new Error(`Failed to dim display: ${response.status}`);
-        }
-        return response.json();
     } catch (error) {
         logger.error('Error dimming display:', error);
         throw error;
     }
 }
 
-export async function restoreDisplay() {
+export function restoreDisplay() {
     try {
-        const response = await fetch(`${API_BASE_URL}/display/restore`, {
-            method: 'POST',
+        sendDisplayCommand({
+            command: 'setBrightness',
+            brightness: 100
         });
-        if (!response.ok) {
-            throw new Error(`Failed to restore display: ${response.status}`);
-        }
-        return response.json();
     } catch (error) {
         logger.error('Error restoring display:', error);
         throw error;

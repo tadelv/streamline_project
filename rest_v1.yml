@@ -231,8 +231,8 @@ paths:
             schema:
               $ref: "#/components/schemas/De1SettingsRequest"
       responses:
-        "200":
-          description: Settings update successful
+        "202":
+          description: Settings update accepted
 
   /api/v1/machine/settings/advanced:
     get:
@@ -257,8 +257,8 @@ paths:
             schema:
               $ref: "#/components/schemas/De1AdvancedSettingsRequest"
       responses:
-        "200":
-          description: Advanced settings updated successfully
+        "202":
+          description: Advanced settings update accepted
 
   /api/v1/machine/calibration:
     get:
@@ -285,28 +285,6 @@ paths:
       responses:
         "202":
           description: Calibration settings updated successfully
-
-  /api/v1/machine/usb/{state}:
-    put:
-      summary: Toggle USB Charger Mode
-      description: Enables or disables the USB charger mode on the machine.
-      tags: [Machine]
-      parameters:
-        - name: state
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [enable, disable]
-      responses:
-        "200":
-          description: USB mode updated successfully
-        "500":
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
 
   /api/v1/machine/waterLevels:
     post:
@@ -516,9 +494,9 @@ paths:
         - **hotWaterData**: Adjust hot water temperature, volume, duration, and flow
         - **rinseData**: Update rinse temperature, duration, and flow
 
-        Use `context` for dose, grinder, and coffee parameters. Legacy fields
-        (`doseData`, `grinderData`, `coffeeData`) are still accepted for backward
-        compatibility but `context` takes precedence when both are provided.
+        Use `context` for dose, grinder, and coffee parameters. As of v0.5.2,
+        legacy fields (`doseData`, `grinderData`, `coffeeData`) are no longer
+        accepted — only `context` is supported.
 
         This approach is preferred over updating individual settings via separate endpoints
         as it ensures all related settings are applied together and uploaded to the machine
@@ -2734,31 +2712,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/DisplayState"
 
-  /api/v1/display/dim:
-    post:
-      summary: Dim the screen
-      description: Dims the tablet screen brightness.
+  /api/v1/display/brightness:
+    put:
+      summary: Set screen brightness
+      description: |
+        Sets the screen brightness to a value between 0 and 100.
+        Setting brightness to 100 returns to OS-managed brightness (respects auto-brightness settings).
+        Values 0-99 set an explicit brightness level.
+        If the low battery brightness limit is active (battery < 30% and setting enabled), the actual applied brightness may be capped at 20.
+        The response includes both `brightness` (actual applied) and `requestedBrightness` (what was requested).
       tags: [Display]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [brightness]
+              properties:
+                brightness:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                  description: Brightness level (0-100). 100 returns to OS-managed brightness.
       responses:
         "200":
-          description: Screen dimmed
+          description: Updated display state
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DisplayState"
-
-  /api/v1/display/restore:
-    post:
-      summary: Restore screen brightness
-      description: Restores the tablet screen to normal brightness.
-      tags: [Display]
-      responses:
-        "200":
-          description: Screen brightness restored
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DisplayState"
+        "400":
+          description: Invalid brightness value
 
   /api/v1/display/wakelock:
     post:
@@ -2876,7 +2861,126 @@ paths:
                     type: string
         "500":
           description: Internal server error
+  /api/v1/data/sync:
+    post:
+      summary: Sync data between Bridge instances
+      description: |
+        Synchronizes data between this Bridge instance and a target Bridge
+        instance over the network. Supports three modes:
+        - **pull**: imports data from the target into this instance
+        - **push**: exports data from this instance to the target
+        - **two_way**: performs pull then push (returns 207 if one phase fails)
 
+        Only the specified sections are synced. If no sections are provided,
+        all available sections are synced.
+      tags: [Data Management]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target, mode]
+              properties:
+                target:
+                  type: string
+                  description: Base URL of the target Bridge instance (e.g. "http://192.168.1.50:8080")
+                mode:
+                  type: string
+                  enum: [pull, push, two_way]
+                  description: |
+                    Sync direction.
+                    'pull' imports from target into this instance.
+                    'push' exports from this instance to the target.
+                    'two_way' performs pull then push.
+                onConflict:
+                  type: string
+                  enum: [skip, overwrite]
+                  default: skip
+                  description: |
+                    How to handle records that already exist.
+                    'skip' keeps existing records (default).
+                    'overwrite' replaces existing records with imported ones.
+                sections:
+                  type: array
+                  items:
+                    type: string
+                    enum: [profiles, shots, workflow, settings, store, beans, grinders]
+                  description: Data sections to sync. Defaults to all sections if omitted.
+      responses:
+        "200":
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+        "207":
+          description: Partial success (two_way mode, one phase failed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+        "400":
+          description: Validation error (missing required fields, invalid mode, etc.)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+        "502":
+          description: Target Bridge unreachable or returned an error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+
+  /api/v1/info:
+    get:
+      summary: Get build information
+      description: Returns compile-time build information (version, commit, branch, build time, etc.)
+      tags: [System]
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commit:
+                    type: string
+                  commitShort:
+                    type: string
+                  branch:
+                    type: string
+                  buildTime:
+                    type: string
+                  version:
+                    type: string
+                  buildNumber:
+                    type: string
+                  appStore:
+                    type: boolean
+                  fullVersion:
+                    type: string
+                required:
+                  - commit
+                  - commitShort
+                  - branch
+                  - buildTime
+                  - version
+                  - buildNumber
+                  - appStore
+                  - fullVersion
 components:
   schemas:
     Error:
@@ -3079,8 +3183,10 @@ components:
       type: object
       properties:
         usb:
-          type: boolean
+          type: string
+          enum: [enable, disable]
           nullable: true
+          description: USB charger mode. Use 'enable' or 'disable'.
         fan:
           type: integer
           nullable: true
@@ -3102,11 +3208,16 @@ components:
         tankTemp:
           type: integer
           nullable: true
+        steamPurgeMode:
+          type: integer
+          nullable: true
+          description: Steam purge mode setting
     De1SettingsResponse:
       type: object
       properties:
         usb:
           type: boolean
+          description: Whether USB charger mode is enabled
         fan:
           type: integer
         flushTemp:
@@ -3121,6 +3232,9 @@ components:
           type: number
         tankTemp:
           type: integer
+        steamPurgeMode:
+          type: integer
+          description: Steam purge mode setting
     De1AdvancedSettingsRequest:
       type: object
       properties:
@@ -3253,6 +3367,14 @@ components:
           type: string
           nullable: true
           example: "AA:BB:CC:DD:EE:FF"
+        defaultSkinId:
+          description: ID of the default WebUI skin to serve
+          type: string
+          nullable: true
+        automaticUpdateCheck:
+          description: Whether to automatically check for updates
+          type: boolean
+          nullable: true
         chargingMode:
           type: string
           enum: [disabled, longevity, balanced, highAvailability]
@@ -3310,6 +3432,13 @@ components:
           type: string
           nullable: true
           example: "AA:BB:CC:DD:EE:FF"
+        defaultSkinId:
+          description: ID of the default WebUI skin being served
+          type: string
+          nullable: true
+        automaticUpdateCheck:
+          description: Whether automatic update checking is enabled
+          type: boolean
         chargingMode:
           type: string
           enum: [disabled, longevity, balanced, highAvailability]
@@ -3451,77 +3580,15 @@ components:
         context:
           $ref: "#/components/schemas/WorkflowContext"
           description: |
-            Unified shot metadata (dose, grinder, coffee, people). This is the recommended
-            way to set workflow parameters. Legacy fields (doseData, grinderData, coffeeData)
-            are still accepted for backward compatibility but context takes precedence.
-        doseData:
-          $ref: "#/components/schemas/DoseData"
-          deprecated: true
-          description: "Deprecated: use context.targetDoseWeight and context.targetYield instead"
-        grinderData:
-          $ref: "#/components/schemas/GrinderData"
-          deprecated: true
-          description: "Deprecated: use context.grinderModel, context.grinderSetting, and context.grinderId instead"
-        coffeeData:
-          $ref: "#/components/schemas/CoffeeData"
-          deprecated: true
-          description: "Deprecated: use context.coffeeName, context.coffeeRoaster, and context.beanBatchId instead"
+            Unified shot metadata (dose, grinder, coffee, people). This is the only
+            supported way to set workflow parameters as of v0.5.2. Legacy fields
+            (doseData, grinderData, coffeeData) are no longer accepted.
         steamSettings:
           $ref: "#/components/schemas/SteamSettings"
         hotWaterData:
           $ref: "#/components/schemas/HotWaterData"
         rinseData:
           $ref: "#/components/schemas/RinseData"
-
-    DoseData:
-      type: object
-      required:
-        - doseIn
-        - doseOut
-      properties:
-        doseIn:
-          type: number
-          description: Input dose (dry coffee weight in grams)
-          example: 18.0
-        doseOut:
-          type: number
-          description: Target output dose (beverage weight in grams)
-          example: 36.0
-
-    GrinderData:
-      type: object
-      required:
-        - setting
-      properties:
-        setting:
-          type: string
-          description: Grinder setting (e.g., "2.5", "15")
-          example: "2.5"
-        manufacturer:
-          type: string
-          nullable: true
-          description: Grinder manufacturer name
-          example: "Niche"
-        model:
-          type: string
-          nullable: true
-          description: Grinder model name
-          example: "Zero"
-
-    CoffeeData:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: Coffee name or variety
-          example: "Ethiopia Yirgacheffe"
-        roaster:
-          type: string
-          nullable: true
-          description: Roaster name
-          example: "Local Roaster"
 
     SteamSettings:
       type: object
@@ -3906,9 +3973,18 @@ components:
           type: boolean
           description: Whether a skin has requested a wake-lock override
         brightness:
-          type: string
-          enum: [normal, dimmed]
-          description: Current brightness state
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Actual applied brightness level (0-100). May differ from requestedBrightness if battery cap is active.
+        requestedBrightness:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: The brightness level that was requested. If no battery cap is active, this equals brightness.
+        lowBatteryBrightnessActive:
+          type: boolean
+          description: Whether the low battery brightness cap is currently limiting brightness
         platformSupported:
           type: object
           properties:
@@ -3939,6 +4015,24 @@ components:
           items:
             type: string
           description: Warning messages (e.g., platform mismatch for device preferences)
+
+    SyncResult:
+      type: object
+      description: Result of a data sync operation. Contains per-phase results keyed by direction.
+      properties:
+        pull:
+          type: object
+          description: Per-section results for the pull phase (present for pull and two_way modes)
+          additionalProperties:
+            $ref: "#/components/schemas/SectionImportResult"
+        push:
+          type: object
+          description: Per-section results for the push phase (present for push and two_way modes)
+          additionalProperties:
+            $ref: "#/components/schemas/SectionImportResult"
+        error:
+          type: string
+          description: Error message if a phase failed (present in 207 responses)
 
     WorkflowContext:
       type: object

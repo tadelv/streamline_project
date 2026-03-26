@@ -6,6 +6,41 @@
       "sourceType": "github",
       "computedHash": "270f0dd1d4c15a798bad5253a309cdc2056fe5322f99ba06ca22ce50581adc02"
     },
+    "figma-code-connect-components": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "9c317d82fe6e7cd42740c2ba9ac3210d1b0c81814e758b93066586060c0869f2"
+    },
+    "figma-create-design-system-rules": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "2a0d7f3579044c13eed985f721093e2637f91fb8fe22b49dd7e99eedd2ca5180"
+    },
+    "figma-create-new-file": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "e696ed4b3b883040b61aeb57a6803ce0952f2b848f74851e6ea42333e30afa18"
+    },
+    "figma-generate-design": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "cc6a40a6ccaba2f96133e1c302910fb9d1be69965a808d5cfa65a49b208d12d0"
+    },
+    "figma-generate-library": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "9dafba28779802b9267610c6a4b420c77d15f6d43a27800feefbaca9f35d2d34"
+    },
+    "figma-implement-design": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "3a73f35eaa52cba221f5f237097b6e2e4c193c558bf88aa4ab32dec736ad0ffe"
+    },
+    "figma-use": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "a38fa3f605e5929bdd99e484d5abfd84c510f06b10492a5bae6e5c640616c4e0"
+    },
     "implement-design": {
       "source": "figma/mcp-server-guide",
       "sourceType": "github",

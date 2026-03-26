@@ -1,0 +1,1 @@
+- [Rea Prime API — workflow endpoint shape](project_rea_prime_api.md) — workflow PUT uses `context` (not `doseData`) for dose/yield/grinder fields; field names changed too

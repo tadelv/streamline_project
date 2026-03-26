@@ -1,0 +1,57 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Running the App
+
+No build step. Serve `index.html` from any static file server:
+```
+python3 -m http.server
+```
+Requires Rea Prime middleware running on `localhost:8080`. The hostname is configurable via `localStorage.getItem('reaHostname')` in `api.js`.
+
+## Architecture
+
+Vanilla JS/HTML/CSS SPA — no framework, no bundler. ES modules via native browser `<script type="module">` and an importmap in `index.html`. Tailwind + DaisyUI loaded from CDN.
+
+### Module Roles (`src/modules/`)
+
+- `api.js` — all network I/O: REST fetch wrappers + WebSocket connections to Rea Prime. Exports `MachineState` enum and caches for shot/DE1 settings.
+- `app.js` — bootstrap and orchestrator. Wires WebSocket callbacks, owns global state (`isDe1Connected`, `isScaleConnected`, `shotStartTime`), exposes `window.app`.
+- `ui.js` — DOM update functions called after state changes.
+- `chart.js` — real-time Plotly shot graph (pressure, flow, groupTemperature actual + target).
+- `history.js` — shot history backed by IndexedDB via `idb.js`.
+- `profileManager.js` — profile CRUD via the workflow API.
+- `router.js` — SPA page loader; swaps in `profile_selector.html` and `settings.html` as sub-pages.
+- `reconnecting-websocket.js` — loaded as a classic script (not a module); auto-reconnect wrapper.
+
+### Data Flow
+
+```
+Rea Prime :8080
+  ├── REST  ──────────────────► api.js → app.js (loadInitialData) → ui.js / profileManager.js
+  └── WebSocket
+        ws/v1/de1/snapshot ──► handleData() → chart.updateChart() + ui.*
+        ws/v1/scale/snapshot ► handleScaleData()
+        ws/v1/de1/waterLevels ► waterTank.js
+        ws/v1/de1/shotSettings ► updateShotSettingsCache()
+```
+
+Single global `appState` object as source of truth. No reactive framework — UI functions are called manually after state changes.
+
+## Conventions
+
+- Styling: TailwindCSS + DaisyUI only. No custom CSS unless unavoidable. Theme via `data-theme="light"`.
+- Chart updates: use `Plotly.update()` not `Plotly.react()` for performance.
+- Chart data arrays must maintain exact equal lengths.
+- Scale readings need throttling to prevent UI flicker.
+- Profile updates require going through the workflow API wrapper, not direct REST calls.
+- IndexedDB writes (history) must be atomic.
+- WebSocket reconnection resets machine connection status — account for this in UI state.
+
+## Reference Files
+
+- `reaprime_api.md` — full REST + WebSocket API reference
+- `DESIGN_SYSTEM.md` — design tokens, component patterns, theming
+- `rewrite_roadmap.md` — feature roadmap
+- Original TCL skin at `/Users/markc/Documents/streamline_js/de1app/de1plus/skins/Streamline/skin.tcl` — reference for feature logic when unsure how something should behave

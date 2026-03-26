@@ -1,4 +1,4 @@
-import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId } from '../modules/api.js';
+import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand } from '../modules/api.js';
 import * as ui from '../modules/ui.js';
 import { initScaling } from '../modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
@@ -948,23 +948,23 @@ export function renderScreenSaverSettings() {
 // Render Brightness settings
 export function renderBrightnessSettings() {
     return `
-        <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
-            <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
-                <p class="leading-[1.2]">Brightness</p>
+        <div class="content-stretch flex flex-col gap-[80px] items-start relative w-full px-[60px] py-[80px]">
+            <div class="content-stretch flex items-center justify-between relative w-full">
+                <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative text-[var(--text-primary)] text-[36px]">
+                    <p class="leading-[1.2]">Screen Brightness</p>
+                </div>
+                
             </div>
 
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Brightness</p>
-                        </div>
-                        <input type="range" min="0" max="100" value="75" class="w-[200px] h-[30px]" onchange="handleBrightnessChange(this.value)">
+            <div class="content-stretch flex flex-col gap-[40px] items-start relative w-full">
+                <div class="h-[41.92px] relative w-full">
+                    <div class="flex items-center justify-between w-full">
+                        <input type="range" id="brightness-slider" min="0" max="100" value="75" class="brightness-slider flex-grow" onchange="handleBrightnessChange(this.value)">
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Adjust screen brightness level
-                    </p>
                 </div>
+                <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[32px] w-full">
+                    Adjust screen brightness level
+                </p>
             </div>
         </div>
     `;
@@ -1033,7 +1033,7 @@ export function renderMiscellaneousSettings() {
                         <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
                             <p class="leading-[1.2]">Brightness</p>
                         </div>
-                        <input type="range" min="0" max="100" value="75" class="w-[200px] h-[30px]" onchange="handleBrightnessChange(this.value)">
+                        <input type="range" id="brightness-slider" min="0" max="100" value="75" class="brightness-slider w-[200px]" onchange="handleBrightnessChange(this.value)">
                     </div>
                     <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
                         Adjust screen brightness level
@@ -2273,6 +2273,9 @@ export async function initializeSettings() {
     // Initialize WebSocket for live device state updates
     initDeviceWebSocket();
 
+    // Initialize WebSocket for live display state updates
+    initDisplayWebSocket();
+
     // Set up event listeners
     const cancelBtn = document.getElementById('cancel-settings-btn');
     if (cancelBtn) {
@@ -2743,6 +2746,24 @@ export function initDeviceWebSocket() {
 }
 
 /**
+ * Initialize display WebSocket connection
+ */
+export function initDisplayWebSocket() {
+    connectDisplayWebSocket((data) => {
+        logger.debug('Display state received:', data);
+
+        // Update brightness slider if it exists
+        const brightnessSlider = document.querySelector('input[type="range"][onchange*="handleBrightnessChange"]');
+        if (brightnessSlider && data.brightness !== undefined) {
+            brightnessSlider.value = data.brightness;
+            previousBrightnessState = data.brightness;
+        }
+    });
+
+    logger.info('Display WebSocket initialized');
+}
+
+/**
  * Render device lists from WebSocket cache
  */
 function renderDeviceListFromCache() {
@@ -2799,16 +2820,41 @@ let previousBrightnessState = null;
 window.handleBrightnessChange = async function(value) {
     try {
         const brightnessValue = parseInt(value);
-        
-        if (brightnessValue === 100) {
-            await restoreDisplay();
-        } else {
-            await dimDisplay();
+        const slider = document.getElementById('brightness-slider');
+
+        // Update slider visual fill
+        if (slider) {
+            const percentage = (brightnessValue / 100) * 100;
+            slider.style.background = `linear-gradient(to right, #385a92 0%, #385a92 ${percentage}%, #e8e8e8 ${percentage}%, #e8e8e8 100%)`;
         }
-        
+
+        sendDisplayCommand({
+            command: 'setBrightness',
+            brightness: brightnessValue
+        });
         previousBrightnessState = brightnessValue;
     } catch (error) {
         console.error('Error adjusting brightness:', error);
+    }
+};
+
+window.handleBrightnessAutoToggle = async function(isEnabled) {
+    try {
+        const slider = document.getElementById('brightness-slider');
+        if (slider) {
+            slider.disabled = isEnabled;
+            slider.style.opacity = isEnabled ? '0.5' : '1';
+            slider.style.cursor = isEnabled ? 'not-allowed' : 'pointer';
+        }
+
+        if (isEnabled) {
+            logger.info('Auto brightness enabled');
+            // You can add logic here to request auto brightness from the display WebSocket
+        } else {
+            logger.info('Auto brightness disabled');
+        }
+    } catch (error) {
+        console.error('Error toggling auto brightness:', error);
     }
 };
 

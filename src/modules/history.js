@@ -1,52 +1,57 @@
 import * as chart from './chart.js';
 import { logger } from './logger.js';
-import { openDB, getAllShots, addShot, getLatestShotTimestamp } from './idb.js';
+import { openDB, getAllShots, addShot, deleteShot as idbDeleteShot, clearShots } from './idb.js';
 import { API_BASE_URL } from './api.js';
 import { renderPastShot, clearShotData } from './shotData.js';
 import { getTranslation } from './i18n.js';
 
+const PAGE_SIZE = 20;
 let shots = [];
 let currentShotIndex = -1;
+let totalAvailable = 0;
 
 async function loadShotHistory() {
-    let fetchedNewShots = false;
     try {
-        const latestTimestamp = await getLatestShotTimestamp();
-        let url = `${API_BASE_URL}/shots`;
-        if (latestTimestamp) {
-            url += `?since=${latestTimestamp}`;
+        const response = await fetch(`${API_BASE_URL}/shots?limit=${PAGE_SIZE}&offset=0&order=desc`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        totalAvailable = data.total ?? 0;
+        for (const shot of data.items ?? []) {
+            await addShot(shot);
         }
-
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const newShots = await response.json();
-
-        if (newShots.length > 0) {
-            for (const shot of newShots) {
-                await addShot(shot);
-            }
-            fetchedNewShots = true;
-            logger.info(`${newShots.length} new shots fetched from API and added to IndexedDB.`);
-        } else {
-            logger.info('No new shots from API.');
-        }
+        logger.info(`${data.items?.length ?? 0} shots fetched from API.`);
     } catch (error) {
-        logger.warn('Could not fetch new shots from API, loading from cache:', error);
+        logger.warn('Could not fetch shots from API, loading from cache:', error);
     }
 
     try {
         shots = await getAllShots();
-        // Sort shots by timestamp descending (newest first)
         shots.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        logger.info('Shot history loaded:', shots.length, 'shots found in IndexedDB');
+        if (totalAvailable < shots.length) totalAvailable = shots.length;
+        logger.info('Shot history loaded:', shots.length, 'shots');
     } catch (error) {
         logger.error('Error loading shots from IndexedDB:', error);
     }
 }
 
-function displayShot(index) {
+async function loadMoreShots() {
+    if (shots.length >= totalAvailable) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/shots?limit=${PAGE_SIZE}&offset=${shots.length}&order=desc`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        totalAvailable = data.total ?? totalAvailable;
+        for (const shot of data.items ?? []) {
+            await addShot(shot);
+            shots.push(shot);
+        }
+        logger.info(`Loaded ${data.items?.length ?? 0} more shots.`);
+    } catch (error) {
+        logger.warn('Could not load more shots:', error);
+    }
+}
+
+async function displayShot(index) {
     if (index < 0 || index >= shots.length) {
         logger.warn('Invalid shot index', index);
         return;
@@ -63,11 +68,10 @@ function displayShot(index) {
     if (dateEl) {
         const date = new Date(shot.timestamp);
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-
         dateEl.textContent = `${year}/${month}/${day} ${hours}:${minutes}`;
     }
     if (profileNameEl && shot.workflow && shot.workflow.profile) {
@@ -76,12 +80,10 @@ function displayShot(index) {
     if (historyLabelEl) {
         if (index === 0) {
             historyLabelEl.textContent = getTranslation('NEWEST');
-            
-        } else if (index === shots.length - 1) {
+        } else if (index === shots.length - 1 && shots.length >= totalAvailable) {
             historyLabelEl.textContent = getTranslation('OLDEST');
         } else {
             historyLabelEl.textContent = getTranslation('SHOT HISTORY');
-            
         }
     }
 
@@ -98,22 +100,30 @@ function displayShot(index) {
 
     if (grindSizeEl) {
         if (shot.workflow && shot.workflow.grinderData && typeof shot.workflow.grinderData.setting !== 'undefined') {
-            const settingStr = shot.workflow.grinderData.setting;
-            const settingInt = parseInt(settingStr, 10);
-            if (!isNaN(settingInt)) {
-                grindSizeEl.textContent = `Grind ${settingInt}`;
-            } else {
-                grindSizeEl.textContent = `Grind N/A`;
-            }
+            const settingInt = parseInt(shot.workflow.grinderData.setting, 10);
+            grindSizeEl.textContent = !isNaN(settingInt) ? `Grind ${settingInt}` : `Grind N/A`;
         } else {
             grindSizeEl.textContent = `Grind N/A`;
         }
     }
 
-    // Update chart and data table
-    if (shot.measurements) {
-        chart.plotHistoricalShot(shot.measurements, shot.workflow);
-        renderPastShot(shot);
+    // Lazy-load measurements if not present
+    if (!shots[currentShotIndex].measurements) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/shots/${shot.id}`);
+            if (response.ok) {
+                const fullShot = await response.json();
+                shots[currentShotIndex] = { ...shot, ...fullShot };
+                await addShot(shots[currentShotIndex]);
+            }
+        } catch (error) {
+            logger.warn('Could not fetch full shot data:', error);
+        }
+    }
+
+    if (shots[currentShotIndex].measurements) {
+        chart.plotHistoricalShot(shots[currentShotIndex].measurements, shots[currentShotIndex].workflow);
+        renderPastShot(shots[currentShotIndex]);
     }
 
     // Update button states
@@ -121,11 +131,15 @@ function displayShot(index) {
     const nextBtn = document.getElementById('history-next-btn');
 
     if (prevBtn) {
-
-        prevBtn.classList.toggle('invisible', currentShotIndex >= shots.length - 1);
+        prevBtn.classList.toggle('invisible', currentShotIndex >= shots.length - 1 && shots.length >= totalAvailable);
     }
     if (nextBtn) {
         nextBtn.classList.toggle('invisible', currentShotIndex <= 0);
+    }
+
+    // Transparently prefetch next page when approaching the end
+    if (currentShotIndex >= shots.length - 3 && shots.length < totalAvailable) {
+        loadMoreShots();
     }
 }
 
@@ -134,7 +148,6 @@ export async function initHistory() {
         await openDB();
     } catch (error) {
         logger.error('Failed to open IndexedDB:', error);
-        // Optionally, display a message to the user that history won't be available offline
         return;
     }
     await loadShotHistory();
@@ -142,9 +155,14 @@ export async function initHistory() {
     const prevBtn = document.getElementById('history-prev-btn');
     const nextBtn = document.getElementById('history-next-btn');
 
-    prevBtn.addEventListener('click', () => {
+    prevBtn.addEventListener('click', async () => {
         if (currentShotIndex < shots.length - 1) {
             displayShot(currentShotIndex + 1);
+        } else if (shots.length < totalAvailable) {
+            await loadMoreShots();
+            if (currentShotIndex < shots.length - 1) {
+                displayShot(currentShotIndex + 1);
+            }
         }
     });
 
@@ -154,26 +172,24 @@ export async function initHistory() {
         }
     });
 
-    // Display the most recent shot on initial load
     if (shots.length > 0) {
         displayShot(0);
     } else {
-        // If no history, clear the shot data table as well
         clearShotData();
     }
 }
 
 export async function clearShotHistory() {
     try {
-        await openDB(); // Ensure DB is open before clearing
+        await openDB();
         await clearShots();
+        shots = [];
+        totalAvailable = 0;
         logger.info('Shot history cleared.');
-        // Reload history after clearing
         await loadShotHistory();
         if (shots.length > 0) {
             displayShot(0);
         } else {
-            // Clear chart and footer if no shots remain
             chart.clearChart();
             clearShotData();
             const dateEl = document.getElementById('history-date');
@@ -183,5 +199,36 @@ export async function clearShotHistory() {
         }
     } catch (error) {
         logger.error('Error clearing shot history:', error);
+    }
+}
+
+export async function updateShot(id, updates) {
+    const response = await fetch(`${API_BASE_URL}/shots/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const updated = await response.json();
+    const idx = shots.findIndex(s => s.id === id);
+    if (idx !== -1) {
+        shots[idx] = { ...shots[idx], ...updated };
+        await addShot(shots[idx]);
+    }
+    return updated;
+}
+
+export async function deleteCurrentShot() {
+    const shot = shots[currentShotIndex];
+    const response = await fetch(`${API_BASE_URL}/shots/${shot.id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    await idbDeleteShot(shot.id);
+    shots.splice(currentShotIndex, 1);
+    totalAvailable--;
+    if (shots.length === 0) {
+        chart.clearChart();
+        clearShotData();
+    } else {
+        displayShot(Math.min(currentShotIndex, shots.length - 1));
     }
 }
