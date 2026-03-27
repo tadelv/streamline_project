@@ -981,19 +981,19 @@ export function renderWakeLockSettings() {
     const wakeLockEnabled = localStorage.getItem('wakeLockEnabled') === 'true';
 
     return `
-        <div class="space-y-6">
+        <div class="space-y-6 px-[60px] py-[80px]">
             <div>
                 <h2 class="text-[28px] font-bold text-[var(--text-primary)] mb-4">Wake Lock Settings</h2>
-                <p class="text-[var(--text-secondary)] text-[20px] mb-6">
+                <p class="text-[var(--text-primary)] text-[20px] mb-6 opacity-75">
                     Control screen wake-lock to prevent the display from sleeping during operation.
                 </p>
             </div>
 
-            <div class="bg-[#385a92] rounded-lg p-6">
+            <div class="bg-[var(--wakelock-card-bg)] rounded-lg p-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <label class="text-[24px] font-semibold text-[var(--text-primary)]">Enable Wake Lock</label>
-                        <p class="text-[18px] text-[var(--text-secondary)] mt-1">
+                        <label class="text-[24px] font-semibold text-[var(--wakelock-card-text)]">Enable Wake Lock</label>
+                        <p class="text-[18px] text-[var(--wakelock-card-text)] opacity-75 mt-1">
                             Keep the screen on while the app is active
                         </p>
                     </div>
@@ -1005,7 +1005,7 @@ export function renderWakeLockSettings() {
                 </div>
             </div>
 
-            <div class="text-[18px] text-[var(--text-secondary)] mt-4">
+            <div class="text-[18px] text-[var(--text-primary)] opacity-75 mt-4">
                 <p><strong>Note:</strong> Wake-lock automatically releases when the WebSocket disconnects.</p>
             </div>
         </div>
@@ -1047,9 +1047,9 @@ async function loadPresenceSettingsAsync() {
         const schedules = settings.schedules || [];
 
         const schedulesHtml = schedules.map(schedule => `
-            <div class="bg-[#2c4a7a] rounded-lg p-4 flex items-center justify-between" data-schedule-id="${schedule.id}">
+            <div class="bg-[var(--presence-card-alt-bg)] rounded-lg p-4 flex items-center justify-between" data-schedule-id="${schedule.id}">
                 <div class="flex-grow">
-                    <div class="text-[22px] font-semibold text-[var(--text-primary)]">
+                    <div class="text-[22px] font-semibold text-[var(--presence-card-text)]">
                         ${schedule.time} - ${formatDaysOfWeek(schedule.daysOfWeek)}
                     </div>
                 </div>
@@ -1066,19 +1066,19 @@ async function loadPresenceSettingsAsync() {
         `).join('');
 
         container.innerHTML = `
-            <div class="space-y-6">
+            <div class="space-y-6 px-[60px] py-[80px]">
                 <div>
                     <h2 class="text-[28px] font-bold text-[var(--text-primary)] mb-4">Presence Detection</h2>
-                    <p class="text-[var(--text-secondary)] text-[20px] mb-6">
+                    <p class="text-[var(--text-primary)] text-[20px] mb-6 opacity-75">
                         Automatically manage machine sleep/wake based on user presence and schedules.
                     </p>
                 </div>
 
-                <div class="bg-[#385a92] rounded-lg p-6">
+                <div class="bg-[var(--presence-card-bg)] rounded-lg p-6">
                     <div class="flex items-center justify-between mb-6">
                         <div>
-                            <label class="text-[24px] font-semibold text-[var(--text-primary)]">Enable Presence Detection</label>
-                            <p class="text-[18px] text-[var(--text-secondary)] mt-1">
+                            <label class="text-[24px] font-semibold text-[var(--presence-card-text)]">Enable Presence Detection</label>
+                            <p class="text-[18px] text-[var(--presence-card-text)] opacity-75 mt-1">
                                 Track user presence to automatically sleep the machine
                             </p>
                         </div>
@@ -1090,56 +1090,56 @@ async function loadPresenceSettingsAsync() {
                     </div>
 
                     <div class="mt-6">
-                        <label class="text-[22px] font-semibold text-[var(--text-primary)] block mb-3">
+                        <label class="text-[22px] font-semibold text-[var(--presence-card-text)] block mb-3">
                             Sleep Timeout (minutes)
                         </label>
                         <input type="number"
                                id="sleep-timeout-input"
-                               class="input input-bordered w-full max-w-xs text-[20px]"
+                               class="input input-bordered w-full max-w-xs text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]"
                                value="${settings.sleepTimeoutMinutes || 30}"
                                min="1"
                                max="120"
                                oninput="this.value = Math.max(1, Math.min(120, this.value))"
                                onchange="handleSleepTimeoutChange(this.value)">
-                        <p class="text-[18px] text-[var(--text-secondary)] mt-2">
+                        <p class="text-[18px] text-[var(--presence-card-text)] opacity-75 mt-2">
                             Minutes of inactivity before auto-sleep
                         </p>
                     </div>
                 </div>
 
-                <div class="bg-[#385a92] rounded-lg p-6">
+                <div class="bg-[var(--presence-card-bg)] rounded-lg p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-[24px] font-semibold text-[var(--text-primary)]">Wake Schedules</h3>
+                        <h3 class="text-[24px] font-semibold text-[var(--presence-card-text)]">Wake Schedules</h3>
                         <button class="btn btn-primary" onclick="handleAddSchedule()">
                             Add Schedule
                         </button>
                     </div>
 
                     <div class="space-y-3">
-                        ${schedules.length > 0 ? schedulesHtml : '<p class="text-[var(--text-secondary)] text-[18px]">No schedules configured</p>'}
+                        ${schedules.length > 0 ? schedulesHtml : '<p class="text-[var(--presence-card-text)] opacity-75 text-[18px]">No schedules configured</p>'}
                     </div>
                 </div>
 
                 <dialog id="add-schedule-modal" class="modal">
-                    <div class="modal-box bg-[#385a92] max-w-2xl">
-                        <h3 class="font-bold text-[24px] text-[var(--text-primary)] mb-4">Add Wake Schedule</h3>
+                    <div class="modal-box bg-[var(--presence-card-bg)] max-w-2xl">
+                        <h3 class="font-bold text-[24px] text-[var(--presence-card-text)] mb-4">Add Wake Schedule</h3>
 
                         <div class="space-y-4">
                             <div>
-                                <label class="text-[20px] text-[var(--text-primary)] block mb-2">Time</label>
-                                <input type="time" id="schedule-time-input" class="input input-bordered w-full text-[20px]">
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Time</label>
+                                <input type="time" id="schedule-time-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
                             </div>
 
                             <div>
-                                <label class="text-[20px] text-[var(--text-primary)] block mb-2">Days of Week</label>
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Days of Week</label>
                                 <div class="flex gap-2 flex-wrap">
-                                    <label class="cursor-pointer"><input type="checkbox" value="1" class="checkbox checkbox-primary mr-1"> Mon</label>
-                                    <label class="cursor-pointer"><input type="checkbox" value="2" class="checkbox checkbox-primary mr-1"> Tue</label>
-                                    <label class="cursor-pointer"><input type="checkbox" value="3" class="checkbox checkbox-primary mr-1"> Wed</label>
-                                    <label class="cursor-pointer"><input type="checkbox" value="4" class="checkbox checkbox-primary mr-1"> Thu</label>
-                                    <label class="cursor-pointer"><input type="checkbox" value="5" class="checkbox checkbox-primary mr-1"> Fri</label>
-                                    <label class="cursor-pointer"><input type="checkbox" value="6" class="checkbox checkbox-primary mr-1"> Sat</label>
-                                    <label class="cursor-pointer"><input type="checkbox" value="7" class="checkbox checkbox-primary mr-1"> Sun</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="1" class="checkbox checkbox-primary mr-1"> Mon</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="2" class="checkbox checkbox-primary mr-1"> Tue</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="3" class="checkbox checkbox-primary mr-1"> Wed</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="4" class="checkbox checkbox-primary mr-1"> Thu</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="5" class="checkbox checkbox-primary mr-1"> Fri</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="6" class="checkbox checkbox-primary mr-1"> Sat</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="7" class="checkbox checkbox-primary mr-1"> Sun</label>
                                 </div>
                             </div>
                         </div>
