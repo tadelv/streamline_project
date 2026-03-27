@@ -1,4 +1,4 @@
-import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand, enableWakeLock, disableWakeLock, getPresenceSettings, setPresenceSettings, getPresenceSchedules, createPresenceSchedule, updatePresenceSchedule, deletePresenceSchedule } from '../modules/api.js';
+import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand, enableWakeLock, disableWakeLock, getPresenceSettings, setPresenceSettings, getPresenceSchedules, createPresenceSchedule, updatePresenceSchedule, deletePresenceSchedule, getAppInfo, getMachineInfo } from '../modules/api.js';
 import * as ui from '../modules/ui.js';
 import { initScaling } from '../modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
@@ -15,7 +15,13 @@ let settingsCache = {
     de1AdvancedLoading: false,
     reaError: null,
     de1Error: null,
-    de1AdvancedError: null
+    de1AdvancedError: null,
+    appInfo: null,
+    appInfoLoading: false,
+    appInfoError: null,
+    machineInfo: null,
+    machineInfoLoading: false,
+    machineInfoError: null
 };
 
 let activeSettingsCategory = null; // New global variable to track the currently active category
@@ -39,6 +45,45 @@ function renderLoadingState(title) {
     `;
 }
 
+function formatMachineExtra(extra) {
+    if (!extra || typeof extra !== 'object') {
+        return 'N/A';
+    }
+
+    const entries = Object.entries(extra);
+    if (entries.length === 0) {
+        return 'N/A';
+    }
+
+    return entries
+        .map(([key, value]) => {
+            const readableKey = key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/^./, (char) => char.toUpperCase());
+            let readableValue;
+            if (typeof value === 'boolean') {
+                readableValue = value ? 'on' : 'off';
+            } else {
+                readableValue = String(value);
+            }
+            return `${readableKey} : ${readableValue}`;
+        })
+        .join(', ');
+}
+
+function formatBuildTimestamp(timestamp) {
+    if (!timestamp) {
+        return 'Unavailable';
+    }
+
+    const parsed = new Date(timestamp);
+    if (Number.isNaN(parsed.getTime())) {
+        return timestamp;
+    }
+
+    return parsed.toLocaleString();
+}
+
 // Render generic error state
 function renderErrorState(title, message) {
     return `
@@ -57,11 +102,10 @@ function updateSettingsContentArea(category) {
     const contentArea = document.getElementById('settings-content-area');
     if (contentArea) {
         contentArea.innerHTML = renderSettingsContent(category);
-        // Initialize theme toggle if we're on the appearance/skin settings
         if (category === 'appearance') {
             setTimeout(() => {
                 ui.initThemeToggle();
-            }, 100); // Small delay to ensure DOM is updated
+            }, 100);
         }
     }
 }
@@ -180,17 +224,19 @@ export async function loadSettings() {
 async function _loadSettingsInternal() {
     try {
         // Fetch all settings in parallel
-        const [reaSettings, de1Settings, de1AdvancedSettings] = await Promise.all([
+        const [reaSettings, de1Settings, de1AdvancedSettings, appInfoData] = await Promise.all([
             getReaSettings(),
             getDe1Settings(),
-            getDe1AdvancedSettings()
+            getDe1AdvancedSettings(),
+            getAppInfo()
         ]);
 
         settingsCache.rea = reaSettings;
         settingsCache.de1 = de1Settings;
         settingsCache.de1Advanced = de1AdvancedSettings;
+        settingsCache.appInfo = appInfoData;
 
-        return { reaSettings, de1Settings, de1AdvancedSettings };
+        return { reaSettings, de1Settings, de1AdvancedSettings, appInfoData };
     } catch (error) {
         console.error('Error loading settings:', error);
         ui.showToast('Failed to load settings', 5000, 'error');
@@ -1045,7 +1091,7 @@ async function loadPresenceSettingsAsync() {
     try {
         const settings = await getPresenceSettings();
         const schedules = settings.schedules || [];
-
+        const activeHours = getActiveHours();
         const schedulesHtml = schedules.map(schedule => `
             <div class="bg-[var(--presence-card-alt-bg)] rounded-lg p-4 flex items-center justify-between" data-schedule-id="${schedule.id}">
                 <div class="flex-grow">
@@ -1059,6 +1105,24 @@ async function loadPresenceSettingsAsync() {
                            ${schedule.enabled ? 'checked' : ''}
                            onchange="handleScheduleToggle('${schedule.id}', this.checked)">
                     <button class="btn btn-sm btn-error" onclick="handleDeleteSchedule('${schedule.id}')">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        `).join('');
+        const activeHoursHtml = activeHours.map(activeHour => `
+            <div class="bg-[var(--presence-card-alt-bg)] rounded-lg p-4 flex items-center justify-between" data-active-hour-id="${activeHour.id}">
+                <div class="flex-grow">
+                    <div class="text-[22px] font-semibold text-[var(--presence-card-text)]">
+                        ${activeHour.startTime} - ${activeHour.endTime} ${formatDaysOfWeek(activeHour.daysOfWeek)}
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <input type="checkbox"
+                           class="toggle toggle-md toggle-primary"
+                           ${activeHour.enabled ? 'checked' : ''}
+                           onchange="handleActiveHourToggle('${activeHour.id}', this.checked)">
+                    <button class="btn btn-sm btn-error" onclick="handleDeleteActiveHour('${activeHour.id}')">
                         Delete
                     </button>
                 </div>
@@ -1120,14 +1184,37 @@ async function loadPresenceSettingsAsync() {
                     </div>
                 </div>
 
-                <dialog id="add-schedule-modal" class="modal">
+                <div class="bg-[var(--presence-card-bg)] rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-[24px] font-semibold text-[var(--presence-card-text)]">Active Hours</h3>
+                            <p class="text-[18px] text-[var(--presence-card-text)] opacity-75 mt-1">
+                                Machine stays awake during these time windows
+                            </p>
+                        </div>
+                        <button class="btn btn-primary" onclick="handleAddActiveHour()">
+                            Add Active Hours
+                        </button>
+                    </div>
+
+                    <div class="space-y-3">
+                        ${activeHours.length > 0 ? activeHoursHtml : '<p class="text-[var(--presence-card-text)] opacity-75 text-[18px]">No active hours configured</p>'}
+                    </div>
+                </div>
+
+                <dialog id="add-active-hour-modal" class="modal">
                     <div class="modal-box bg-[var(--presence-card-bg)] max-w-2xl">
-                        <h3 class="font-bold text-[24px] text-[var(--presence-card-text)] mb-4">Add Wake Schedule</h3>
+                        <h3 class="font-bold text-[24px] text-[var(--presence-card-text)] mb-4">Add Active Hours</h3>
 
                         <div class="space-y-4">
                             <div>
-                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Time</label>
-                                <input type="time" id="schedule-time-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Start Time</label>
+                                <input type="time" id="active-hour-start-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
+                            </div>
+
+                            <div>
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">End Time</label>
+                                <input type="time" id="active-hour-end-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
                             </div>
 
                             <div>
@@ -1145,8 +1232,8 @@ async function loadPresenceSettingsAsync() {
                         </div>
 
                         <div class="modal-action">
-                            <button class="btn" onclick="document.getElementById('add-schedule-modal').close()">Cancel</button>
-                            <button class="btn btn-primary" onclick="handleSaveSchedule()">Save</button>
+                            <button class="btn" onclick="document.getElementById('add-active-hour-modal').close()">Cancel</button>
+                            <button class="btn btn-primary" onclick="handleSaveActiveHour()">Save</button>
                         </div>
                     </div>
                 </dialog>
@@ -2181,46 +2268,82 @@ async function loadVisualizerSettings() {
 
 // Render updates settings
 export function renderUpdatesSettings() {
+    const appInfo = settingsCache.appInfo;
+    const infoAvailable = !!appInfo;
+    const appInfoDetails = infoAvailable ? `
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="rounded-[10px] border border-[#c9c9c9] p-4 bg-[var(--box-color)]">
+                        <p class="text-[20px] font-['Inter:Bold',sans-serif] font-bold text-[#385a92]">Version</p>
+                        <p class="text-[24px] font-['Inter:Regular',sans-serif]">${appInfo.version} (${appInfo.buildNumber})</p>
+                        <p class="text-[16px] text-[var(--text-secondary)]">Full: ${appInfo.fullVersion}</p>
+                        <p class="text-[16px] text-[var(--text-secondary)]">${formatBuildTimestamp(appInfo.buildTime)}</p>
+                    </div>
+                    <div class="rounded-[10px] border border-[#c9c9c9] p-4 bg-[var(--box-color)]">
+                        <p class="text-[20px] font-['Inter:Bold',sans-serif] font-bold text-[#385a92]">Source</p>
+                        <p class="text-[24px] font-['Inter:Regular',sans-serif]">${appInfo.branch}</p>
+                        <p class="text-[16px] text-[var(--text-secondary)]">Commit: ${appInfo.commitShort}</p>
+                        <p class="text-[16px] text-[var(--text-secondary)]">App Store: ${appInfo.appStore ? 'Yes' : 'No'}</p>
+                    </div>
+                </div>
+            ` : `
+                <div class="rounded-[10px] border border-[#c9c9c9] p-4 bg-[var(--box-color)]">
+                    <p class="text-[20px] font-['Inter:Bold',sans-serif] font-bold text-[#385a92]">Update info</p>
+                    <p class="text-[24px] font-['Inter:Regular',sans-serif]">Fetching build metadata...</p>
+                </div>
+            `;
+
+    const machineInfo = settingsCache.machineInfo;
+    const machineExtra = formatMachineExtra(machineInfo?.extra);
+    const machineDetails = machineInfo ? `
+                <div class="rounded-[10px] border border-[#c9c9c9] p-4 bg-[var(--box-color)]">
+                    <p class="text-[20px] font-['Inter:Bold',sans-serif] font-bold text-[#385a92]">Machine</p>
+                    <p class="text-[24px] font-['Inter:Regular',sans-serif]">${machineInfo.model}</p>
+                    <p class="text-[16px] text-[var(--text-secondary)]">Version: ${machineInfo.version}</p>
+                    <p class="text-[16px] text-[var(--text-secondary)]">Serial: ${machineInfo.serialNumber}</p>
+                    <p class="text-[16px] text-[var(--text-secondary)]">GHC: ${machineInfo.GHC ? 'Enabled' : 'Disabled'}</p>
+                    <p class="text-[16px] text-[var(--text-secondary)] break-words">${machineExtra}</p>
+                </div>
+            ` : `
+                <div class="rounded-[10px] border border-[#c9c9c9] p-4 bg-[var(--box-color)]">
+                    <p class="text-[20px] font-['Inter:Bold',sans-serif] font-bold text-[#385a92]">Machine Info</p>
+                    <p class="text-[24px] font-['Inter:Regular',sans-serif]">Fetching machine info...</p>
+                </div>
+            `;
+
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
             <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
                 <p class="leading-[1.2]">Updates Settings</p>
             </div>
 
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">Firmware Update</p>
+            <div class="content-stretch flex flex-col items-start relative w-full space-y-10">
+                <div class="flex flex-col gap-[30px] w-full">
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <div class="font-['Inter:Bold',sans-serif] font-bold text-[#385a92] text-[30px]">Firmware Update</div>
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">Check</button>
                         </div>
-                        <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
-                            Check
-                        </button>
+                        <p class="text-[24px] text-[var(--text-primary)]">Check for firmware updates</p>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Check for firmware updates
-                    </p>
+
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                            <div class="font-['Inter:Bold',sans-serif] font-bold text-[#385a92] text-[30px]">App Update</div>
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">Check</button>
+                        </div>
+                        <p class="text-[24px] text-[var(--text-primary)]">Check for application updates</p>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Divider -->
-            <div class="h-0 relative w-full">
-                <hr class="border-t border-[#c9c9c9] w-full" />
-            </div>
-
-            <div class="content-stretch flex flex-col items-start relative w-full">
-                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
-                    <div class="content-stretch flex items-center justify-between relative w-full">
-                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
-                            <p class="leading-[1.2]">App Update</p>
-                        </div>
-                        <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[200px] text-white text-[24px] font-bold">
-                            Check
-                        </button>
+                <div class="w-full flex flex-col gap-4">
+                    <div class="flex flex-col gap-4">
+                        <p class="font-['Inter:Bold',sans-serif] font-bold text-[#385a92] text-[30px]">Build Information</p>
+                        ${appInfoDetails}
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
-                        Check for application updates
-                    </p>
+                    <div class="flex flex-col gap-4">
+                        <p class="font-['Inter:Bold',sans-serif] font-bold text-[#385a92] text-[30px]">Machine Details</p>
+                        ${machineDetails}
+                    </div>
                 </div>
             </div>
         </div>
@@ -2333,23 +2456,30 @@ async function _preloadSettingsInternal() {
         settingsCache.reaLoading = true;
         settingsCache.de1Loading = true;
         settingsCache.de1AdvancedLoading = true;
+        settingsCache.appInfoLoading = true;
 
         // Reset error flags
         settingsCache.reaError = null;
         settingsCache.de1Error = null;
         settingsCache.de1AdvancedError = null;
+        settingsCache.appInfoError = null;
 
         // Fetch all settings in parallel using Promise.allSettled to handle individual failures
-        const [reaSettingsResult, de1SettingsResult, de1AdvancedSettingsResult] = await Promise.allSettled([
+        // Fetch all settings in parallel using Promise.allSettled to handle individual failures
+        const [reaSettingsResult, de1SettingsResult, de1AdvancedSettingsResult, appInfoResult, machineInfoResult] = await Promise.allSettled([
             getReaSettings(),
             getDe1Settings(),
-            getDe1AdvancedSettings()
+            getDe1AdvancedSettings(),
+            getAppInfo(),
+            getMachineInfo()
         ]);
 
         // Process results and handle errors appropriately
         let reaSettings = null;
         let de1Settings = null;
         let de1AdvancedSettings = null;
+        let appInfo = null;
+        let machineInfo = null;
 
         // Handle REA settings result
         if (reaSettingsResult.status === 'fulfilled') {
@@ -2366,7 +2496,7 @@ async function _preloadSettingsInternal() {
                 }, 1000);
 
                 loadPage('index.html');
-                return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
+                return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null, appInfo: null, machineInfo: null };
             }
         }
 
@@ -2385,7 +2515,7 @@ async function _preloadSettingsInternal() {
                 }, 1000);
                 loadPage('index.html');
 
-                return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
+                return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null, appInfo: null, machineInfo: null };
             }
         }
 
@@ -2403,21 +2533,41 @@ async function _preloadSettingsInternal() {
                     ui.showToast('Unable to load settings. Check if De1 is connected. Returned to home page.', 5000, 'error');
                 }, 1000);
                 loadPage('index.html');
-                return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
+                return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null, appInfo: null, machineInfo: null };
             }
+        }
+
+        // Handle App Info result
+        if (appInfoResult.status === 'fulfilled') {
+            appInfo = appInfoResult.value;
+        } else {
+            console.error('Error loading app info:', appInfoResult.reason);
+            settingsCache.appInfoError = appInfoResult.reason?.message || 'Failed to load update information';
+        }
+
+        // Handle Machine Info result
+        if (machineInfoResult.status === 'fulfilled') {
+            machineInfo = machineInfoResult.value;
+        } else {
+            console.error('Error loading machine info:', machineInfoResult.reason);
+            settingsCache.machineInfoError = machineInfoResult.reason?.message || 'Failed to load machine details';
         }
 
         // Update cache with results
         settingsCache.rea = reaSettings;
         settingsCache.de1 = de1Settings;
         settingsCache.de1Advanced = de1AdvancedSettings;
+        settingsCache.appInfo = appInfo;
+        settingsCache.machineInfo = machineInfo;
 
         // Update loading flags
         settingsCache.reaLoading = false;
         settingsCache.de1Loading = false;
         settingsCache.de1AdvancedLoading = false;
+        settingsCache.appInfoLoading = false;
+        settingsCache.machineInfoLoading = false;
 
-        return { reaSettings, de1Settings, de1AdvancedSettings };
+        return { reaSettings, de1Settings, de1AdvancedSettings, appInfo, machineInfo };
     } catch (error) {
         console.error('Error during settings preload:', error);
         ui.showToast('Failed to preload settings', 5000, 'error');
@@ -3133,6 +3283,76 @@ window.handleSaveSchedule = async function() {
     }
 };
 
+window.handleAddActiveHour = function() {
+    document.getElementById('add-active-hour-modal').showModal();
+};
+
+window.handleSaveActiveHour = function() {
+    try {
+        const startTime = document.getElementById('active-hour-start-input').value;
+        const endTime = document.getElementById('active-hour-end-input').value;
+
+        if (!startTime || !endTime) {
+            ui.showToast('Please select start and end times', 3000, 'error');
+            return;
+        }
+
+        if (startTime === endTime) {
+            ui.showToast('Start and end times must be different', 3000, 'error');
+            return;
+        }
+
+        const checkboxes = document.querySelectorAll('#add-active-hour-modal input[type="checkbox"]:checked');
+        const daysOfWeek = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
+
+        const activeHour = {
+            startTime,
+            endTime,
+            daysOfWeek,
+            enabled: true
+        };
+
+        addActiveHour(activeHour);
+        ui.showToast('Active hours created', 3000, 'success');
+
+        // Reset form
+        document.getElementById('active-hour-start-input').value = '';
+        document.getElementById('active-hour-end-input').value = '';
+        document.querySelectorAll('#add-active-hour-modal input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+        document.getElementById('add-active-hour-modal').close();
+        updateSettingsContentArea('presence');
+    } catch (error) {
+        console.error('Error creating active hours:', error);
+        ui.showToast('Failed to create active hours', 5000, 'error');
+    }
+};
+
+window.handleActiveHourToggle = function(id, enabled) {
+    try {
+        updateActiveHour(id, { enabled });
+        ui.showToast(`Active hours ${enabled ? 'enabled' : 'disabled'}`, 3000, 'success');
+    } catch (error) {
+        console.error('Error toggling active hours:', error);
+        ui.showToast('Failed to update active hours', 5000, 'error');
+        const toggle = document.querySelector(`input[onchange*="${id}"]`);
+        if (toggle) toggle.checked = !enabled;
+    }
+};
+
+window.handleDeleteActiveHour = function(id) {
+    if (!confirm('Are you sure you want to delete this active hour?')) return;
+
+    try {
+        deleteActiveHour(id);
+        ui.showToast('Active hours deleted', 3000, 'success');
+        updateSettingsContentArea('presence');
+    } catch (error) {
+        console.error('Error deleting active hours:', error);
+        ui.showToast('Failed to delete active hours', 5000, 'error');
+    }
+};
+
 window.handleScheduleToggle = async function(scheduleId, enabled) {
     try {
         await updatePresenceSchedule(scheduleId, { enabled });
@@ -3540,6 +3760,104 @@ window.scanForScales = async function() {
         ui.showToast(`Error scanning for scales: ${error.message}`, 5000, 'error');
     }
 };
+
+// ============================================================================
+// Active Hours / Keep-Awake Feature (Client-Side Workaround)
+// ============================================================================
+
+// Active Hours localStorage helpers
+function getActiveHours() {
+    const stored = localStorage.getItem('activeHours');
+    return stored ? JSON.parse(stored) : [];
+}
+
+function saveActiveHours(activeHours) {
+    localStorage.setItem('activeHours', JSON.stringify(activeHours));
+}
+
+function addActiveHour(activeHour) {
+    const activeHours = getActiveHours();
+    activeHour.id = crypto.randomUUID();
+    activeHour.enabled = activeHour.enabled !== false;
+    activeHours.push(activeHour);
+    saveActiveHours(activeHours);
+    return activeHour;
+}
+
+function updateActiveHour(id, updates) {
+    const activeHours = getActiveHours();
+    const index = activeHours.findIndex(ah => ah.id === id);
+    if (index !== -1) {
+        activeHours[index] = { ...activeHours[index], ...updates };
+        saveActiveHours(activeHours);
+        return activeHours[index];
+    }
+    return null;
+}
+
+function deleteActiveHour(id) {
+    const activeHours = getActiveHours();
+    const filtered = activeHours.filter(ah => ah.id !== id);
+    saveActiveHours(filtered);
+}
+
+// Active Hours Scheduler
+let activeHoursInterval = null;
+let currentActiveHourId = null;
+
+function startActiveHoursScheduler() {
+    // Check every minute
+    activeHoursInterval = setInterval(checkActiveHours, 60000);
+    // Also check immediately
+    checkActiveHours();
+}
+
+function stopActiveHoursScheduler() {
+    if (activeHoursInterval) {
+        clearInterval(activeHoursInterval);
+        activeHoursInterval = null;
+    }
+}
+
+async function checkActiveHours() {
+    const now = new Date();
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const currentDay = now.getDay() === 0 ? 7 : now.getDay(); // Convert Sunday from 0 to 7
+
+    const activeHours = getActiveHours();
+    const activeNow = activeHours.find(ah => {
+        if (!ah.enabled) return false;
+        if (ah.daysOfWeek.length > 0 && !ah.daysOfWeek.includes(currentDay)) return false;
+
+        // Check if current time is within the window
+        return currentTime >= ah.startTime && currentTime < ah.endTime;
+    });
+
+    if (activeNow && currentActiveHourId !== activeNow.id) {
+        // Entering active-hours window
+        console.log('Entering active hours:', activeNow);
+        currentActiveHourId = activeNow.id;
+        try {
+            await setPresenceSettings({ userPresenceEnabled: false });
+            ui.showToast('Active hours started - machine will stay awake', 3000, 'info');
+        } catch (error) {
+            console.error('Error disabling presence detection for active hours:', error);
+        }
+    } else if (!activeNow && currentActiveHourId) {
+        // Exiting active-hours window
+        console.log('Exiting active hours');
+        currentActiveHourId = null;
+        try {
+            await setPresenceSettings({ userPresenceEnabled: true });
+            ui.showToast('Active hours ended - presence detection re-enabled', 3000, 'info');
+        } catch (error) {
+            console.error('Error re-enabling presence detection after active hours:', error);
+        }
+    }
+}
+
+// Start scheduler when settings module loads
+startActiveHoursScheduler();
 
 // Initialize Bluetooth settings when the page loads
 document.addEventListener('DOMContentLoaded', function() {

@@ -806,6 +806,22 @@ export async function getReaSettings() {
     }
 }
 
+export async function getMachineInfo() {
+    const response = await fetch(`${API_BASE_URL}/machine/info`);
+    if (!response.ok) {
+        throw new Error(`Failed to get machine info: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+export async function getAppInfo() {
+    const response = await fetch(`${API_BASE_URL}/info`);
+    if (!response.ok) {
+        throw new Error(`Failed to get app info: ${response.statusText}`);
+    }
+    return response.json();
+}
+
 
 export async function getDe1Settings() {
     // Check if we have cached data that is still fresh
