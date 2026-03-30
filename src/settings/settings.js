@@ -1237,6 +1237,37 @@ async function loadPresenceSettingsAsync() {
                         </div>
                     </div>
                 </dialog>
+
+                <dialog id="add-schedule-modal" class="modal">
+                    <div class="modal-box bg-[var(--presence-card-bg)] max-w-2xl">
+                        <h3 class="font-bold text-[24px] text-[var(--presence-card-text)] mb-4">Add Schedule</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Wake Time</label>
+                                <input type="time" id="schedule-time-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
+                            </div>
+
+                            <div>
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Days of Week</label>
+                                <div class="flex gap-2 flex-wrap">
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="1" class="checkbox checkbox-primary mr-1"> Mon</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="2" class="checkbox checkbox-primary mr-1"> Tue</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="3" class="checkbox checkbox-primary mr-1"> Wed</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="4" class="checkbox checkbox-primary mr-1"> Thu</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="5" class="checkbox checkbox-primary mr-1"> Fri</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="6" class="checkbox checkbox-primary mr-1"> Sat</label>
+                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="7" class="checkbox checkbox-primary mr-1"> Sun</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-action">
+                            <button class="btn" onclick="document.getElementById('add-schedule-modal').close()">Cancel</button>
+                            <button class="btn btn-primary" onclick="handleSaveSchedule()">Save</button>
+                        </div>
+                    </div>
+                </dialog>
             </div>
         `;
     } catch (error) {

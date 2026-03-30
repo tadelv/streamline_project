@@ -73,9 +73,9 @@ body {
     /* Wake Lock and Presence Settings (Light Mode) */
     --wakelock-card-bg: #385a92;
     --wakelock-card-text: #ffffff;
-    --presence-card-bg: #385a92;
-    --presence-card-alt-bg: #2c4a7a;
-    --presence-card-text: #ffffff;
+    --presence-card-bg: #f8f9fb;
+    --presence-card-alt-bg: #ffffff;
+    --presence-card-text: #121212;
     --presence-input-bg: #ffffff;
     --presence-input-text: #121212;
     --presence-input-border: #c5cdda;
@@ -113,7 +113,7 @@ body {
     /* Wake Lock and Presence Settings (Dark Mode) */
     --wakelock-card-bg: #415996;
     --wakelock-card-text: #e8e8e8;
-    --presence-card-bg: #415996;
+    --presence-card-bg: #17181D;
     --presence-card-alt-bg: #2d3a52;
     --presence-card-text: #e8e8e8;
     --presence-input-bg: #292c38;
