@@ -240,7 +240,11 @@ function handleTimeToReadyData(data) {
 }
 
 function handleData(data) {
-    //logger.debug("handleData received new snapshot.");
+    if (!data?.state) {
+        logger.warn('Received WebSocket message with missing state:', data);
+        return;
+    }
+
     resetDataTimeout(); // Reset the timer every time data is received.
 
     const { state, substate } = data.state;
@@ -260,6 +264,7 @@ function handleData(data) {
     } else if (state === MachineState.SLEEPING) {
         // Activate screensaver when machine enters sleep state
         if (!ui.isScreensaverActive()) {
+            logger.info('Machine entered sleep state. Activating screensaver.');
             ui.activateScreensaver();
         }
         statusString = "Sleeping";

@@ -929,7 +929,7 @@ export async function getDe1AdvancedSettings() {
         clearTimeout(timeoutId);
         if (error.name === 'AbortError') {
             logger.error(`Error in getDe1AdvancedSettings: Request timed out after 5 seconds.`);
-            window.location.reload(); // Reload the page on timeout to attempt recovery
+            // window.location.reload(); // Reload the page on timeout to attempt recovery
         } else {
             logger.error("Error in getDe1AdvancedSettings:", error);
             
