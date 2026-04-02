@@ -304,6 +304,9 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                             const newProfileNameElement = profileNameElement.cloneNode(true);
                             profileNameElement.parentNode.replaceChild(newProfileNameElement, profileNameElement);
 
+                            // Prevent virtual keyboard on mobile by removing focusability
+                            newProfileNameElement.setAttribute('tabindex', '-1');
+                            
                             // Add the click event listener to navigate to the profile selector
                             newProfileNameElement.onclick = () => {
                                 loadPage('src/profiles/profile_selector.html');

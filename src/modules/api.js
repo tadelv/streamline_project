@@ -752,34 +752,52 @@ async function sendShotSettings() {
 }
 
 export async function setTargetHotWaterVolume(volume) {
-    currentShotSettings.targetHotWaterVolume = parseFloat(volume);
-    return sendShotSettings();
+    return updateWorkflow({
+        hotWaterData: {
+            volume: parseFloat(volume)
+        }
+    });
 }
 
 export async function setTargetHotWaterTemp(temp) {
-    currentShotSettings.targetHotWaterTemp = parseFloat(temp);
-    return sendShotSettings();
+    return updateWorkflow({
+        hotWaterData: {
+            targetTemperature: parseFloat(temp)
+        }
+    });
 }
 
 export async function setTargetHotWaterDuration(duration) {
-    currentShotSettings.targetHotWaterDuration = parseFloat(duration);
-    return sendShotSettings();
+    return updateWorkflow({
+        hotWaterData: {
+            duration: parseFloat(duration)
+        }
+    });
 }
 
 export async function setTargetSteamTemp(temp) {
-    currentShotSettings.targetSteamTemp = parseFloat(temp);
-    return sendShotSettings();
+    return updateWorkflow({
+        steamSettings: {
+            targetTemperature: parseFloat(temp)
+        }
+    });
 }
 
 export async function setTargetSteamDuration(duration) {
-    currentShotSettings.targetSteamDuration = parseFloat(duration);
-    return sendShotSettings();
+    return updateWorkflow({
+        steamSettings: {
+            duration: parseFloat(duration)
+        }
+    });
 }
 
 
 export async function setTargetSteamFlow(flow) {
-    const settings = { steamFlow: parseFloat(flow) };
-    return setDe1Settings(settings);
+    return updateWorkflow({
+        steamSettings: {
+            flow: parseFloat(flow)
+        }
+    });
 }
 
 export async function getReaSettings() {

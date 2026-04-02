@@ -1,4 +1,4 @@
-import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand, enableWakeLock, disableWakeLock, getPresenceSettings, setPresenceSettings, getPresenceSchedules, createPresenceSchedule, updatePresenceSchedule, deletePresenceSchedule, getAppInfo, getMachineInfo } from '../modules/api.js';
+import {  getReaSettings, getDe1Settings, getDe1AdvancedSettings, setReaSettings, setDe1Settings, setDe1AdvancedSettings, reconnectDevice, connectScaleDevice, connectDeviceWebSocket, sendDeviceCommand, dimDisplay, restoreDisplay, currentMachineState, signalHeartbeat, MachineState, getDeviceWebSocket, initDeviceWebSocketWithCallback, saveScaleDeviceId, getScaleDeviceId, connectDisplayWebSocket, sendDisplayCommand, enableWakeLock, disableWakeLock, getPresenceSettings, setPresenceSettings, getPresenceSchedules, createPresenceSchedule, updatePresenceSchedule, deletePresenceSchedule, getAppInfo, getMachineInfo, getWorkflow, updateWorkflow } from '../modules/api.js';
 import * as ui from '../modules/ui.js';
 import { initScaling } from '../modules/scaling.js';
 import { getSupportedLanguages, getCurrentLanguage, setLanguage } from '../modules/i18n.js';
@@ -10,12 +10,15 @@ let settingsCache = {
     rea: null,
     de1: null,
     de1Advanced: null,
+    workflow: null,
     reaLoading: false,
     de1Loading: false,
     de1AdvancedLoading: false,
+    workflowLoading: false,
     reaError: null,
     de1Error: null,
     de1AdvancedError: null,
+    workflowError: null,
     appInfo: null,
     appInfoLoading: false,
     appInfoError: null,
@@ -224,23 +227,25 @@ export async function loadSettings() {
 async function _loadSettingsInternal() {
     try {
         // Fetch all settings in parallel
-        const [reaSettings, de1Settings, de1AdvancedSettings, appInfoData] = await Promise.all([
+        const [reaSettings, de1Settings, de1AdvancedSettings, appInfoData, workflowData] = await Promise.all([
             getReaSettings(),
             getDe1Settings(),
             getDe1AdvancedSettings(),
-            getAppInfo()
+            getAppInfo(),
+            getWorkflow()
         ]);
 
         settingsCache.rea = reaSettings;
         settingsCache.de1 = de1Settings;
         settingsCache.de1Advanced = de1AdvancedSettings;
         settingsCache.appInfo = appInfoData;
+        settingsCache.workflow = workflowData;
 
-        return { reaSettings, de1Settings, de1AdvancedSettings, appInfoData };
+        return { reaSettings, de1Settings, de1AdvancedSettings, appInfoData, workflowData };
     } catch (error) {
         console.error('Error loading settings:', error);
         ui.showToast('Failed to load settings', 5000, 'error');
-        return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null };
+        return { reaSettings: null, de1Settings: null, de1AdvancedSettings: null, workflowData: null };
     } finally {
         // Clear the loading promise after completion
         settingsLoadingPromise = null;
@@ -299,6 +304,46 @@ export async function updateDe1AdvancedSetting(key, value) {
     } catch (error) {
         console.error('Error updating DE1 advanced setting:', error);
         ui.showToast(`Failed to update DE1 advanced setting: ${error.message}`, 5000, 'error');
+    }
+}
+
+// Update steam settings via workflow API
+export async function updateSteamSetting(key, value) {
+    try {
+        const steamSettings = { ...(settingsCache.workflow?.steamSettings || {}) };
+        steamSettings[key] = value;
+        await updateWorkflow({ steamSettings });
+        
+        // Update local cache
+        if (!settingsCache.workflow) {
+            settingsCache.workflow = {};
+        }
+        settingsCache.workflow.steamSettings = steamSettings;
+        
+        ui.showToast('Steam setting updated successfully', 3000, 'success');
+    } catch (error) {
+        console.error('Error updating steam setting:', error);
+        ui.showToast(`Failed to update steam setting: ${error.message}`, 5000, 'error');
+    }
+}
+
+// Update hot water settings via workflow API
+export async function updateHotWaterSetting(key, value) {
+    try {
+        const hotWaterData = { ...(settingsCache.workflow?.hotWaterData || {}) };
+        hotWaterData[key] = value;
+        await updateWorkflow({ hotWaterData });
+        
+        // Update local cache
+        if (!settingsCache.workflow) {
+            settingsCache.workflow = {};
+        }
+        settingsCache.workflow.hotWaterData = hotWaterData;
+        
+        ui.showToast('Hot water setting updated successfully', 3000, 'success');
+    } catch (error) {
+        console.error('Error updating hot water setting:', error);
+        ui.showToast(`Failed to update hot water setting: ${error.message}`, 5000, 'error');
     }
 }
 
@@ -1464,16 +1509,21 @@ export function renderMiscellaneousSettings() {
 
 // Render Steam settings
 export function renderSteamSettings() {
-    if (!settingsCache.de1) {
+    if (!settingsCache.de1 && !settingsCache.workflow) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
                 <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Steam Settings</p>
                 </div>
-                <div class="text-red-500 p-4 text-[24px]">Failed to load DE1 settings</div>
+                <div class="text-red-500 p-4 text-[24px]">Failed to load settings</div>
             </div>
         `;
     }
+
+    const steamSettings = settingsCache.workflow?.steamSettings || {};
+    const targetTemp = steamSettings.targetTemperature || 150;
+    const duration = steamSettings.duration || 60;
+    const flow = steamSettings.flow || 0.9;
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
@@ -1481,6 +1531,74 @@ export function renderSteamSettings() {
                 <p class="leading-[1.2]">Steam Settings</p>
             </div>
 
+            <!-- Steam Temperature -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Target Temperature (°C)</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="steamTempInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${targetTemp}" step="1" min="130" max="170">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateSteamSetting('targetTemperature', parseInt(document.getElementById('steamTempInput').value))">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Steam temperature setting (130-170°C)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Steam Duration -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Duration (seconds)</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="steamDurationInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${duration}" step="5" min="10" max="120">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateSteamSetting('duration', parseInt(document.getElementById('steamDurationInput').value))">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Steam duration in seconds
+                    </p>
+                </div>
+            </div>
+
+            <!-- Steam Flow -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Flow</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="steamFlowInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${flow.toFixed(1)}" step="0.1" min="0.1" max="2.5">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateSteamSetting('flow', parseFloat(document.getElementById('steamFlowInput').value))">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Steam flow rate (0.1 - 2.5)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Steam Purge Mode (from DE1 settings) -->
+            ${settingsCache.de1 ? `
             <div class="content-stretch flex flex-col items-start relative w-full">
                 <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
                     <div class="content-stretch flex items-center justify-between relative w-full">
@@ -1498,22 +1616,29 @@ export function renderSteamSettings() {
                     </p>
                 </div>
             </div>
+            ` : ''}
         </div>
     `;
 }
 
 // Render Hot Water settings
 export function renderHotWaterSettings() {
-    if (!settingsCache.de1) {
+    if (!settingsCache.de1 && !settingsCache.workflow) {
         return `
             <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
                 <div class="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] min-w-full not-italic relative text-[var(--text-primary)] text-[36px] text-center w-[min-content]">
                     <p class="leading-[1.2]">Hot Water Settings</p>
                 </div>
-                <div class="text-red-500 p-4 text-[24px]">Failed to load DE1 settings</div>
+                <div class="text-red-500 p-4 text-[24px]">Failed to load settings</div>
             </div>
         `;
     }
+
+    const hotWaterData = settingsCache.workflow?.hotWaterData || {};
+    const targetTemp = hotWaterData.targetTemperature || 75;
+    const volume = hotWaterData.volume || 50;
+    const duration = hotWaterData.duration || 30;
+    const flow = hotWaterData.flow || 2.5;
 
     return `
         <div class="content-stretch flex flex-col gap-[60px] items-start relative w-full">
@@ -1521,42 +1646,90 @@ export function renderHotWaterSettings() {
                 <p class="leading-[1.2]">Hot Water Settings</p>
             </div>
 
-            <!-- Divider -->
-            <div class="h-0 relative w-full">
-                <hr class="border-t border-[#c9c9c9] w-full" />
+            <!-- Hot Water Temperature -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Target Temperature (°C)</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="hotWaterTempInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${targetTemp}" step="1" min="50" max="95">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateHotWaterSetting('targetTemperature', parseInt(document.getElementById('hotWaterTempInput').value))">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Hot water temperature (50-95°C)
+                    </p>
+                </div>
             </div>
 
-            <div class="content-stretch flex flex-col items-center relative w-full">
-                <div class="border border-[#c9c9c9] border-solid content-stretch flex flex-col gap-[30px] items-center px-[60px] py-[30px] relative shrink-0 w-[590px]">
-                    <div class="content-stretch flex items-center relative shrink-0">
-                        <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.2] not-italic relative shrink-0 text-[var(--text-primary)] text-[30px]">
-                            Hot Water Flow
-                        </p>
-                    </div>
-                    <div class="content-stretch flex gap-[20px] h-[72px] items-center justify-center relative shrink-0 w-full">
-                        <button id="hot-water-flow-minus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
-                                onclick="window.flashPlusMinusButton(this); window.adjustHotWaterFlow(-0.1);">
-                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M10.416 25H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none flex items-center justify-center"
-                             style="width: 130px;">
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" id="hotWaterFlowInput" class="text-center text-[var(--text-primary)] text-[24px] font-bold bg-transparent border-none w-full"
-                                   value="${settingsCache.de1.hotWaterFlow !== undefined ? settingsCache.de1.hotWaterFlow : 2.5}"
-                                   step="0.1" min="0" max="8"
-                                   onchange="window.updateDe1Setting('hotWaterFlow', parseFloat(this.value))">
-                            <span class="ml-2 text-nowrap">ml/s</span>
+            <!-- Hot Water Volume -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Volume (ml)</p>
                         </div>
-                        <button id="hot-water-flow-plus" class="w-[72px] h-[72px] bg-[var(--button-grey)] rounded-[20px] flex items-center justify-center"
-                                onclick="window.flashPlusMinusButton(this); window.adjustHotWaterFlow(0.1);">
-                            <svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M24.9993 10.4165V39.5832M10.416 24.9998H39.5827" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="hotWaterVolumeInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${volume}" step="10" min="10" max="500">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateHotWaterSetting('volume', parseInt(document.getElementById('hotWaterVolumeInput').value))">
+                                Save
+                            </button>
+                        </div>
                     </div>
-                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full text-center">
-                        Flow rate for hot water : 0.0 - 8.0 ml/s
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Hot water volume in ml
+                    </p>
+                </div>
+            </div>
+
+            <!-- Hot Water Duration -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Duration (seconds)</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="hotWaterDurationInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${duration}" step="5" min="5" max="120">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateHotWaterSetting('duration', parseInt(document.getElementById('hotWaterDurationInput').value))">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Hot water duration in seconds
+                    </p>
+                </div>
+            </div>
+
+            <!-- Hot Water Flow (from workflow) -->
+            <div class="content-stretch flex flex-col items-start relative w-full">
+                <div class="content-stretch flex flex-col gap-[30px] items-start relative w-full">
+                    <div class="content-stretch flex items-center justify-between relative w-full">
+                        <div class="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] not-italic relative text-[#385a92] text-[30px]">
+                            <p class="leading-[1.2]">Flow (ml/s)</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <input type="number" id="hotWaterFlowInput" class="bg-[#385a92] border-2 border-[#385a92] border-solid h-[62.88px] rounded-[10px] w-[150px] text-white text-[24px] p-2 text-center"
+                                   value="${flow.toFixed(1)}" step="0.1" min="0.1" max="8">
+                            <button class="bg-[#385a92] h-[62.88px] rounded-[10px] w-[100px] text-white text-[24px] font-bold"
+                                    onclick="window.updateHotWaterSetting('flow', parseFloat(document.getElementById('hotWaterFlowInput').value))">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                    <p class="font-['Inter:Regular',sans-serif] font-normal leading-[1.4] not-italic relative text-[var(--text-primary)] text-[24px] w-full">
+                        Flow rate for hot water (0.1 - 8.0 ml/s)
                     </p>
                 </div>
             </div>
@@ -2750,6 +2923,8 @@ export async function initializeSettings() {
     window.updateReaSetting = updateReaSetting;
     window.updateDe1Setting = updateDe1Setting;
     window.updateDe1AdvancedSetting = updateDe1AdvancedSetting;
+    window.updateSteamSetting = updateSteamSetting;
+    window.updateHotWaterSetting = updateHotWaterSetting;
     window.flashPlusMinusButton = ui.flashPlusMinusButton;
     window.retryLoadSettings = () => {
         // Function to retry loading settings when user clicks retry button
