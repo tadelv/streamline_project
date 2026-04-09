@@ -348,6 +348,9 @@ async function openModal(inputElement, options = {}) {
     console.log('[DEBUG] Numpad Modal Opened');
     console.log('[DEBUG] window.innerWidth:', window.innerWidth, 'window.innerHeight:', window.innerHeight);
     console.log('[DEBUG] screen.width:', screen.width, 'screen.height:', screen.height);
+    console.log('[DEBUG] screen.availWidth:', screen.availWidth, 'screen.availHeight:', screen.availHeight);
+    console.log('[DEBUG] window.devicePixelRatio:', window.devicePixelRatio);
+    console.log('[DEBUG] Calculated physical pixels:', screen.width * window.devicePixelRatio, 'x', screen.height * window.devicePixelRatio);
     console.log('[DEBUG] document.documentElement.clientWidth:', document.documentElement.clientWidth, 'clientHeight:', document.documentElement.clientHeight);
     
     // Log modal container dimensions after it's rendered

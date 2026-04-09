@@ -450,6 +450,50 @@
     }
 }
 
+@media (min-width: 768px) and (max-width: 1200px) {
+    .numpad-modal-numpad {
+        gap: 32px;
+    }
+    
+    .numpad-modal-numpad-btn {
+        padding: 28px 56px;
+        font-size: 28px;
+    }
+    
+    .numpad-modal-input-label {
+        font-size: 24px;
+        padding-top: 80px;
+    }
+    
+    .numpad-modal-input-value {
+        font-size: 36px;
+    }
+    
+    .numpad-modal-input-box {
+        max-width: 220px;
+    }
+}
+
+@media (min-width: 1201px) and (max-width: 1600px) {
+    .numpad-modal-numpad {
+        gap: 40px;
+    }
+    
+    .numpad-modal-numpad-btn {
+        padding: 32px 64px;
+        font-size: 32px;
+    }
+    
+    .numpad-modal-input-label {
+        font-size: 26px;
+        padding-top: 100px;
+    }
+    
+    .numpad-modal-input-value {
+        font-size: 42px;
+    }
+}
+
 @media (min-width: 768px) {
     .numpad-modal-overlay {
         align-items: flex-end;
