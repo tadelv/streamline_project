@@ -379,8 +379,6 @@ async function openModal(inputElement, options = {}) {
     container.style.left = '0';
 
     console.log('[Numpad] Applied modalScale:', modalScale);
-
-    console.log('[Numpad] Applied modalScale:', modalScale);
     
     // DEBUG: Log viewport dimensions when modal opens
     console.log('[DEBUG] Numpad Modal Opened');
@@ -393,12 +391,12 @@ async function openModal(inputElement, options = {}) {
     
     // Log modal container dimensions after it's rendered
     requestAnimationFrame(() => {
-        const container = overlay.querySelector('.numpad-modal-container');
-        if (container) {
-            const rect = container.getBoundingClientRect();
+        const modalContainer = overlay.querySelector('.numpad-modal-container');
+        if (modalContainer) {
+            const rect = modalContainer.getBoundingClientRect();
             console.log('[DEBUG] Modal container rect - width:', rect.width, 'height:', rect.height);
-            console.log('[DEBUG] Modal container style - width:', container.style.width, 'height:', container.style.height);
-            console.log('[DEBUG] Modal container offsetWidth:', container.offsetWidth, 'offsetHeight:', container.offsetHeight);
+            console.log('[DEBUG] Modal container style - width:', modalContainer.style.width, 'height:', modalContainer.style.height);
+            console.log('[DEBUG] Modal container offsetWidth:', modalContainer.offsetWidth, 'offsetHeight:', modalContainer.offsetHeight);
         }
         
         // Log scaled-content transform
@@ -417,7 +415,7 @@ async function openModal(inputElement, options = {}) {
     
     // Prevent OS keyboard by preventing focus on any element
     // Keep focus prevention but make touchstart selective to not block button clicks
-    const container = overlay.querySelector('.numpad-modal-container');
+    // Reuse the container variable from earlier
     const preventFocus = (e) => {
         e.preventDefault();
         e.stopPropagation();
