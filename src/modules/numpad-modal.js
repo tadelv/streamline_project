@@ -344,6 +344,20 @@ async function openModal(inputElement, options = {}) {
     const overlay = document.getElementById('numpad-modal-overlay');
     overlay.classList.add('active');
     
+    // Apply the same scaling transform as the main content to the modal
+    const scaledContent = document.getElementById('scaled-content');
+    if (scaledContent) {
+        const transform = scaledContent.style.transform;
+        const scaleMatch = transform.match(/scale\(([\d.]+)\)/);
+        const scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+        
+        const container = overlay.querySelector('.numpad-modal-container');
+        container.style.transform = `scale(${scale})`;
+        container.style.transformOrigin = 'top left';
+        
+        console.log('[Numpad] Applied scale:', scale, 'to modal container');
+    }
+    
     // DEBUG: Log viewport dimensions when modal opens
     console.log('[DEBUG] Numpad Modal Opened');
     console.log('[DEBUG] window.innerWidth:', window.innerWidth, 'window.innerHeight:', window.innerHeight);
