@@ -344,6 +344,36 @@ async function openModal(inputElement, options = {}) {
     const overlay = document.getElementById('numpad-modal-overlay');
     overlay.classList.add('active');
     
+    // DEBUG: Log viewport dimensions when modal opens
+    console.log('[DEBUG] Numpad Modal Opened');
+    console.log('[DEBUG] window.innerWidth:', window.innerWidth, 'window.innerHeight:', window.innerHeight);
+    console.log('[DEBUG] screen.width:', screen.width, 'screen.height:', screen.height);
+    console.log('[DEBUG] document.documentElement.clientWidth:', document.documentElement.clientWidth, 'clientHeight:', document.documentElement.clientHeight);
+    
+    // Log modal container dimensions after it's rendered
+    requestAnimationFrame(() => {
+        const container = overlay.querySelector('.numpad-modal-container');
+        if (container) {
+            const rect = container.getBoundingClientRect();
+            console.log('[DEBUG] Modal container rect - width:', rect.width, 'height:', rect.height);
+            console.log('[DEBUG] Modal container style - width:', container.style.width, 'height:', container.style.height);
+            console.log('[DEBUG] Modal container offsetWidth:', container.offsetWidth, 'offsetHeight:', container.offsetHeight);
+        }
+        
+        // Log scaled-content transform
+        const scaledContent = document.getElementById('scaled-content');
+        if (scaledContent) {
+            console.log('[DEBUG] scaled-content transform:', scaledContent.style.transform);
+            console.log('[DEBUG] scaled-content offsetWidth:', scaledContent.offsetWidth, 'offsetHeight:', scaledContent.offsetHeight);
+        }
+        
+        // Log viewport dimensions
+        const viewport = document.getElementById('scaling-container');
+        if (viewport) {
+            console.log('[DEBUG] scaling-container style - width:', viewport.style.width, 'height:', viewport.style.height);
+        }
+    });
+    
     // Prevent OS keyboard by preventing focus on any element
     // Keep focus prevention but make touchstart selective to not block button clicks
     const container = overlay.querySelector('.numpad-modal-container');
