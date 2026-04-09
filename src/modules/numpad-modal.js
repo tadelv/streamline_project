@@ -145,8 +145,13 @@ function createModalHTML() {
         <div class="numpad-modal-container">
             <div class="numpad-modal-header">
                 <span class="numpad-modal-title">DOSE</span>
-                <button class="numpad-modal-close" id="numpad-modal-close">&times;</button>
+                <div class="numpad-modal-actions ml-auto">
+                    <button class="numpad-modal-cancel w-60 py-10 rounded-[90px] inline-flex justify-center items-center gap-2.5" id="numpad-cancel">CANCEL</button>
+                    <button class="numpad-modal-confirm w-[369px] py-10 bg-[#385a92] rounded-[90px] inline-flex justify-center items-center gap-2.5" id="numpad-confirm">CONFIRM</button>
+                </div>
             </div>
+            
+            <div class="numpad-modal-header-divider"></div>
             
             <div class="numpad-modal-content">
                 <div class="numpad-modal-left">
@@ -159,9 +164,13 @@ function createModalHTML() {
                         </div>
                     </div>
                     
+                    <div class="numpad-previous-divider"></div>
+                    
                     <div class="numpad-modal-previous-values" id="numpad-previous-values-container" style="display: none;">
-                        <div class="numpad-modal-previous-title">Previous Values</div>
-                        <div class="numpad-modal-previous-grid" id="numpad-previous-grid"></div>
+                        <div class="numpad-modal-previous-container" style="width: 750px; height: 370px;">
+                            <div class="numpad-modal-previous-title">Previous Values</div>
+                            <div class="numpad-modal-previous-grid" id="numpad-previous-grid"></div>
+                        </div>
                     </div>
                 </div>
                 
@@ -187,11 +196,6 @@ function createModalHTML() {
                         </button>
                     </div>
                 </div>
-            </div>
-            
-            <div class="numpad-modal-actions">
-                <button class="numpad-modal-cancel" id="numpad-cancel">CANCEL</button>
-                <button class="numpad-modal-confirm" id="numpad-confirm">CONFIRM</button>
             </div>
         </div>
     `;
@@ -432,7 +436,10 @@ function initializeNumpadModal() {
     createModalHTML();
     
     console.log('[Numpad] Attaching event listeners...');
-    document.getElementById('numpad-modal-close').addEventListener('click', handleCancel);
+    const closeBtn = document.getElementById('numpad-modal-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', handleCancel);
+    }
     document.getElementById('numpad-cancel').addEventListener('click', handleCancel);
     document.getElementById('numpad-confirm').addEventListener('click', handleConfirm);
     
