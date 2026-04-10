@@ -496,7 +496,7 @@
 
 @media (min-width: 768px) {
     .numpad-modal-overlay {
-        align-items: flex-end;
+align-items: center;
     }
 
     .numpad-modal-container {

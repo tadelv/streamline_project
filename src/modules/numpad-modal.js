@@ -201,6 +201,13 @@ function createModalHTML() {
     `;
     
     document.body.appendChild(overlay);
+    
+    // Attempt to move modal inside scaled-content for proper scaling
+    const scaledContent = document.getElementById('scaled-content');
+    if (scaledContent && overlay.parentElement === document.body) {
+        scaledContent.appendChild(overlay);
+    }
+    
     return overlay;
 }
 
