@@ -398,6 +398,10 @@ async function openModal(inputElement, options = {}) {
     // Get the container for event listeners later
     const container = overlay.querySelector('.numpad-modal-container');
     
+    // Set container to viewport dimensions (for revert: remove these 2 lines)
+    container.style.width = `${window.innerWidth}px`;
+    container.style.height = `${window.innerHeight}px`;
+    
     // Apply scale to inner content wrapper only (not container - it inherits parent scale)
     const designScale = getDesignScale();
     const innerContent = container?.querySelector('.numpad-modal-scaled-inner');
