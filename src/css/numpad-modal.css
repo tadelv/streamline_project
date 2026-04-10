@@ -28,7 +28,7 @@
     padding-bottom: max(24px, env(safe-area-inset-bottom));
     transform: translateY(100%);
     transition: transform 0.3s ease;
-    max-height: 100vh;
+    
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -83,7 +83,7 @@
     display: flex;
     gap: 0;
     flex: 1;
-    min-height: 0;
+    height: 100%;
 }
 
 .numpad-modal-left {
