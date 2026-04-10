@@ -398,18 +398,15 @@ async function openModal(inputElement, options = {}) {
     // Get the container for event listeners later
     const container = overlay.querySelector('.numpad-modal-container');
     
-    // Set container to viewport dimensions (for revert: remove these 2 lines)
-    container.style.width = `${window.innerWidth}px`;
-    container.style.height = `${window.innerHeight}px`;
+    // Set container to fill overlay dimensions (1920x1200), not viewport
+    // This way container inherits parent scale once and renders at correct viewport size
+    container.style.width = '1920px';
+    container.style.height = '1200px';
     
-    // Apply scale to inner content wrapper only (not container - it inherits parent scale)
-    const designScale = getDesignScale();
+    // No scale needed here - container already inherits parent scale from #scaled-content
+    // Inner wrapper fills 100% of container, elements naturally display at correct size
     const innerContent = container?.querySelector('.numpad-modal-scaled-inner');
-    if (innerContent && designScale !== 1) {
-        innerContent.style.transform = `scale(${designScale})`;
-        innerContent.style.transformOrigin = 'top left';
-        console.log('[DEBUG] Applied scale to inner wrapper:', designScale);
-    }
+    console.log('[DEBUG] Inner wrapper uses parent scale only - no explicit scale applied');
     
     // DEBUG: Log viewport dimensions when modal opens
     console.log('[DEBUG] Numpad Modal Opened');
