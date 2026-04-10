@@ -147,8 +147,8 @@ function createModalHTML() {
                 <div class="numpad-modal-header">
                     <span class="numpad-modal-title">DOSE</span>
                     <div class="numpad-modal-actions ml-auto">
-                        <button class="numpad-modal-cancel w-60 py-10 rounded-[90px] inline-flex justify-center items-center gap-2.5" id="numpad-cancel">CANCEL</button>
-                        <button class="numpad-modal-confirm w-[369px] py-10 bg-[#385a92] rounded-[90px] inline-flex justify-center items-center gap-2.5" id="numpad-confirm">CONFIRM</button>
+                        <button class="numpad-modal-cancel w-[240px] h-[82.5px] py-10 rounded-[90px] inline-flex justify-center items-center gap-2.5" id="numpad-cancel">CANCEL</button>
+                        <button class="numpad-modal-confirm w-[240px] h-[82.5px] py-10 bg-[#385a92] rounded-[90px] inline-flex justify-center items-center gap-2.5" id="numpad-confirm">CONFIRM</button>
                     </div>
                 </div>
                 
