@@ -364,21 +364,14 @@ async function openModal(inputElement, options = {}) {
         modalScale = screenWidth / designWidth;
     }
 
-    // Don't scale up past 1.0 - modal looks better at 100% on large screens
-    modalScale = Math.min(modalScale, 1.0);
-
-    // Apply scale to modal container while preserving the CSS slide-up animation
-    // CSS uses transform: translateY() for the slide effect, so we need to combine both
+    // The modal container uses CSS width: 100%, height: 100% to fill viewport
+    // No scale transform needed - container already fills 1280x800
+    // The scaling.js handles main content, modal fills viewport naturally
+    
+    console.log('[Numpad] Modal uses viewport size directly:', screenWidth, 'x', screenHeight);
+    
+    // Get the container for event listeners later
     const container = overlay.querySelector('.numpad-modal-container');
-    // Keep the slide-up animation from CSS, add our scale
-    container.style.transform = `translateY(0) scale(${modalScale})`;
-    container.style.transformOrigin = 'top left';
-    // Ensure proper positioning
-    container.style.position = 'fixed';
-    container.style.top = '0';
-    container.style.left = '0';
-
-    console.log('[Numpad] Applied modalScale:', modalScale);
     
     // DEBUG: Log viewport dimensions when modal opens
     console.log('[DEBUG] Numpad Modal Opened');
