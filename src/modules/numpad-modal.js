@@ -289,6 +289,22 @@ function renderPreviousValues() {
     });
 }
 
+function getDesignScale() {
+    const scaledContent = document.getElementById('scaled-content');
+    if (!scaledContent) return 1;
+    
+    const style = window.getComputedStyle(scaledContent);
+    const transform = style.transform;
+    
+    if (transform && transform !== 'none') {
+        const match = transform.match(/matrix\(([^)]+)\)/);
+        if (match) {
+            return parseFloat(match[1].split(',')[0]) || 1;
+        }
+    }
+    return 1;
+}
+
 let currentFieldType = 'dose-in';
 
 const fieldConfig = {
@@ -379,6 +395,12 @@ async function openModal(inputElement, options = {}) {
     
     // Get the container for event listeners later
     const container = overlay.querySelector('.numpad-modal-container');
+    
+    // Apply dynamic scale to modal content - use same scale as parent scaled-content
+    const designScale = getDesignScale();
+    if (container && designScale !== 1) {
+        container.style.setProperty('--modal-scale', designScale);
+    }
     
     // DEBUG: Log viewport dimensions when modal opens
     console.log('[DEBUG] Numpad Modal Opened');
