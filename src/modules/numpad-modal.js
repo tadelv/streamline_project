@@ -416,9 +416,13 @@ async function openModal(inputElement, options = {}) {
         const modalContainer = overlay.querySelector('.numpad-modal-container');
         if (modalContainer) {
             const rect = modalContainer.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(modalContainer);
             console.log('[DEBUG] Modal container rect - width:', rect.width, 'height:', rect.height);
             console.log('[DEBUG] Modal container style - width:', modalContainer.style.width, 'height:', modalContainer.style.height);
             console.log('[DEBUG] Modal container offsetWidth:', modalContainer.offsetWidth, 'offsetHeight:', modalContainer.offsetHeight);
+            console.log('[DEBUG] Modal transform:', computedStyle.transform);
+            console.log('[DEBUG] Modal --modal-scale:', computedStyle.getPropertyValue('--modal-scale') || 'not set');
+            console.log('[DEBUG] getDesignScale() returned:', designScale);
         }
         
         // Log scaled-content transform
