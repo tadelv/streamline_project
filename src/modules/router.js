@@ -277,10 +277,93 @@ export async function loadPage(pageUrl, containerSelector = '#scaled-content') {
                         await profileManagerModule.init(); // Reinitialize profile manager
                         showScaleInfo(); // Make sure the scale info container is visible
 
+                        // Reinitialize numpad modal after returning to main page
+                        try {
+                            const numpadModule = await import('./numpad-modal.js');
+                            if (numpadModule.resetNumpadModal) {
+                                numpadModule.resetNumpadModal();
+                            }
+                            if (numpadModule.initNumpadModal) {
+                                numpadModule.initNumpadModal();
+                                if (numpadModule.attachToNumericInputs) {
+                                    numpadModule.attachToNumericInputs();
+                                }
+                                console.log('Router: Numpad modal reinitialized.');
+                            }
+                        } catch (e) {
+                            console.error('Router: Error reinitializing numpad modal:', e);
+                        }
+
                         // Import and call loadInitialData directly to ensure profile information is updated
                         // But make sure to wait for the profile manager to fully update the UI first
                         const appModule = await import('./app.js');
                         console.log('Router: appModule imported');
+
+                        // Reinitialize mobile value inputs after returning to main page
+                        if (appModule.initMobileValueInputs) {
+                            appModule.initMobileValueInputs();
+                            console.log('Router: Mobile value inputs reinitialized.');
+                        }
+
+                        // Force reattach click handlers to value elements (bypass shouldUseNumpad check)
+                        const numpadModule = await import('./numpad-modal.js');
+                        const valueElements = [
+                            { id: 'dose-in-value', type: 'dose-in', format: (v) => `${v}g` },
+                            { id: 'drink-out-value', type: 'drink-out', format: (v) => `${v}g` },
+                            { id: 'temp-value', type: 'temperature', format: (v) => `${v}°c` },
+                            { id: 'grind-value', type: 'grind', format: (v) => v },
+                            { id: 'steam-duration-value', type: 'steam-duration', format: (v) => `${v}s` },
+                            { id: 'steam-flow-value', type: 'steam-flow', format: (v) => v },
+                            { id: 'flush-value', type: 'flush', format: (v) => `${v}s` },
+                            { id: 'hot-water-vol-value', type: 'hot-water-vol', format: (v) => `${v}ml` },
+                            { id: 'hot-water-temp-value', type: 'hot-water-temp', format: (v) => `${v}°c` }
+                        ];
+
+                        valueElements.forEach(({ id, type, format }) => {
+                            const el = document.getElementById(id);
+                            if (!el) return;
+
+                            // Remove existing click listener by cloning (workaround for removing old handlers)
+                            const newEl = el.cloneNode(true);
+                            el.parentNode.replaceChild(newEl, el);
+
+                            // Add fresh click handler
+                            newEl.style.cursor = 'pointer';
+                            newEl.style.touchAction = 'manipulation';
+                            newEl.setAttribute('tabindex', '-1');
+
+                            newEl.addEventListener('click', async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+
+                                const currentValue = newEl.textContent.replace(/[^0-9.]/g, '') || '0';
+
+                                const mockInput = {
+                                    value: currentValue,
+                                    setAttribute: () => {},
+                                    dispatchEvent: () => {}
+                                };
+
+                                if (numpadModule.openModal) {
+                                    numpadModule.openModal(mockInput, {
+                                        previousValues: [],
+                                        fieldType: type,
+                                        onConfirm: (val) => {
+                                            newEl.textContent = format(val);
+
+                                            // Update app state
+                                            if (type === 'dose-in') {
+                                                window.app.ui.updateDoseValue('in', val);
+                                            } else if (type === 'drink-out') {
+                                                window.app.ui.updateDoseValue('out', val);
+                                            }
+                                        }
+                                    });
+                                }
+                            });
+                        });
+                        console.log('Router: Click handlers force reattached.');
+
                         if (appModule.loadInitialData) {
                             // Add a sufficient delay to ensure DOM is fully updated and all UI components are ready
                             await new Promise(resolve => setTimeout(resolve, 200));

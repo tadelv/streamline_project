@@ -616,8 +616,15 @@ function initNumpadModal() {
     }
 }
 
+// Reset function to allow reinitialization after DOM changes (e.g., router page loads)
+function resetNumpadModal() {
+    numpadModalInitialized = false;
+    console.log('[Numpad] Modal state reset');
+}
+
 // Expose for manual testing in browser console
 window.initNumpadModal = initNumpadModal;
 window.openNumpadModal = openModal;
+window.resetNumpadModal = resetNumpadModal;
 
-export { initNumpadModal, attachToNumericInputs, openModal, shouldUseNumpad, initializeNumpadModal };
+export { initNumpadModal, attachToNumericInputs, openModal, shouldUseNumpad, initializeNumpadModal, resetNumpadModal };
