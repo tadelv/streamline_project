@@ -1125,6 +1125,15 @@ function formatDaysOfWeek(days) {
     return days.map(d => dayNames[d - 1]).join(', ');
 }
 
+function formatKeepAwakeDuration(minutes) {
+    if (!minutes || minutes < 1) return '';
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hrs > 0 && mins > 0) return `${hrs} hr ${mins} min`;
+    if (hrs > 0) return `${hrs} hr`;
+    return `${mins} min`;
+}
+
 // Async loader for presence settings content
 async function loadPresenceSettingsAsync() {
     // Small delay to ensure the placeholder DOM is rendered first
@@ -1136,12 +1145,14 @@ async function loadPresenceSettingsAsync() {
     try {
         const settings = await getPresenceSettings();
         const schedules = settings.schedules || [];
-        const activeHours = getActiveHours();
-        const schedulesHtml = schedules.map(schedule => `
+        const schedulesHtml = schedules.map(schedule => {
+            const keepAwakeLabel = schedule.keepAwakeFor ? formatKeepAwakeDuration(schedule.keepAwakeFor) : '';
+            return `
             <div class="bg-[var(--presence-card-alt-bg)] rounded-lg p-4 flex items-center justify-between" data-schedule-id="${schedule.id}">
                 <div class="flex-grow">
                     <div class="text-[22px] font-semibold text-[var(--presence-card-text)]">
                         ${schedule.time} - ${formatDaysOfWeek(schedule.daysOfWeek)}
+                        ${keepAwakeLabel ? `<span class="text-[18px] opacity-75 ml-2">(${keepAwakeLabel})</span>` : ''}
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
@@ -1154,25 +1165,7 @@ async function loadPresenceSettingsAsync() {
                     </button>
                 </div>
             </div>
-        `).join('');
-        const activeHoursHtml = activeHours.map(activeHour => `
-            <div class="bg-[var(--presence-card-alt-bg)] rounded-lg p-4 flex items-center justify-between" data-active-hour-id="${activeHour.id}">
-                <div class="flex-grow">
-                    <div class="text-[22px] font-semibold text-[var(--presence-card-text)]">
-                        ${activeHour.startTime} - ${activeHour.endTime} ${formatDaysOfWeek(activeHour.daysOfWeek)}
-                    </div>
-                </div>
-                <div class="flex items-center gap-4">
-                    <input type="checkbox"
-                           class="toggle toggle-md toggle-primary"
-                           ${activeHour.enabled ? 'checked' : ''}
-                           onchange="handleActiveHourToggle('${activeHour.id}', this.checked)">
-                    <button class="btn btn-sm btn-error" onclick="handleDeleteActiveHour('${activeHour.id}')">
-                        Delete
-                    </button>
-                </div>
-            </div>
-        `).join('');
+        `}).join('');
 
         container.innerHTML = `
             <div class="space-y-6 px-[60px] py-[80px]">
@@ -1229,60 +1222,6 @@ async function loadPresenceSettingsAsync() {
                     </div>
                 </div>
 
-                <div class="bg-[var(--presence-card-bg)] rounded-lg p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h3 class="text-[24px] font-semibold text-[var(--presence-card-text)]">Active Hours</h3>
-                            <p class="text-[18px] text-[var(--presence-card-text)] opacity-75 mt-1">
-                                Machine stays awake during these time windows
-                            </p>
-                        </div>
-                        <button class="btn btn-primary" onclick="handleAddActiveHour()">
-                            Add Active Hours
-                        </button>
-                    </div>
-
-                    <div class="space-y-3">
-                        ${activeHours.length > 0 ? activeHoursHtml : '<p class="text-[var(--presence-card-text)] opacity-75 text-[18px]">No active hours configured</p>'}
-                    </div>
-                </div>
-
-                <dialog id="add-active-hour-modal" class="modal">
-                    <div class="modal-box bg-[var(--presence-card-bg)] max-w-2xl">
-                        <h3 class="font-bold text-[24px] text-[var(--presence-card-text)] mb-4">Add Active Hours</h3>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Start Time</label>
-                                <input type="time" id="active-hour-start-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
-                            </div>
-
-                            <div>
-                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">End Time</label>
-                                <input type="time" id="active-hour-end-input" class="input input-bordered w-full text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]">
-                            </div>
-
-                            <div>
-                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Days of Week</label>
-                                <div class="flex gap-2 flex-wrap">
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="1" class="checkbox checkbox-primary mr-1"> Mon</label>
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="2" class="checkbox checkbox-primary mr-1"> Tue</label>
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="3" class="checkbox checkbox-primary mr-1"> Wed</label>
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="4" class="checkbox checkbox-primary mr-1"> Thu</label>
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="5" class="checkbox checkbox-primary mr-1"> Fri</label>
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="6" class="checkbox checkbox-primary mr-1"> Sat</label>
-                                    <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="7" class="checkbox checkbox-primary mr-1"> Sun</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="modal-action">
-                            <button class="btn" onclick="document.getElementById('add-active-hour-modal').close()">Cancel</button>
-                            <button class="btn btn-primary" onclick="handleSaveActiveHour()">Save</button>
-                        </div>
-                    </div>
-                </dialog>
-
                 <dialog id="add-schedule-modal" class="modal">
                     <div class="modal-box bg-[var(--presence-card-bg)] max-w-2xl">
                         <h3 class="font-bold text-[24px] text-[var(--presence-card-text)] mb-4">Add Schedule</h3>
@@ -1304,6 +1243,25 @@ async function loadPresenceSettingsAsync() {
                                     <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="6" class="checkbox checkbox-primary mr-1"> Sat</label>
                                     <label class="cursor-pointer text-[var(--presence-card-text)]"><input type="checkbox" value="7" class="checkbox checkbox-primary mr-1"> Sun</label>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[20px] text-[var(--presence-card-text)] block mb-2">Keep Awake For</label>
+                                <div class="flex items-center gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" id="keep-awake-hours-input" class="input input-bordered w-20 text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]"
+                                               min="0" max="12" placeholder="0" value="0">
+                                        <span class="text-[var(--presence-card-text)]">hr</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" id="keep-awake-mins-input" class="input input-bordered w-20 text-[20px] bg-[var(--presence-input-bg)] text-[var(--presence-input-text)] border-[var(--presence-input-border)]"
+                                               min="0" max="59" placeholder="0" value="0">
+                                        <span class="text-[var(--presence-card-text)]">min</span>
+                                    </div>
+                                </div>
+                                <p class="text-[18px] text-[var(--presence-card-text)] opacity-75 mt-1">
+                                    Duration to keep machine awake after schedule fires. Leave empty for wake-only.
+                                </p>
                             </div>
                         </div>
 
@@ -3468,17 +3426,27 @@ window.handleSaveSchedule = async function() {
         const checkboxes = document.querySelectorAll('#add-schedule-modal input[type="checkbox"]:checked');
         const daysOfWeek = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
 
+        const hours = parseInt(document.getElementById('keep-awake-hours-input').value, 10) || 0;
+        const mins = parseInt(document.getElementById('keep-awake-mins-input').value, 10) || 0;
+        const keepAwakeFor = (hours * 60) + mins;
+
         const schedule = {
             time: timeInput,
             daysOfWeek: daysOfWeek,
             enabled: true
         };
 
+        if (keepAwakeFor >= 1 && keepAwakeFor <= 720) {
+            schedule.keepAwakeFor = keepAwakeFor;
+        }
+
         await createPresenceSchedule(schedule);
         ui.showToast('Schedule created', 3000, 'success');
 
         // Clear form inputs
         document.getElementById('schedule-time-input').value = '';
+        document.getElementById('keep-awake-hours-input').value = '0';
+        document.getElementById('keep-awake-mins-input').value = '0';
         document.querySelectorAll('#add-schedule-modal input[type="checkbox"]').forEach(cb => cb.checked = false);
 
         document.getElementById('add-schedule-modal').close();
@@ -3486,76 +3454,6 @@ window.handleSaveSchedule = async function() {
     } catch (error) {
         console.error('Error creating schedule:', error);
         ui.showToast('Failed to create schedule', 5000, 'error');
-    }
-};
-
-window.handleAddActiveHour = function() {
-    document.getElementById('add-active-hour-modal').showModal();
-};
-
-window.handleSaveActiveHour = function() {
-    try {
-        const startTime = document.getElementById('active-hour-start-input').value;
-        const endTime = document.getElementById('active-hour-end-input').value;
-
-        if (!startTime || !endTime) {
-            ui.showToast('Please select start and end times', 3000, 'error');
-            return;
-        }
-
-        if (startTime === endTime) {
-            ui.showToast('Start and end times must be different', 3000, 'error');
-            return;
-        }
-
-        const checkboxes = document.querySelectorAll('#add-active-hour-modal input[type="checkbox"]:checked');
-        const daysOfWeek = Array.from(checkboxes).map(cb => parseInt(cb.value, 10));
-
-        const activeHour = {
-            startTime,
-            endTime,
-            daysOfWeek,
-            enabled: true
-        };
-
-        addActiveHour(activeHour);
-        ui.showToast('Active hours created', 3000, 'success');
-
-        // Reset form
-        document.getElementById('active-hour-start-input').value = '';
-        document.getElementById('active-hour-end-input').value = '';
-        document.querySelectorAll('#add-active-hour-modal input[type="checkbox"]').forEach(cb => cb.checked = false);
-
-        document.getElementById('add-active-hour-modal').close();
-        updateSettingsContentArea('presence');
-    } catch (error) {
-        console.error('Error creating active hours:', error);
-        ui.showToast('Failed to create active hours', 5000, 'error');
-    }
-};
-
-window.handleActiveHourToggle = function(id, enabled) {
-    try {
-        updateActiveHour(id, { enabled });
-        ui.showToast(`Active hours ${enabled ? 'enabled' : 'disabled'}`, 3000, 'success');
-    } catch (error) {
-        console.error('Error toggling active hours:', error);
-        ui.showToast('Failed to update active hours', 5000, 'error');
-        const toggle = document.querySelector(`input[onchange*="${id}"]`);
-        if (toggle) toggle.checked = !enabled;
-    }
-};
-
-window.handleDeleteActiveHour = function(id) {
-    if (!confirm('Are you sure you want to delete this active hour?')) return;
-
-    try {
-        deleteActiveHour(id);
-        ui.showToast('Active hours deleted', 3000, 'success');
-        updateSettingsContentArea('presence');
-    } catch (error) {
-        console.error('Error deleting active hours:', error);
-        ui.showToast('Failed to delete active hours', 5000, 'error');
     }
 };
 
@@ -3966,104 +3864,6 @@ window.scanForScales = async function() {
         ui.showToast(`Error scanning for scales: ${error.message}`, 5000, 'error');
     }
 };
-
-// ============================================================================
-// Active Hours / Keep-Awake Feature (Client-Side Workaround)
-// ============================================================================
-
-// Active Hours localStorage helpers
-function getActiveHours() {
-    const stored = localStorage.getItem('activeHours');
-    return stored ? JSON.parse(stored) : [];
-}
-
-function saveActiveHours(activeHours) {
-    localStorage.setItem('activeHours', JSON.stringify(activeHours));
-}
-
-function addActiveHour(activeHour) {
-    const activeHours = getActiveHours();
-    activeHour.id = crypto.randomUUID();
-    activeHour.enabled = activeHour.enabled !== false;
-    activeHours.push(activeHour);
-    saveActiveHours(activeHours);
-    return activeHour;
-}
-
-function updateActiveHour(id, updates) {
-    const activeHours = getActiveHours();
-    const index = activeHours.findIndex(ah => ah.id === id);
-    if (index !== -1) {
-        activeHours[index] = { ...activeHours[index], ...updates };
-        saveActiveHours(activeHours);
-        return activeHours[index];
-    }
-    return null;
-}
-
-function deleteActiveHour(id) {
-    const activeHours = getActiveHours();
-    const filtered = activeHours.filter(ah => ah.id !== id);
-    saveActiveHours(filtered);
-}
-
-// Active Hours Scheduler
-let activeHoursInterval = null;
-let currentActiveHourId = null;
-
-function startActiveHoursScheduler() {
-    // Check every minute
-    activeHoursInterval = setInterval(checkActiveHours, 60000);
-    // Also check immediately
-    checkActiveHours();
-}
-
-function stopActiveHoursScheduler() {
-    if (activeHoursInterval) {
-        clearInterval(activeHoursInterval);
-        activeHoursInterval = null;
-    }
-}
-
-async function checkActiveHours() {
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const currentDay = now.getDay() === 0 ? 7 : now.getDay(); // Convert Sunday from 0 to 7
-
-    const activeHours = getActiveHours();
-    const activeNow = activeHours.find(ah => {
-        if (!ah.enabled) return false;
-        if (ah.daysOfWeek.length > 0 && !ah.daysOfWeek.includes(currentDay)) return false;
-
-        // Check if current time is within the window
-        return currentTime >= ah.startTime && currentTime < ah.endTime;
-    });
-
-    if (activeNow && currentActiveHourId !== activeNow.id) {
-        // Entering active-hours window
-        console.log('Entering active hours:', activeNow);
-        currentActiveHourId = activeNow.id;
-        try {
-            await setPresenceSettings({ userPresenceEnabled: false });
-            ui.showToast('Active hours started - machine will stay awake', 3000, 'info');
-        } catch (error) {
-            console.error('Error disabling presence detection for active hours:', error);
-        }
-    } else if (!activeNow && currentActiveHourId) {
-        // Exiting active-hours window
-        console.log('Exiting active hours');
-        currentActiveHourId = null;
-        try {
-            await setPresenceSettings({ userPresenceEnabled: true });
-            ui.showToast('Active hours ended - presence detection re-enabled', 3000, 'info');
-        } catch (error) {
-            console.error('Error re-enabling presence detection after active hours:', error);
-        }
-    }
-}
-
-// Start scheduler when settings module loads
-startActiveHoursScheduler();
 
 // Initialize Bluetooth settings when the page loads
 document.addEventListener('DOMContentLoaded', function() {
