@@ -1,0 +1,929 @@
+import { connectWebSocket, getWorkflow, connectScaleWebSocket, ensureGatewayModeTracking, reconnectingWebSocket, getDevices, reconnectDevice, scanForDevices,connectShotSettingsWebSocket, getDe1AdvancedSettings, updateShotSettingsCache, getDe1Settings, MachineState, getShotIds, getShots, getValueFromStore, verifyVisualizerCredentials, connectScaleDevice, tareScale, connectTimeToReadyWebSocket, sendDeviceCommand, saveScaleDeviceId, getScaleDeviceId, getDeviceWebSocket, initDeviceWebSocketWithCallback, connectDisplayWebSocket } from './api.js';
+import { initScaling } from './scaling.js';
+import * as chart from './chart.js';
+import * as ui from './ui.js';
+import { initI18n } from './i18n.js';
+import * as history from './history.js';
+import * as shotData from './shotData.js';
+import * as profileManager from './profileManager.js';
+import * as api from './api.js';
+import { loadPage, initRouter, isSubPage } from './router.js';
+import { initWaterTankSocket } from './waterTank.js';
+import { logger, setDebug } from './logger.js';
+import { initNumpadModal, attachToNumericInputs, openModal, shouldUseNumpad } from './numpad-modal.js';
+
+window.app = { api, ui, chart };
+
+// Export functions for UI and router access
+window.handleWeightClick = handleWeightClick;
+window.handleScaleData = handleScaleData;
+window.loadInitialData = loadInitialData;
+window.resetDataTimeout = resetDataTimeout;
+window.onScaleDisconnect = onScaleDisconnect;
+window.onScaleReconnect = onScaleReconnect;
+
+function initMobileValueInputs() {
+    if (!shouldUseNumpad()) return;
+    
+    const valueElements = [
+        { id: 'dose-in-value', type: 'dose-in', label: 'Dose In' },
+        { id: 'drink-out-value', type: 'drink-out', label: 'Drink Out' },
+        { id: 'temp-value', type: 'temperature', label: 'Temperature' },
+        { id: 'grind-value', type: 'grind', label: 'Grind' },
+        { id: 'steam-duration-value', type: 'steam-duration', label: 'Steam Duration' },
+        { id: 'steam-flow-value', type: 'steam-flow', label: 'Steam Flow' },
+        { id: 'flush-value', type: 'flush', label: 'Flush' },
+        { id: 'hot-water-vol-value', type: 'hot-water-vol', label: 'Hot Water Volume' },
+        { id: 'hot-water-temp-value', type: 'hot-water-temp', label: 'Hot Water Temp' }
+    ];
+    
+    valueElements.forEach(({ id, type, label }) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        
+        el.style.cursor = 'pointer';
+        // Tell browser this is for clicking, not text input
+        el.style.touchAction = 'manipulation';
+        el.style.webkitTapHighlightColor = 'transparent';
+        el.setAttribute('tabindex', '-1');
+        
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const currentValue = el.textContent.replace(/[^0-9.]/g, '') || '0';
+            
+            const mockInput = {
+                value: currentValue,
+                setAttribute: () => {},
+                dispatchEvent: (event) => {
+                    if (event.type === 'change' || event.type === 'input') {
+                        const newVal = mockInput.value;
+                        el.textContent = type === 'temperature' ? `${newVal}°c` : 
+                                        type === 'grind' ? newVal : 
+                                        type === 'steam-duration' ? `${newVal}s` :
+                                        type === 'steam-flow' ? newVal :
+                                        type === 'flush' ? `${newVal}s` :
+                                        type === 'hot-water-vol' ? `${newVal}ml` :
+                                        type === 'hot-water-temp' ? `${newVal}°c` :
+                                        `${newVal}g`;
+                                        
+                        if (type === 'dose-in') {
+                            window.app.ui.updateDoseValue('in', newVal);
+                        } else if (type === 'drink-out') {
+                            window.app.ui.updateDoseValue('out', newVal);
+                        } else if (type === 'steam-duration') {
+                            window.app.ui.updateSteamDisplay({ targetSteamDuration: parseFloat(newVal) });
+                        } else if (type === 'steam-flow') {
+                            window.app.ui.updateSteamDisplay({ targetSteamFlow: parseFloat(newVal) });
+                        } else if (type === 'flush') {
+                            window.app.ui.updateFlushDisplay(parseFloat(newVal));
+                        } else if (type === 'hot-water-vol') {
+                            window.app.ui.updateHotWaterDisplay({ targetHotWaterVolume: parseFloat(newVal) });
+                        } else if (type === 'hot-water-temp') {
+                            window.app.ui.updateHotWaterDisplay({ targetHotWaterTemp: parseFloat(newVal) });
+                        } else if (type === 'grind') {
+                            window.app.ui.updateGrindValue(newVal);
+                        }
+                    }
+                }
+            };
+            
+            openModal(mockInput, {
+                previousValues: [],
+                onConfirm: (val) => {},
+                fieldType: type
+            });
+        });
+    });
+    
+    logger.info('Mobile value inputs initialized');
+}
+
+// Helper function to format state strings
+function formatStateString(text) {
+    if (!text) return '';
+    // "camelCase" -> "Camel Case"
+    const result = text.replace(/([A-Z])/g, ' $1');
+    return result.charAt(0).toUpperCase() + result.slice(1).trim();
+}
+
+let shotStartTime = null;
+let dataTimeout;
+let de1DeviceId = null;
+let isDe1Connected = false; // New variable to track DE1 connection status
+let isScaleConnected = false; // New variable to track Scale connection status
+let previousState = {}; // Track previous machine state object {state, substate}
+
+let latestScaleWeight = 0;
+let heatingStartTime = null;
+let heatingStartTemp = 0;
+let isConnectingScale = false;
+let timeToReadyMessage = null;
+let isHeatingFromTimeToReady = false; // Flag to track if we're currently in a heating phase from time-to-ready
+let timeToReadyStatus = null; // Track the status from time-to-ready data
+
+// To filter the chart to only show data from the 'pouring' state,
+// set this variable to true in your browser's developer console.
+let filterGraphToPouringState = true;
+
+function onScaleReconnect() {
+    logger.info('Scale WebSocket reconnected.');
+}
+
+function onScaleDisconnect() {
+    logger.warn('Scale has disconnected.');
+    isScaleConnected = false;
+    // Keep the scale info container visible but show reconnect status
+    ui.updateWeight('[Reconnect]', {
+        weightText: { add: ['text-red-600'] },
+        dataWeight: { add: ['text-[var(--mimoja-blue)]'], remove: ['text-[var(--text-primary)]'] }
+    });
+}
+
+// Sets a timer. If no data is received within 5 seconds, it assumes a stale connection.
+function resetDataTimeout() {
+    clearTimeout(dataTimeout);
+    dataTimeout = setTimeout(async () => {
+        logger.warn('No WebSocket data received for 5 seconds. Assuming REA or WebSocket disconnection.');
+        ui.updateMachineStatus({ status: "disconnected" });
+        isDe1Connected = false;
+        try {
+            const devices = await scanForDevices();
+            const de1Machine = devices.find(d => d.type === 'machine');
+            if (de1DeviceId) {
+                logger.info('DE1 machine connected no need to reconnect.');
+            } else {
+                reconnectDevice(de1DeviceId);
+            }
+        } catch (error) {
+            logger.error('Error during device reconnection attempt:', error);
+        }
+    }, 5000); // 5-second timeout
+}
+
+function isHeatingState(state, substate) {
+    return state === MachineState.HEATING || (state === MachineState.IDLE && substate === 'preparingForShot');
+}
+
+async function pollForUploadConfirmation(shotId, timeout = 30000) {
+    // Check if visualizer is enabled before attempting upload
+    const isVisualizerEnabled = localStorage.getItem('visualizerEnabled') === 'true';
+    
+    if (!isVisualizerEnabled) {
+        logger.info('Visualizer is disabled. Skipping upload confirmation for shot ID:', shotId);
+        return Promise.resolve(false); // Return resolved promise with false to indicate no upload happened
+    }
+    
+    logger.info(`Polling for upload confirmation for shot ID: ${shotId}`);
+    const pollInterval = 3000; // 3 seconds
+    const startTime = Date.now();
+
+    const checkUploadStatus = async (resolve, reject) => {
+        if (Date.now() - startTime > timeout) {
+            logger.warn(`Polling timed out for shot ${shotId}.`);
+            ui.showToast(`Upload to Visualizer Failed.`, 3000, 'error');
+            return reject(new Error('Polling timed out'));
+        }
+
+        try {
+            const lastUploadedShotId = await getValueFromStore('visualizer.reaplugin', 'lastUploadedShot');
+            logger.debug(`Polled lastUploadedShotId: ${lastUploadedShotId}`);
+
+            if (lastUploadedShotId === shotId) {
+                logger.info(`Successfully confirmed upload for shot ${shotId}.`);
+                ui.showToast('Shot uploaded successfully!', 3000, 'success');
+                return resolve(true);
+            } else {
+                setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
+            }
+        } catch (error) {
+            logger.error('Error during polling for upload confirmation:', error);
+            // Don't reject immediately, let it retry until timeout
+            setTimeout(() => checkUploadStatus(resolve, reject), pollInterval);
+        }
+    };
+
+    return new Promise(checkUploadStatus);
+}
+
+function handleTimeToReadyData(data) {
+    if (data.status === 'heating' && data.remainingTimeMs > 0) {
+        const totalSeconds = Math.round(data.remainingTimeMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        timeToReadyStatus = data.status; // Store the status globally
+
+        // Check if we're close to reaching the target (within 10 seconds)
+        if (totalSeconds <= 15) {
+            timeToReadyStatus = 'reached';
+        }
+
+        // logger.debug("time to read data",data);
+        if (minutes > 5) {
+            timeToReadyMessage = `Heating`;
+        } else {
+            timeToReadyMessage = `Heating: ${totalSeconds}s remaining`;
+        }
+
+        // Update the machine status directly when heating info is received
+        isHeatingFromTimeToReady = true; // Set flag to indicate we're in a heating phase
+    } else {
+        timeToReadyMessage = null;
+        timeToReadyStatus = data.status; // Update status to reflect current state
+        isHeatingFromTimeToReady = false; // Clear flag when not heating
+
+        // When heating is complete (reached), let handleData take over
+        if (data.status === 'reached') {
+            timeToReadyStatus = 'reached';
+        }
+    }
+}
+
+function handleData(data) {
+    if (!data?.state) {
+        logger.warn('Received WebSocket message with missing state:', data);
+        return;
+    }
+
+    resetDataTimeout(); // Reset the timer every time data is received.
+
+    const { state, substate } = data.state;
+    const wasHeating = isHeatingState(previousState.state, previousState.substate);
+    const isHeating = isHeatingState(state, substate);
+    let statusString;
+
+    // Reset heating timer if state changes FROM heating
+    if (wasHeating && !isHeating) {
+        heatingStartTime = null;
+        heatingStartTemp = 0;
+    }
+
+    // Determine the status string based on state and substate
+    if (state === MachineState.ERROR) {
+        statusString = "Error";
+    } else if (state === MachineState.SLEEPING) {
+        // Activate screensaver when machine enters sleep state
+        if (!ui.isScreensaverActive()) {
+            logger.info('Machine entered sleep state. Activating screensaver.');
+            ui.activateScreensaver();
+        }
+        statusString = "Sleeping";
+    } else {
+        // Deactivate screensaver when machine wakes up from sleep (if it was active)
+        if (ui.isScreensaverActive()) {
+            ui.deactivateScreensaver();
+        }
+        if (isHeating && isHeatingFromTimeToReady) {
+            // When heating and we're in a heating phase from time-to-ready,
+            // rely solely on timeToReadyMessage from the time-to-ready WebSocket
+            // Don't show temperature details here anymore
+            statusString = timeToReadyMessage || "Heating";
+        } else if (isHeating) {
+            // When heating but not in a time-to-ready phase, show generic heating
+            statusString = "Heating";
+        } else {
+            const formattedState = formatStateString(state);
+            const formattedSubstate = formatStateString(substate);
+            statusString = formattedState;
+
+            // Append substate if it's meaningful and not redundant
+            if (formattedSubstate && formattedSubstate.toLowerCase() !== 'idle' && formattedSubstate.toLowerCase() !== formattedState.toLowerCase()) {
+                statusString += ` (${formattedSubstate})`;
+            }
+        }
+    }
+
+    // Detect DE1 reconnection
+    if (state !== MachineState.ERROR && !isDe1Connected) {
+        logger.info('DE1 machine reconnected. Loading initial data.');
+        isDe1Connected = true;
+        ui.updateMachineStatus({ status: statusString }); // Update status to reflect actual machine state
+        loadInitialData(); // Refresh all configuration data
+        // Do not clear chart or reset shotStartTime as per user request
+    } else if (state === MachineState.ERROR && isDe1Connected) {
+        logger.warn('DE1 machine connected with error status.');
+        isDe1Connected = false;
+        ui.updateMachineStatus({ status: "Disconnected" }); // Show disconnected when in error state
+    }
+
+    // Check if the machine is in an error state that indicates disconnection
+    if (state === MachineState.ERROR) {
+        logger.warn('DE1 machine in error state, likely disconnected.');
+        isDe1Connected = false;
+        ui.updateMachineStatus({ status: "Disconnected" });
+    }
+
+    // Check for shot completion (transition from 'espresso' to 'ready' or 'idle')
+    if (previousState.state === MachineState.ESPRESSO && (state === MachineState.READY || state === MachineState.IDLE)) {
+        logger.info('Shot finished. Checking for upload confirmation and refreshing history.');
+
+        // Start polling for upload confirmation
+        setTimeout(async () => {
+            try {
+                const shotIds = await getShotIds();
+                if (shotIds && shotIds.length > 0) {
+                    const latestShotId = shotIds[shotIds.length - 1];
+                    pollForUploadConfirmation(latestShotId);
+                } else {
+                    logger.warn('Could not get latest shot ID to confirm upload.');
+                }
+            } catch (error) {
+                logger.error('Failed to initiate upload polling:', error);
+            }
+        }, 2000); // Delay to ensure shot is saved on server
+
+        setTimeout(() => {
+            history.initHistory();
+        }, 5000);
+    }
+    previousState = data.state; // Update previous state
+
+    // Update UI elements
+    // Pass detailed status information to match the enhanced updateMachineStatus function
+    ui.updateMachineStatus({
+        status: statusString,
+        substate: substate,
+        stepName: formatStateString(substate), // Use formatted substate as step name
+        timeValue: data.elapsedTime, // Use elapsed time from data if available
+        isClickable: (substate === 'preinfusion' || substate === 'pouring'), // Make preinfusion/pouring steps clickable
+        isHeating: isHeating, // Pass heating state to UI
+        isHeatingFromTimeToReady: isHeatingFromTimeToReady // Pass time-to-ready heating state to UI
+    });
+    ui.updateSleepButton(state);
+    ui.updateTemperatures({ mix: data.mixTemperature, group: data.groupTemperature, steam: data.steamTemperature });
+
+    // Update Chart and Shot Data Table
+    if (MachineState.ESPRESSO.includes(state)) {
+        // Only start the shot clock and chart when preinfusion or pouring starts
+        // This excludes the "preparingForShot" phase from the shot timing
+        if (substate === 'preinfusion' || substate === 'pouring') {
+            if (!shotStartTime) {
+                shotStartTime = new Date(data.timestamp);
+                chart.clearChart();
+                shotData.clearShotData();
+                const historyLabelEl = document.getElementById('shot-history-label');
+                if (historyLabelEl) {
+                    historyLabelEl.textContent = 'CURRENT';
+                }
+            }
+            chart.updateChart(shotStartTime, data, latestScaleWeight);
+            shotData.updateShotData(data, latestScaleWeight);
+        }
+    } else {
+        shotStartTime = null;
+    }
+}
+
+// Throttle function to limit the rate of execution
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+const throttledUpdateWeight = throttle(ui.updateWeight, 100); // 100ms throttle interval
+
+function handleScaleData(data) {
+    const scaleInfoContainer = document.getElementById('scale-info-container');
+    const currentWeight = data.weight;
+    latestScaleWeight = currentWeight;
+
+    // Receiving any message means the websocket and BLE link are up.
+    // The timeout in api.js will trigger a disconnect if data stops flowing.
+
+    if (currentWeight !== null && currentWeight !== undefined) {
+        // We have a weight, so we are fully connected.
+        if (!isScaleConnected) {
+            logger.info('Scale reconnected.');
+            isScaleConnected = true;
+            // Show the container when a scale is connected and providing weight data
+            if (scaleInfoContainer) {
+                scaleInfoContainer.style.display = '';
+            }
+        }
+        // Update the UI with the new weight and reset styles.
+        throttledUpdateWeight(currentWeight, {
+            weightText: { remove: ['text-red-600'] },
+            dataWeight: { remove: ['text-[var(--mimoja-blue)]'] }
+        });
+    } else {
+        // We received a message without a weight.
+        if (!isScaleConnected) {
+            // If it was never connected and no weight data, keep it hidden.
+            // if (scaleInfoContainer) {
+            //     scaleInfoContainer.style.display = 'none';
+            // }
+            ui.updateWeight('[Reconnect]', {
+                weightText: { add: ['text-red-600'] },
+                dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+            });
+        }
+        logger.warn('Scale message received without weight data.');
+    }
+}
+
+async function handleWeightClick() {
+    if (isScaleConnected) {
+        try {
+            await tareScale();
+            ui.showToast('Scale tared', 2000, 'success');
+        } catch (error) {
+            ui.showToast('Failed to tare scale', 3000, 'error');
+        }
+        return;
+    }
+
+    if (isConnectingScale) return;
+
+    isConnectingScale = true;
+    ui.updateWeight('Connecting...');
+
+    try {
+        const deviceWs = getDeviceWebSocket();
+        if (!deviceWs || deviceWs.readyState !== WebSocket.OPEN) {
+            initDeviceWebSocketWithCallback(
+                () => {
+                    sendDeviceCommand({ command: 'scan', connect: true });
+                },
+                () => {},
+                () => {},
+                () => {}
+            );
+        } else {
+            sendDeviceCommand({ command: 'scan', connect: true });
+        }
+        logger.info('Scale connection initiated via WebSocket, waiting for weight data...');
+        let attempts = 0;
+        const maxAttempts = 15;
+        const poll = setInterval(async () => {
+            attempts++;
+            if (attempts > maxAttempts) {
+                clearInterval(poll);
+                ui.showToast('Scale Not Found', 3000, 'error');
+                ui.updateWeight('[Reconnect]', {
+                    weightText: { add: ['text-red-600'] },
+                    dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+                });
+                isConnectingScale = false;
+                // If scale connection failed, hide the container if it was never truly connected
+                if (!isScaleConnected) {
+                    const scaleInfoContainer = document.getElementById('scale-info-container');
+                    if (scaleInfoContainer) {
+                        scaleInfoContainer.style.display = 'none';
+                    }
+                }
+                return;
+            }
+
+            try {
+                const devices = await getDevices();
+                const scale = devices.find(d => d.type === 'scale' && d.state === 'connected');
+
+                if (scale) {
+                    clearInterval(poll);
+                    saveScaleDeviceId(scale.id);
+                    logger.info('Scale BLE link established. Re-initializing WebSocket connection.');
+                    isConnectingScale = false;
+                    // Re-create the WebSocket with proper handlers to ensure a clean connection.
+                    connectScaleWebSocket(
+                        handleScaleData,
+                        onScaleReconnect,
+                        onScaleDisconnect
+                    );
+                }
+            } catch (pollError) {
+                // Ignore poll errors, let it retry
+            }
+        }, 1000);
+    } catch (error) {
+        ui.showToast('Failed to initiate scale connection', 3000, 'error');
+        ui.updateWeight('[Reconnect]', {
+            weightText: { add: ['text-red-600'] },
+            dataWeight: { add: ['text-[var(--mimoja-blue)]'] ,remove:['text-[var(--text-primary)]']}
+        });
+        isConnectingScale = false;
+        // If initial connection failed, hide the container if it was never truly connected
+        // if (!isScaleConnected) {
+        //     const scaleInfoContainer = document.getElementById('scale-info-container');
+        //     if (scaleInfoContainer) {
+        //         scaleInfoContainer.style.display = 'none';
+        //     }
+        // }
+    }
+}
+
+async function handleShotSettingsData(data) {
+    updateShotSettingsCache(data);
+    ui.updateHotWaterDisplay(data);
+
+    // Update steam display with the data received from the WebSocket
+    // Avoiding unnecessary API call to get DE1 settings on every WebSocket message
+    ui.updateSteamDisplay(data);
+
+    if (data.flushTimeout !== undefined) {
+        logger.debug('Received flush timeout data:', data.flushTimeout);
+        ui.updateFlushDisplay(data.flushTimeout);
+    }
+}
+
+async function loadInitialData() {
+    logger.debug("loadInitialData triggered.");
+    try {
+        // Wait for DOM to be fully updated when called from router
+        await new Promise(resolve => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', resolve);
+            } else {
+                // Small delay to ensure DOM updates from router are complete
+                setTimeout(resolve, 100);
+            }
+        });
+
+        const workflow = await getWorkflow();
+        logger.debug("Workflow data received:", workflow);
+
+        const profile = workflow?.profile;
+        const context = workflow?.context;
+        const doseData = workflow?.doseData; // Legacy fallback
+        const grinderData = workflow?.grinderData; // Legacy fallback
+        const flushtimeout = workflow?.rinseData;
+
+        // Get the profile manager to access the favorite assignments
+        const profileManagerModule = await import('./profileManager.js');
+        const favoriteButtons = [];
+        const FAV_COUNT = 5;
+
+        for (let i = 0; i < FAV_COUNT; i++) {
+            const button = document.getElementById(`fav-profile-btn-${i}`);
+            if (button) {
+                favoriteButtons.push(button);
+                logger.info(`Found favorite button with ID: fav-profile-btn-${i}`); // Log found buttons
+            } else {
+                logger.info(`Favorite button with ID: fav-profile-btn-${i} not found`);
+            }
+        }
+        
+        if (profile) {
+            ui.updateProfileName(profile.title || "Untitled Profile");
+            logger.info(`Active profile: ${profile.title}`);
+            
+            // Set the current profile in the chart module for step change detection
+            chart.setCurrentProfile(profile);
+            logger.info('Profile set in chart module for step change detection');
+            
+            // Highlight the active profile button based on assignment rather than text matching
+            // This is more reliable since it uses the internal assignment mapping
+            if (profileManagerModule.favoriteAssignments && favoriteButtons.length > 0) {
+                logger.debug('Using assignment mapping to highlight favorite button');
+                
+                // Find which button has the current profile assigned to it
+                for (let i = 0; i < FAV_COUNT; i++) {
+                    const assignedProfileKey = profileManagerModule.favoriteAssignments[i];
+                    const button = favoriteButtons[i];
+                    
+                    logger.debug(`Checking favorite button ${i}: assignedProfileKey=${assignedProfileKey}, button exists=${!!button}`);
+                    
+                    if (button && assignedProfileKey) {
+                        // Get the profile record to compare with the active profile
+                        const assignedProfileRecord = profileManagerModule.availableProfiles[assignedProfileKey];
+                        
+                        logger.debug(`Assigned profile record for button ${i}: `, assignedProfileRecord);
+                        
+                        if (assignedProfileRecord && assignedProfileRecord.profile && 
+                            assignedProfileRecord.profile.title === profile.title) {
+                            // This button has the active profile assigned to it
+                            const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                            const activeTextClass = 'text-white';
+                            const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                            
+                            logger.info(`Marking button at index ${i} as active for profile "${profile.title}".`);
+                            button.classList.add(activeBgClass, activeTextClass);
+                            button.classList.remove(inactiveTextClass);
+                        } else {
+                            // This button doesn't have the active profile, ensure it's not highlighted
+                            const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                            const activeTextClass = 'text-white';
+                            const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                            
+                            button.classList.remove(activeBgClass, activeTextClass);
+                            button.classList.add(inactiveTextClass);
+                        }
+                    } else if (button) {
+                        // Button exists but no profile assigned, ensure it's not highlighted
+                        const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                        const activeTextClass = 'text-white';
+                        const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                        
+                        button.classList.remove(activeBgClass, activeTextClass);
+                        button.classList.add(inactiveTextClass);
+                    }
+                }
+            } else {
+                logger.debug('Assignment mapping not available, using text matching fallback');
+                
+                // Fallback to the original text matching approach if the assignment mapping isn't available
+                favoriteButtons.forEach((btn, index) => {
+                    const activeBgClass = 'bg-[var(--mimoja-blue-v2)]';
+                    const activeTextClass = 'text-white';
+                    const inactiveTextClass = 'text-[var(--mimoja-blue)]';
+                    const buttonText = btn.textContent.trim();
+                    const profileTitle = profile.title;
+                    
+                    logger.debug(`Checking button ${index} with text: "${buttonText}" against profile: "${profileTitle}"`);
+                    
+                    if (buttonText === profileTitle) {
+                        logger.info((`Marking button "${buttonText}" as active for profile "${profileTitle}".`));
+                        btn.classList.add(activeBgClass, activeTextClass);
+                        btn.classList.remove(inactiveTextClass);
+                    } else {
+                        btn.classList.remove(activeBgClass, activeTextClass);
+                        btn.classList.add(inactiveTextClass);
+                    }
+                });
+            }
+            
+            if (profile.steps && profile.steps.length > 0) {
+                ui.updateTemperatureDisplay(profile.steps[0].temperature || 0);
+            }
+        }
+
+        if (flushtimeout !== undefined) {
+            logger.debug('Received flush timeout data:', flushtimeout);
+            ui.updateFlushDisplay(flushtimeout.duration);
+
+        }
+
+        // Update grind display - prefer context.grinderSetting over legacy grinderData.setting
+        if (context?.grinderSetting) {
+            ui.updateGrindDisplay({ grinderSetting: context.grinderSetting });
+        } else if (grinderData?.setting) {
+            ui.updateGrindDisplay(grinderData);
+        }
+        logger.debug("Dose data received:", context || doseData);
+        
+        const doseInValue = context?.targetDoseWeight ?? doseData?.doseIn;
+        const doseOutValue = context?.targetYield ?? doseData?.doseOut;
+        
+        if (doseInValue !== undefined) ui.updateDoseInDisplay(doseInValue);
+        if (doseOutValue !== undefined) ui.updateDrinkOut(doseOutValue);
+        ui.updateDrinkRatio();
+
+    } catch (error) {
+        logger.error("Failed to load initial data:", error);
+        ui.updateProfileName("Error loading profile");
+    }
+}
+
+async function initializeDe1Connection() {
+    try {
+        logger.info('Attempting to find DE1 device...');
+        
+        // Try fast method first
+        let devices = await getDevices();
+        let de1Machine = devices.find(d => d.type === 'machine' && d.state === 'connected');
+        
+        // If not found, try the slower, more reliable scan
+        if (!de1Machine) {
+            logger.warn('DE1 not found with fast method. Trying fallback scan...');
+            devices = await scanForDevices();
+            de1Machine = devices.find(d => d.type === 'machine' && d.state === 'connected');
+        }
+        
+        if (de1Machine) {
+            de1DeviceId = de1Machine.id;
+            logger.info(`DE1 machine ID found and stored: ${de1DeviceId}`);
+            
+            // Update connection status based on actual device state
+            if (de1Machine.state === 'connected') {
+                logger.info('DE1 machine is connected.');
+                isDe1Connected = true;
+                // Don't update status here - let handleData manage it based on actual machine state
+            } else {
+                logger.warn('DE1 machine is found but not connected.');
+                isDe1Connected = false;
+                ui.updateMachineStatus({ status: "disconnected" });
+            }
+        } else {
+            logger.error('DE1 machine not found or not connected even after fallback scan.');
+            isDe1Connected = false;
+            ui.updateMachineStatus({ status: "disconnected" });
+        }
+    } catch (error) {
+        logger.error('Failed to initialize DE1 device ID:', error);
+        isDe1Connected = false;
+        ui.updateMachineStatus({ status: "disconnected" });
+    }
+}
+
+async function initVisualizer() {
+    // Check if visualizer is enabled before initializing
+    const isVisualizerEnabled = localStorage.getItem('visualizerEnabled') === 'true';
+    
+    if (!isVisualizerEnabled) {
+        logger.info('Visualizer is disabled. Skipping initialization.');
+        return;
+    }
+    
+    logger.info('Initializing Visualizer connection...');
+    const username = localStorage.getItem('visualizerUsername');
+    const encodedPassword = localStorage.getItem('visualizerPassword');
+
+    if (username && encodedPassword) {
+        try {
+            const password = atob(encodedPassword); // Decode password
+            const isValid = await verifyVisualizerCredentials(username, password);
+            if (isValid) {
+                logger.info('Saved Visualizer credentials are valid.');
+
+            } else {
+                logger.warn('Saved Visualizer credentials failed to validate. Please check your settings.');
+                // Clearing the invalid credentials
+                localStorage.removeItem('visualizerUsername');
+                localStorage.removeItem('visualizerPassword');
+            }
+        } catch (e) {
+            logger.error('Failed to decode or verify saved credentials', e);
+            // Clear potentially corrupted credentials
+            localStorage.removeItem('visualizerUsername');
+            localStorage.removeItem('visualizerPassword');
+        }
+    } else {
+        logger.info('No saved Visualizer credentials found.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        setDebug(true);
+        logger.info('App DOMContentLoaded: Starting initialization.');
+
+        chart.initChart();
+        logger.info('App DOMContentLoaded: Chart initialized.');
+
+        await initI18n();
+        ui.initUI({ onWeightClick: handleWeightClick });
+        ui.initScreensaver(); // Initialize screensaver functionality
+        initScaling();
+        initNumpadModal();
+        initMobileValueInputs();
+        logger.info('App DOMContentLoaded: UI initialized.');
+
+        // Check URL and load appropriate page if navigating directly to a route
+        await initRouter();
+        logger.info('App DOMContentLoaded: Router initialized.');
+
+        // Only run main page initializations if NOT on a sub-page (settings, profile_selector, etc.)
+        if (!isSubPage()) {
+            logger.info('App DOMContentLoaded: Awaiting History module...');
+            await history.initHistory();
+            logger.info('App DOMContentLoaded: History module finished.');
+
+            logger.info('App DOMContentLoaded: Awaiting Profile Manager module...');
+            await profileManager.init();
+            logger.info('App DOMContentLoaded: Profile Manager module finished.');
+
+            logger.info('App DOMContentLoaded: Awaiting initial data...');
+            await loadInitialData();
+            logger.info('App DOMContentLoaded: Initial data finished.');
+
+            logger.info('App DOMContentLoaded: Awaiting DE1 connection...');
+            await initializeDe1Connection();
+            logger.info('App DOMContentLoaded: DE1 connection finished.');
+
+            logger.info('App DOMContentLoaded: Initializing Visualizer...');
+            await initVisualizer();
+            logger.info('App DOMContentLoaded: Visualizer initialized.');
+
+            logger.info('App DOMContentLoaded: Setting up WebSockets and timers...');
+            connectWebSocket(handleData, () => {
+                logger.info('WebSocket reconnected. Resetting DE1 connection status.');
+                isDe1Connected = false; // Reset DE1 connection status so handleData can detect reconnection
+            });
+            connectScaleWebSocket(
+                handleScaleData,
+                onScaleReconnect,
+                onScaleDisconnect
+            );
+            initWaterTankSocket();
+            connectTimeToReadyWebSocket(handleTimeToReadyData);
+            connectDisplayWebSocket((data) => {
+                logger.debug('Display state updated:', data);
+            });
+            ensureGatewayModeTracking();
+            resetDataTimeout(); // Start the timeout timer initially.
+            connectShotSettingsWebSocket(handleShotSettingsData);
+            getDe1AdvancedSettings();
+            getDe1Settings();
+            logger.info('App DOMContentLoaded: WebSockets and timers set up.');
+        } // End of if (!isSubPage())
+
+        logger.info('App initialization finished successfully.');
+
+        // Check if user is on desktop (Windows or macOS) to determine if we should show fullscreen prompt
+        const isDesktop = navigator.userAgent.includes('Win') || navigator.userAgent.includes('Mac');
+        
+        // Function to determine if we're in fullscreen mode
+        // This accounts for both browser fullscreen API and web view fullscreen scenarios
+        function isFullscreenMode() {
+            // Check if using browser's native fullscreen API
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                return true;
+            }
+
+            // Check if viewport dimensions match screen dimensions (indicating fullscreen)
+            // This is especially relevant for web views that start in fullscreen
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const screenWidth = screen.width;
+            const screenHeight = screen.height;
+
+            // Account for potential UI elements like mobile browsers' address bars
+            // If viewport is very close to screen size, consider it fullscreen
+            const widthRatio = viewportWidth / screenWidth;
+            const heightRatio = viewportHeight / screenHeight;
+
+            // If both dimensions are at least 95% of screen size, consider it fullscreen
+            return widthRatio >= 0.95 && heightRatio >= 0.95;
+        }
+
+        // Helper function to check if rotation prompt should be shown (mobile + portrait)
+        function shouldShowRotationPrompt() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isPortrait = window.innerHeight > window.innerWidth;
+            return isMobile && isPortrait && !sessionStorage.getItem('rotationPromptDismissed');
+        }
+
+        // Prompt user to enter fullscreen only if not on desktop, not already in fullscreen,
+        // and rotation prompt is not being shown (rotation takes priority on mobile)
+        const isRotationPromptActive = shouldShowRotationPrompt();
+        
+        if (!isDesktop && !isFullscreenMode() && !sessionStorage.getItem('fullscreenPromptDismissed') && !isRotationPromptActive) {
+            const toastContainer = document.getElementById('fullscreen-toast-container');
+            if (toastContainer) {
+                toastContainer.style.display = 'grid'; // Use grid as per DaisyUI examples for centering
+
+                document.getElementById('toast-fullscreen-btn').onclick = () => {
+                    document.getElementById('fullscreen-toggle-btn').click();
+                    toastContainer.style.display = 'none';
+                    sessionStorage.setItem('fullscreenPromptDismissed', 'true');
+                };
+
+                document.getElementById('toast-close-btn').onclick = () => {
+                    toastContainer.style.display = 'none';
+                    sessionStorage.setItem('fullscreenPromptDismissed', 'true');
+                };
+            }
+        }
+
+        // Add event listener to close the toast when fullscreen mode is entered
+        // This handles the case where the user clicks the fullscreen toggle directly
+        document.addEventListener('fullscreenchange', () => {
+            const toastContainer = document.getElementById('fullscreen-toast-container');
+            if (toastContainer && isFullscreenMode()) {
+                // If we're now in fullscreen mode, hide the toast
+                toastContainer.style.display = 'none';
+            }
+        });
+
+        // Also handle the WebKit-specific event for Safari
+        document.addEventListener('webkitfullscreenchange', () => {
+            const toastContainer = document.getElementById('fullscreen-toast-container');
+            if (toastContainer && isFullscreenMode()) {
+                // If we're now in fullscreen mode, hide the toast
+                toastContainer.style.display = 'none';
+            }
+        });
+
+        const profileNameEl = document.getElementById('profile-name');
+        if (profileNameEl) {
+            profileNameEl.onclick = () => {
+                loadPage('src/profiles/profile_selector.html');
+            };
+        }
+
+        // Add event listener for the settings button
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => {
+                loadPage('src/settings/settings.html');
+            });
+        }
+    } catch (error) {
+        logger.error('CRITICAL: Unhandled error during application initialization:', error);
+        // Optionally, display a user-friendly error message on the page
+        const body = document.querySelector('body');
+        if (body) {
+            body.innerHTML = `<div style="color: red; padding: 2rem;">
+                <h1>Application Error</h1>
+                <p>A critical error occurred during startup. Please check the console for details and try refreshing the page.</p>
+            </div>`;
+        }
+    }
+});
