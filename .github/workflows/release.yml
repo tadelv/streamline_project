@@ -1,0 +1,76 @@
+name: Build and Release Skin
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage whitelist into ./dist
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          # Whitelist — ONLY these paths become part of the skin.
+          # Everything else in the repo (shots/, .DS_Store, AI agent dirs,
+          # loose notes, TCL files, figama_code/, test logs, etc.) is excluded
+          # by construction, not by ignore rules.
+          #
+          # Layout note: index.html at repo root references src/css, src/modules,
+          # src/profiles, src/settings, src/ui — so we ship src/ as-is, not the
+          # individual subfolders.
+          for path in index.html skin-manifest.json src; do
+            if [ -e "$path" ]; then
+              cp -r "$path" dist/
+            else
+              echo "::warning::whitelist entry missing: $path"
+            fi
+          done
+
+      - name: Validate skin-manifest.json
+        run: |
+          set -euo pipefail
+          test -f dist/skin-manifest.json
+          jq -e '.id == "streamline.js"' dist/skin-manifest.json > /dev/null
+          jq -e '.version' dist/skin-manifest.json > /dev/null
+
+      - name: Reject filenames with Win32 reserved chars
+        run: |
+          set -euo pipefail
+          bad=$(find dist -type f | grep -E '[<>:"|?*]' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::found filenames with Win32 reserved chars:"
+            echo "$bad"
+            exit 1
+          fi
+
+      # On every push to main: publish ./dist to the dist branch (orphan, force)
+      - name: Deploy to dist branch
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: dist
+          force_orphan: true
+
+      # On tag push: zip ./dist and publish a GitHub Release
+      - name: Create release archive
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd dist
+          zip -r ../streamline.js-${{ github.ref_name }}.zip .
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: streamline.js-${{ github.ref_name }}.zip
+          generate_release_notes: true
