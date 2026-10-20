@@ -5,15 +5,31 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     const options = [];
     const handlers = {};
     let legendBindings = 0;
-    const instance = {
-        setOption(option) { options.push(option); },
-        getOption() { return options.at(-1) || { legend: [], series: [] }; },
-        resize() {},
-        dispose() {},
-        on(name, handler) { handlers[name] = handler; if (name === 'legendselectchanged') legendBindings++; },
-        off() {},
-        dispatchAction() {}
+    const instances = [];
+    const appends = [];
+    const createInstance = () => {
+        let current = { legend: [], series: [] };
+        const instance = {
+            setOption(option) {
+                options.push(option);
+                current = { ...current, ...option };
+                if (option.series) current.series = option.series.map(series => ({ ...series, data: series.data.map(point => [...point]) }));
+            },
+            appendData({ seriesIndex, data }) {
+                appends.push({ instance, seriesIndex, data });
+                for (const point of data) current.series[seriesIndex].data.push([...point]);
+            },
+            getOption() { return current; },
+            resize() {},
+            dispose() {},
+            on(name, handler) { handlers[name] = handler; if (name === 'legendselectchanged') legendBindings++; },
+            off() {},
+            dispatchAction() {}
+        };
+        instances.push(instance);
+        return instance;
     };
+    const painted = () => instances[0].getOption().series[0].data;
     const element = (id, width, height) => ({
         id,
         offsetParent: {},
@@ -43,7 +59,7 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
         createElement: () => ({ style: {}, getContext: () => ({ measureText: text => ({ width: text.length * 8 }) }) })
     });
     const windowTarget = new EventTarget();
-    Object.assign(windowTarget, { devicePixelRatio: 2, echarts: { init: () => instance } });
+    Object.assign(windowTarget, { devicePixelRatio: 2, echarts: { init: createInstance } });
 
     globalThis.document = documentTarget;
     globalThis.window = windowTarget;
@@ -76,14 +92,17 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     chart.updateChart(start, frame(2), 2);
     chart.updateChart(start, frame(3), 3);
     await new Promise(resolve => setTimeout(resolve, 120));
-    assert.equal(options.at(-1).series[0].data.length, 3);
+    assert.deepEqual(painted(), [[1, 1], [2, 2], [3, 3]]);
     assert.deepEqual([options.at(-1).xAxis[0].min, options.at(-1).xAxis[0].max], [0, 3 / 0.93]);
 
     const visibleRenderCount = options.length;
+    const visibleAppendCount = appends.length;
     documentTarget.visibilityState = 'hidden';
     chart.updateChart(start, frame(4), 4);
     await new Promise(resolve => setTimeout(resolve, 120));
     assert.equal(options.length, visibleRenderCount);
+    assert.equal(appends.length, visibleAppendCount);
+    assert.equal(painted().length, 3);
 
     const nativeSetTimeout = globalThis.setTimeout;
     const delays = [];
@@ -96,9 +115,11 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     timer.mock.restore();
     assert.deepEqual(delays, [100]); // Frozen clock retains the documented default.
     await new Promise(resolve => setTimeout(resolve, 120));
-    assert.equal(options.at(-1).series[0].data.length, 4);
+    assert.deepEqual(painted(), [[1, 1], [2, 2], [3, 3], [4, 4]]);
+    assert.equal(Object.hasOwn(options.at(-1), 'series'), false);
+    assert.deepEqual(appends.findLast(call => call.seriesIndex === 0).data, [[4, 4]]);
 
-    const projected = options.at(-1).series[0].data;
+    const projected = painted();
     now = 1001;
     const fastDelays = [];
     const fastTimer = t.mock.method(globalThis, 'setTimeout', (callback, delay, ...args) => {
@@ -109,21 +130,23 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     fastTimer.mock.restore();
     assert.deepEqual(fastDelays, [24]); // 25 ms lower bound minus 1 ms since paint.
     await new Promise(resolve => setTimeout(resolve, 120));
-    assert.strictEqual(options.at(-1).series[0].data, projected);
+    assert.strictEqual(painted(), projected);
+    assert.equal(Object.hasOwn(options.at(-1), 'series'), false);
+    assert.deepEqual(appends.findLast(call => call.seriesIndex === 0).data, [[5, 5]]);
     assert.equal(projected.length, 5);
 
     chart.finalizeLiveChart();
     await new Promise(resolve => setTimeout(resolve, 0));
     assert.equal(options.at(-1).animation, false);
     assert.ok(options.at(-1).xAxis[0].max > 5);
-    assert.notStrictEqual(options.at(-1).series[0].data, projected);
-    assert.equal(options.at(-1).series[0].data.length, 5);
+    assert.notStrictEqual(painted(), projected);
+    assert.equal(painted().length, 5);
 
-    const finalized = options.at(-1).series[0].data;
+    const finalized = painted();
     chart.setTheme('dark');
     await new Promise(resolve => setTimeout(resolve, 0));
-    assert.notStrictEqual(options.at(-1).series[0].data, finalized);
-    assert.equal(options.at(-1).series[0].data.length, 5);
+    assert.notStrictEqual(painted(), finalized);
+    assert.equal(painted().length, 5);
 
     chart.openExpandedChart();
     await new Promise(resolve => setTimeout(resolve, 20));
@@ -144,7 +167,7 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     await new Promise(resolve => setTimeout(resolve, 0));
     chart.updateChart(start, frame(1), 1);
     await new Promise(resolve => setTimeout(resolve, 120));
-    assert.deepEqual(options.at(-1).series[0].data, [[1, 1]]);
+    assert.deepEqual(painted(), [[1, 1]]);
     chart.finalizeLiveChart();
     await new Promise(resolve => setTimeout(resolve, 0));
 });

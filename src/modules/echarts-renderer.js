@@ -281,7 +281,7 @@ function projectSeries(traces, previous) {
         const { points, reset, ...projection } = projectTraceDelta(trace, previous?.[index]);
         const data = reset ? points : previous[index].data;
         if (!reset) for (const point of points) data.push(point);
-        return { ...projection, data };
+        return { ...projection, data, points, reset };
     });
 }
 
@@ -320,16 +320,26 @@ export function renderChart(echarts, element, traces, layout, mode = 'full') {
     // instance disposal discard the old cache. Source replacement also resets
     // individual projections, even if a hidden chart skipped the clear render.
     const projections = projectSeries(traces, live ? state.projections : undefined);
-    // Data was extended in place: keep its length metadata in sync even if
-    // setOption throws, so a retry cannot append the same tail twice.
+    // Keep the full cache in sync before painting. If any operation throws
+    // (including a partial append), the next paint must replace series data
+    // from this cache rather than lose or duplicate a tail.
+    const append = live && state.liveLayoutSignature === signature &&
+        !state.needsSeriesUpdate && !projections.some(projection => projection.reset) &&
+        typeof state.chart.appendData === 'function';
     state.projections = projections;
+    state.needsSeriesUpdate = true;
     if (live) {
         const layoutChanged = state.liveLayoutSignature !== signature;
         const axes = layoutChanged ? axesOptions(layout, traces) : null;
         state.chart.setOption({
             ...(axes || { xAxis: liveXAxisOptions(layout) }),
-            series: liveSeriesOptions(projections, layout, layoutChanged)
+            ...(!append ? { series: liveSeriesOptions(projections, layout, layoutChanged) } : {})
         }, { notMerge: false, lazyUpdate: true, silent: true });
+        // appendData does not expand coordinate extents: update explicit x
+        // bounds first. Y bounds change only on the layout-signature path.
+        if (append) projections.forEach((projection, seriesIndex) => {
+            if (projection.points.length) state.chart.appendData({ seriesIndex, data: projection.points });
+        });
     } else {
         const selected = Object.assign({}, ...(state.chart.getOption?.()?.legend || []).map(legend => legend.selected || {}));
         state.chart.setOption(chartOption(traces, layout, size, selected, projections), {
@@ -339,7 +349,7 @@ export function renderChart(echarts, element, traces, layout, mode = 'full') {
             silent: true
         });
     }
-    charts.set(element, { ...state, traceCount: traces.length, liveLayoutSignature: signature });
+    charts.set(element, { ...state, needsSeriesUpdate: false, traceCount: traces.length, liveLayoutSignature: signature });
 }
 
 export function resizeChart(element) {
