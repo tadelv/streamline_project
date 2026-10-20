@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-test('live chart frames are paint-aligned, deferred while hidden, and expanded in one instance', async () => {
+test('live chart frames are paint-aligned, deferred while hidden, and expanded in one instance', async t => {
     const options = [];
     const handlers = {};
     let legendBindings = 0;
@@ -48,7 +48,8 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     globalThis.document = documentTarget;
     globalThis.window = windowTarget;
     globalThis.localStorage = { getItem: () => 'light' };
-    globalThis.performance = { now: () => 1000 };
+    let now = 1000;
+    globalThis.performance = { now: () => now };
     globalThis.requestAnimationFrame = callback => setTimeout(() => callback(1000), 0);
     globalThis.cancelAnimationFrame = clearTimeout;
 
@@ -84,15 +85,45 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     await new Promise(resolve => setTimeout(resolve, 120));
     assert.equal(options.length, visibleRenderCount);
 
+    const nativeSetTimeout = globalThis.setTimeout;
+    const delays = [];
+    const timer = t.mock.method(globalThis, 'setTimeout', (callback, delay, ...args) => {
+        delays.push(delay);
+        return nativeSetTimeout(callback, delay, ...args);
+    });
     documentTarget.visibilityState = 'visible';
     documentTarget.dispatchEvent(new Event('visibilitychange'));
+    timer.mock.restore();
+    assert.deepEqual(delays, [100]); // Frozen clock retains the documented default.
     await new Promise(resolve => setTimeout(resolve, 120));
     assert.equal(options.at(-1).series[0].data.length, 4);
+
+    const projected = options.at(-1).series[0].data;
+    now = 1001;
+    const fastDelays = [];
+    const fastTimer = t.mock.method(globalThis, 'setTimeout', (callback, delay, ...args) => {
+        fastDelays.push(delay);
+        return nativeSetTimeout(callback, delay, ...args);
+    });
+    chart.updateChart(start, frame(5), 5);
+    fastTimer.mock.restore();
+    assert.deepEqual(fastDelays, [24]); // 25 ms lower bound minus 1 ms since paint.
+    await new Promise(resolve => setTimeout(resolve, 120));
+    assert.strictEqual(options.at(-1).series[0].data, projected);
+    assert.equal(projected.length, 5);
 
     chart.finalizeLiveChart();
     await new Promise(resolve => setTimeout(resolve, 0));
     assert.equal(options.at(-1).animation, false);
-    assert.ok(options.at(-1).xAxis[0].max > 4);
+    assert.ok(options.at(-1).xAxis[0].max > 5);
+    assert.notStrictEqual(options.at(-1).series[0].data, projected);
+    assert.equal(options.at(-1).series[0].data.length, 5);
+
+    const finalized = options.at(-1).series[0].data;
+    chart.setTheme('dark');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.notStrictEqual(options.at(-1).series[0].data, finalized);
+    assert.equal(options.at(-1).series[0].data.length, 5);
 
     chart.openExpandedChart();
     await new Promise(resolve => setTimeout(resolve, 20));
@@ -107,4 +138,13 @@ test('live chart frames are paint-aligned, deferred while hidden, and expanded i
     await new Promise(resolve => setTimeout(resolve, 20));
     assert.equal(legendBindings, 2);
     chart.closeExpandedChart();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    chart.clearChart();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    chart.updateChart(start, frame(1), 1);
+    await new Promise(resolve => setTimeout(resolve, 120));
+    assert.deepEqual(options.at(-1).series[0].data, [[1, 1]]);
+    chart.finalizeLiveChart();
+    await new Promise(resolve => setTimeout(resolve, 0));
 });
