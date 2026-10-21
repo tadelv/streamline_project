@@ -1,6 +1,6 @@
 // Match the historical 10 Hz gate until a positive frame interval is observed.
 export const DEFAULT_CHART_INTERVAL_MS = 100;
-export const MIN_CHART_INTERVAL_MS = 25;
+export const MIN_CHART_INTERVAL_MS = 100;
 export const MAX_CHART_INTERVAL_MS = 100;
 
 // Observe accepted updateChart arrivals, not machine timestamps. The floor equals

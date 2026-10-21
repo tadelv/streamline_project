@@ -12,7 +12,7 @@ test('cadence falls back for first, frozen, backwards and non-finite timestamps'
     // THROWAWAY measurement build. The upstream guard below is lifted on purpose to
     // measure the floor on a real tablet; the assertion still fails if the value is
     // changed silently, it just records the intentional value instead of 100.
-    assert.equal(MIN_CHART_INTERVAL_MS, 25, 'measurement build: floor lowered for the tablet A/B');
+    assert.equal(MIN_CHART_INTERVAL_MS, 100, 'measurement build: baseline arm of the tablet A/B');
     assert.equal(observe(2010), DEFAULT_CHART_INTERVAL_MS);
 });
 
