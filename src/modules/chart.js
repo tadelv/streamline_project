@@ -6,6 +6,7 @@ import { createLatestTaskRunner } from './latest-task-runner.js';
 import { loadECharts } from './echarts-loader.js';
 import { createChartCadence, DEFAULT_CHART_INTERVAL_MS } from './chart-live-policy.js';
 import { destroyChart, getSeriesVisibility, hasChart, onLegendChange, renderChart, resizeChart, selectSeries, setYAxisRange } from './echarts-renderer.js';
+import * as chartPerf from './chart-perf-probe.js'; // THROWAWAY: floor measurement build
 
 // Maps internal trace key → i18n key used for the chart label.
 const LABEL_KEYS = {
@@ -425,6 +426,7 @@ let isLiveShot = false;
 // Call when a shot finishes to reveal the trace-end labels on the chart that
 // was just live.
 export function finalizeLiveChart() {
+    chartPerf.report('final'); // THROWAWAY: floor measurement build
     cancelChartFlush();
     liveRenderDirty = false;
     isLiveShot = false;
@@ -524,6 +526,7 @@ function flushChart() {
     };
     renderMain(chartTraces, layout, 'live');
     if (expandedOpen) renderExpandedCharts('live');
+    chartPerf.flush(chartRedrawInterval); // THROWAWAY: floor measurement build
     liveRenderDirty = false;
 }
 
@@ -887,6 +890,7 @@ export function updateChart(shotStartTime, data, weight, weightFlow = null, filt
         }
     }
     chartRedrawInterval = observeChartFrame(performance.now());
+    chartPerf.arrival(); // THROWAWAY: floor measurement build
     const pressureY = data.pressure;
     const flowY = data.flow;
     const targetPressureY = data.targetPressure;
@@ -951,6 +955,7 @@ export function updateChart(shotStartTime, data, weight, weightFlow = null, filt
 // that redraw themselves right after (plotHistoricalShot) use this to avoid
 // painting an empty chart just to overwrite it.
 function resetChartState() {
+    chartPerf.reset(); // THROWAWAY: floor measurement build
     // Clear all chart data arrays
     for (const trace in chartData) {
         chartData[trace].x = [];

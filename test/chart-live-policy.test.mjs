@@ -9,7 +9,10 @@ test('cadence falls back for first, frozen, backwards and non-finite timestamps'
         assert.equal(observe(now), DEFAULT_CHART_INTERVAL_MS);
     }
     assert.equal(observe(2010), MIN_CHART_INTERVAL_MS);
-    assert.equal(MIN_CHART_INTERVAL_MS, 100, 'floor stays at the historical gate until tablet-verified');
+    // THROWAWAY measurement build. The upstream guard below is lifted on purpose to
+    // measure the floor on a real tablet; the assertion still fails if the value is
+    // changed silently, it just records the intentional value instead of 100.
+    assert.equal(MIN_CHART_INTERVAL_MS, 25, 'measurement build: floor lowered for the tablet A/B');
     assert.equal(observe(2010), DEFAULT_CHART_INTERVAL_MS);
 });
 
@@ -31,8 +34,10 @@ test('slow cadence and stalls cannot paint slower than the historical gate', () 
 test('cadence smooths normal jitter and a new observer starts with the default', () => {
     const observe = createChartCadence();
     observe(0);
-    assert.equal(observe(50), DEFAULT_CHART_INTERVAL_MS);
-    assert.equal(observe(130), DEFAULT_CHART_INTERVAL_MS);
+    // THROWAWAY measurement build: express the EMA instead of the post-clamp
+    // value, which was 100 only because the floor equalled MAX and swallowed it.
+    assert.equal(observe(50), Math.max(MIN_CHART_INTERVAL_MS, 50));
+    assert.equal(observe(130), Math.max(MIN_CHART_INTERVAL_MS, 0.75 * 50 + 0.25 * 80));
     assert.equal(createChartCadence()(130), DEFAULT_CHART_INTERVAL_MS);
 });
 

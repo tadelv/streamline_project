@@ -1,4 +1,5 @@
 import { projectTraceDelta } from './chart-live-policy.js';
+import * as chartPerf from './chart-perf-probe.js'; // THROWAWAY: floor measurement build
 
 const charts = new WeakMap();
 const DPR = 1.25;
@@ -293,7 +294,19 @@ function liveSeriesOptions(projections, layout, includeMarkers) {
     return includeMarkers ? series.concat(markerSeriesOptions(layout, true)) : series;
 }
 
+// THROWAWAY: floor measurement build. Times the synchronous paint work only
+// (setOption + per-trace appendData). chart.js enqueues through
+// createLatestTaskRunner, so timing at the call site would measure the enqueue.
 export function renderChart(echarts, element, traces, layout, mode = 'full') {
+    const startedAt = performance.now();
+    try {
+        return renderChartBody(echarts, element, traces, layout, mode);
+    } finally {
+        chartPerf.recordPaint(mode, performance.now() - startedAt);
+    }
+}
+
+function renderChartBody(echarts, element, traces, layout, mode = 'full') {
     let state = charts.get(element);
     // Live frames reuse the last measured size: clientWidth/clientHeight force
     // layout every frame. A 1x1 state was measured while hidden, so re-measure.
